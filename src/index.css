@@ -121,4 +121,21 @@ All colors MUST be HSL.
   .glass {
     @apply bg-background/60 backdrop-blur-md border;
   }
+  
+  /* Text alignment utilities */
+  .text-left {
+    text-align: left;
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+  
+  .text-right {
+    text-align: right;
+  }
+  
+  .text-justify {
+    text-align: justify;
+  }
 }

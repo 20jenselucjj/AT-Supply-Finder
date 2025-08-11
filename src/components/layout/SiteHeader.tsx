@@ -1,5 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useKit } from "@/context/kit-context";
+import React from "react";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -7,6 +9,22 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 const SiteHeader = () => {
+  const { kitCount } = useKit();
+  const [darkMode, setDarkMode] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark");
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between">
@@ -22,7 +40,7 @@ const SiteHeader = () => {
             Catalog
           </NavLink>
           <NavLink to="/build" className={navLinkClass}>
-            Build a Kit
+            Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
           </NavLink>
         </nav>
         <div className="flex items-center gap-2">
@@ -31,6 +49,13 @@ const SiteHeader = () => {
           </Button>
           <Button asChild variant="hero">
             <Link to="/catalog">Start Browsing</Link>
+          </Button>
+          <Button
+            variant="outline"
+            aria-label="Toggle dark mode"
+            onClick={() => setDarkMode((d) => !d)}
+          >
+            {darkMode ? "🌙" : "☀️"}
           </Button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { Helmet } from "react-helmet-async";
 import Hero from "@/components/home/Hero";
 import CategoryGrid from "@/components/home/CategoryGrid";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
@@ -26,6 +28,22 @@ const Index = () => {
       </Helmet>
       <Hero />
       <CategoryGrid />
+      
+      {/* Blog Preview Section */}
+      <section className="container mx-auto py-12">
+        <div className="max-w-2xl mx-auto text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-semibold mb-4">Latest from our Blog</h2>
+          <p className="text-muted-foreground">
+            Get expert tips on athletic training, injury prevention, and tape techniques
+          </p>
+        </div>
+        
+        <div className="text-center">
+          <Button asChild variant="hero">
+            <Link to="/blog">Read Our Blog</Link>
+          </Button>
+        </div>
+      </section>
     </main>
   );
 };

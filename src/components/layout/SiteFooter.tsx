@@ -11,9 +11,10 @@ const SiteFooter = () => {
         <div>
           <h4 className="text-sm font-semibold mb-3">Explore</h4>
           <ul className="space-y-2 text-sm">
-            <li><a className="hover:underline" href="/catalog">Catalog</a></li>
-            <li><a className="hover:underline" href="/build">Build a Kit</a></li>
-            <li><a className="hover:underline" href="#how-it-works">How it works</a></li>
+            <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/catalog">Catalog</a></li>
+            <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/build">Build a Kit</a></li>
+            <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/blog">Blog</a></li>
+            <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="#how-it-works">How it works</a></li>
           </ul>
         </div>
         <div>
