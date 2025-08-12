@@ -172,24 +172,24 @@ const Login = () => {
               
               <div className="text-center text-sm">
                 {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                <button
+                <Button
                   type="button"
-                  className="text-primary hover:underline"
+                  variant="link"
                   onClick={() => setIsSignUp(!isSignUp)}
                 >
                   {isSignUp ? 'Login' : 'Sign up'}
-                </button>
+                </Button>
               </div>
               
               {!isSignUp && (
                 <div className="text-center text-sm">
-                  <button
+                  <Button
                     type="button"
-                    className="text-primary hover:underline"
+                    variant="link"
                     onClick={() => navigate('/forgot-password')}
                   >
                     Forgot Password?
-                  </button>
+                  </Button>
                 </div>
               )}
             </CardFooter>

@@ -29,7 +29,7 @@ const KitItem = ({ item }: KitItemProps) => {
   const bestOffer = item.offers.slice().sort((a, b) => a.price - b.price)[0];
   
   return (
-    <div className="flex items-center gap-4 p-4 border rounded-lg flex-wrap sm:flex-nowrap">
+    <div className="flex items-center gap-4 p-4 border rounded-lg flex-wrap md:flex-nowrap">
       <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden">
         <img
           src={item.imageUrl || "/placeholder.svg"}
@@ -48,7 +48,7 @@ const KitItem = ({ item }: KitItemProps) => {
         <p className="text-sm text-muted-foreground">{item.category}</p>
       </div>
       
-      <div className="flex items-center gap-2 my-2 sm:my-0">
+      <div className="flex items-center gap-2 my-2 md:my-0">
         <Button
           variant="outline"
           size="icon"

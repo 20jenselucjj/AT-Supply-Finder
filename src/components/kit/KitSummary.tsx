@@ -26,7 +26,7 @@ const KitSummary = () => {
   
   return (
     <Card className="p-6 mt-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4">
         <h2 className="text-xl font-bold">Kit Summary</h2>
         <Button variant="outline" onClick={clearKit}>
           Clear Kit
@@ -45,7 +45,7 @@ const KitSummary = () => {
         {vendorTotals.map(({ vendor, total, url }) => (
           <div
             key={vendor}
-            className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 p-3 rounded-md border"
+            className="flex flex-col md:flex-row justify-between md:items-center gap-3 p-3 rounded-md border"
           >
             <div className="flex items-center gap-2">
               <span>{vendor}</span>

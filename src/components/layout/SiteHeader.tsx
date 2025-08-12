@@ -2,6 +2,9 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useKit } from "@/context/kit-context";
 import { useAuth } from "@/context/auth-context";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 import React from "react";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -36,6 +39,8 @@ const SiteHeader = () => {
     }
   };
 
+  const isMobile = useIsMobile();
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between">
@@ -43,22 +48,45 @@ const SiteHeader = () => {
           <div className="h-8 w-8 rounded-md" style={{ background: "var(--gradient-primary)" }} />
           <span className="text-lg font-semibold">Wrap Wizard</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main">
-          <NavLink to="/" className={navLinkClass} end>
-            Home
-          </NavLink>
-          <NavLink to="/catalog" className={navLinkClass}>
-            Catalog
-          </NavLink>
-          <NavLink to="/build" className={navLinkClass}>
-            Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
-          </NavLink>
-        </nav>
+        
+        {/* Mobile Navigation */}
+        {isMobile ? (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Open menu">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col gap-4 py-4" aria-label="Main">
+                <NavLink to="/" className={navLinkClass} end>
+                  Home
+                </NavLink>
+                <NavLink to="/catalog" className={navLinkClass}>
+                  Catalog
+                </NavLink>
+                <NavLink to="/build" className={navLinkClass}>
+                  Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
+                </NavLink>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2" aria-label="Main">
+            <NavLink to="/" className={navLinkClass} end>
+              Home
+            </NavLink>
+            <NavLink to="/catalog" className={navLinkClass}>
+              Catalog
+            </NavLink>
+            <NavLink to="/build" className={navLinkClass}>
+              Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
+            </NavLink>
+          </nav>
+        )}
+        
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <a href="#how-it-works">How it works</a>
-          </Button>
-          <Button asChild variant="hero">
+          <Button asChild variant="hero" className="hidden sm:flex">
             <Link to="/catalog">Start Browsing</Link>
           </Button>
           <Button

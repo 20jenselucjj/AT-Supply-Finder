@@ -134,8 +134,8 @@ const Catalog = () => {
       </div>
 
       <section className="mb-6">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="sm:col-span-2">
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+          <div className="md:col-span-2">
             <label htmlFor="catalog-search" className="sr-only">
               Search products
             </label>
@@ -175,11 +175,12 @@ const Catalog = () => {
               onClick={() => updateParam("cat", c === "all" ? "" : c)}
               aria-pressed={c === cat}
               aria-label={`Filter by ${c}`}
+              className="flex-1 min-w-[80px] md:flex-none"
             >
               {c}
             </Button>
           ))}
-          <div className="ml-auto text-sm text-muted-foreground self-center">
+          <div className="w-full text-sm text-muted-foreground text-center mt-2 md:w-auto md:text-left md:ml-auto md:self-center md:mt-0">
             {filtered.length} result{filtered.length !== 1 ? "s" : ""}
           </div>
         </div>

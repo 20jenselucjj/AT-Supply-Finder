@@ -34,11 +34,11 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products }) => {
       <TableHeader>
         <TableRow>
           <TableHead className="w-[50px]"></TableHead>
-          <TableHead>Product Name</TableHead>
-          <TableHead>Features</TableHead>
-          <TableHead>Price</TableHead>
-          <TableHead>Vendors</TableHead>
-          <TableHead>Add to Kit</TableHead>
+          <TableHead className="w-[250px]">Product Name</TableHead>
+          <TableHead className="w-[200px]">Features</TableHead>
+          <TableHead className="w-[100px]">Price</TableHead>
+          <TableHead className="w-[150px]">Vendors</TableHead>
+          <TableHead className="w-[120px]">Add to Kit</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody variants={tableVariants} initial="hidden" animate="visible">

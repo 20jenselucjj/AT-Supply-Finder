@@ -38,9 +38,9 @@ const Hero = () => {
 
   return (
     <section className="relative bg-hero" onMouseMove={handleMove}>
-      <div className="container mx-auto py-20 md:py-28">
+      <div className="container mx-auto py-20 md:py-28 lg:py-36">
         <motion.div
-          className="mx-auto max-w-3xl text-center"
+          className="mx-auto max-w-4xl text-center"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -52,29 +52,29 @@ const Hero = () => {
             Compare • Build • Save
           </motion.span>
           <motion.h1
-            className="text-4xl md:text-5xl font-bold tracking-tight"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
             variants={itemVariants}
           >
             Build your perfect athletic wrap and bandage kit
           </motion.h1>
           <motion.p
-            className="mt-4 text-lg text-muted-foreground"
+            className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
             variants={itemVariants}
           >
             Compare prices across Amazon and top vendors. Mix and match
             bandages, tape, pre-wrap and more—without spreadsheets.
           </motion.p>
           <motion.div
-            className="mt-8 flex items-center justify-center gap-3"
+            className="mt-8 flex items-center justify-center gap-3 flex-wrap"
             variants={itemVariants}
           >
-            <Button asChild variant="hero">
+            <Button asChild variant="hero" className="px-6 py-3 text-base">
               <Link to="/catalog">
                 Start browsing
                 <ArrowRight className="ml-1" />
               </Link>
             </Button>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="px-6 py-3 text-base">
               <Link to="/build">Build a kit</Link>
             </Button>
           </motion.div>

@@ -98,13 +98,13 @@ const ForgotPassword = () => {
           )}
           
           <div className="px-6 pb-6 text-center">
-            <button
+            <Button
               type="button"
-              className="text-primary hover:underline text-sm"
+              variant="link"
               onClick={handleBackToLogin}
             >
               Back to Login
-            </button>
+            </Button>
           </div>
         </Card>
       </div>

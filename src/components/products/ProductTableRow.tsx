@@ -37,15 +37,15 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product }) => 
             className="w-10 h-10 mr-4 object-cover"
           />
           <div>
-            <div>{product.name}</div>
-            <div className="text-sm text-muted-foreground">{product.category}</div>
+            <div className="text-sm md:text-base">{product.name}</div>
+            <div className="text-xs md:text-sm text-muted-foreground">{product.category}</div>
           </div>
         </div>
       </TableCell>
       <TableCell>
-        <ul className="list-disc list-inside">
+        <ul className="list-disc list-inside text-xs md:text-sm">
           {product.features?.slice(0, 3).map((feature, index) => (
-            <li key={index}>{feature}</li>
+            <li key={index} className="truncate max-w-[150px] md:max-w-xs">{feature}</li>
           ))}
         </ul>
       </TableCell>
@@ -53,9 +53,9 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product }) => 
         {bestPrice !== undefined ? `$${bestPrice.toFixed(2)}` : 'N/A'}
       </TableCell>
       <TableCell>
-        <div className="flex space-x-2">
-          {product.offers.map((offer) => (
-            <Button variant="outline" size="sm" key={offer.name} asChild>
+        <div className="flex flex-wrap gap-1">
+          {product.offers.slice(0, 3).map((offer) => (
+            <Button variant="outline" size="sm" key={offer.name} asChild className="text-xs px-2 py-1 h-auto">
               <a href={offer.url} target="_blank" rel="noopener noreferrer">
                 {offer.name}
               </a>
@@ -64,7 +64,7 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product }) => 
         </div>
       </TableCell>
       <TableCell>
-        <Button onClick={() => addToKit(product)}>Add to Kit</Button>
+        <Button onClick={() => addToKit(product)} className="text-xs md:text-sm px-2 py-1 h-auto">Add to Kit</Button>
       </TableCell>
     </TableRow>
   );

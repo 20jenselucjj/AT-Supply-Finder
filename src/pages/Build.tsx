@@ -16,7 +16,7 @@ const Build = () => {
         <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">Build your kit</h1>
         {kit.length > 0 && (
           <Button asChild variant="outline">

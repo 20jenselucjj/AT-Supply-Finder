@@ -31,15 +31,15 @@ const Index = () => {
       
       {/* Blog Preview Section */}
       <section className="container mx-auto py-12">
-        <div className="max-w-2xl mx-auto text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-semibold mb-4">Latest from our Blog</h2>
-          <p className="text-muted-foreground">
+        <div className="max-w-3xl mx-auto text-center mb-8">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold mb-4">Latest from our Blog</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Get expert tips on athletic training, injury prevention, and tape techniques
           </p>
         </div>
         
         <div className="text-center">
-          <Button asChild variant="hero">
+          <Button asChild variant="hero" className="px-6 py-3 text-base">
             <Link to="/blog">Read Our Blog</Link>
           </Button>
         </div>

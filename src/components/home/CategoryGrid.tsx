@@ -55,14 +55,14 @@ const cardVariants = {
 
 const CategoryGrid = () => {
   return (
-    <section className="container mx-auto py-12" id="how-it-works">
+    <div className="container mx-auto py-12">
       <div className="max-w-2xl mb-8">
         <h2 className="text-2xl md:text-3xl font-semibold">Shop by category</h2>
         <p className="text-muted-foreground mt-2">
           We organize the essentials for trainers and athletes so you can build a kit fast.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {categories.map(({ name, description, icon: Icon, slug }) => (
           <Link to={`/catalog?cat=${slug}`} key={name}>
             <motion.div
@@ -91,7 +91,7 @@ const CategoryGrid = () => {
           </Link>
         ))}
       </div>
-    </section>
+    </div>
   );
 };
 

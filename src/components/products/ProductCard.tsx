@@ -43,17 +43,17 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             fetchPriority="low"
           />
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between flex-1 gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
           <div className="flex-1">
-            <h3 className="text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
+            <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
             <p className="text-sm text-yellow-700 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
           </div>
-          <div className="text-right sm:min-w-[120px]">
+          <div className="text-right md:min-w-[120px]">
             <div className="text-sm">From</div>
-            <div className="text-2xl font-bold text-yellow-800">$11.99</div>
+            <div className="text-xl md:text-2xl font-bold text-yellow-800">$11.99</div>
             <div className="mt-1 flex flex-col items-end gap-1">
-              <Badge variant="secondary" className="bg-yellow-300 text-yellow-900">Best price</Badge>
-              <Badge className="bg-yellow-500 text-white">Best on Amazon</Badge>
+              <Badge variant="secondary" className="bg-yellow-300 text-yellow-900 text-xs md:text-sm">Best price</Badge>
+              <Badge className="bg-yellow-500 text-white text-xs md:text-sm">Best on Amazon</Badge>
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           <Button
             asChild
             variant="hero"
-            className="transition-transform duration-200 hover:scale-105 shadow-md"
+            className="transition-transform duration-200 hover:scale-105 shadow-md flex-1 md:flex-none"
           >
             <a
               href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
@@ -81,14 +81,14 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           <Button
             onClick={() => addToKit(product)}
             variant="secondary"
-            className="transition-transform duration-200 hover:scale-105"
+            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none"
           >
             Add to Kit
           </Button>
           <Button
             asChild
             variant="outline"
-            className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 shadow-md"
+            className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 shadow-md flex-1 md:flex-none"
           >
             <a
               href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
@@ -126,23 +126,23 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between flex-1 gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
         <div className="flex-1">
-          <h3 className="text-base font-semibold leading-tight text-left">
+          <h3 className="text-base md:text-lg font-semibold leading-tight text-left">
             {loading ? <Skeleton className="h-5 w-32 mb-1" /> : product.name}
           </h3>
           <p className="text-xs text-muted-foreground mt-1 text-left">
             {loading ? <Skeleton className="h-3 w-20" /> : product.category}
           </p>
         </div>
-        <div className="text-right sm:min-w-[100px]">
+        <div className="text-right md:min-w-[100px]">
           <div className="text-sm">From</div>
-          <div className="text-xl font-bold">
+          <div className="text-lg md:text-xl font-bold">
             {loading ? <Skeleton className="h-6 w-16" /> : price ? currency(price) : currency(bestOffer.price)}
           </div>
           <div className="mt-1 flex flex-col items-end gap-1">
-            {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary">Best price</Badge>}
-            {bestIsAmazon && !loading && <Badge>Best on Amazon</Badge>}
+            {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
+            {bestIsAmazon && !loading && <Badge className="text-xs">Best on Amazon</Badge>}
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
         <Button
           onClick={() => addToKit(product)}
           variant="secondary"
-          className="transition-transform duration-200 hover:scale-105"
+          className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
           disabled={loading}
         >
           Add to Kit
@@ -171,7 +171,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             key={o.name}
             asChild
             variant={o.name.toLowerCase().includes("amazon") ? "hero" : "outline"}
-            className="transition-transform duration-200 hover:scale-105"
+            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
             disabled={loading}
           >
             <a href={o.url} target="_blank" rel="sponsored noopener noreferrer" aria-label={`View on ${o.name}`}>
@@ -183,7 +183,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           <Button
             asChild
             variant="outline"
-            className="transition-transform duration-200 hover:scale-105"
+            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
             disabled={loading}
           >
             <a

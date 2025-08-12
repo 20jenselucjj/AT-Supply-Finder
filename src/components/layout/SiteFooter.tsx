@@ -1,10 +1,10 @@
 const SiteFooter = () => {
   return (
     <footer className="mt-16 border-t">
-      <div className="container mx-auto py-10 grid gap-6 md:grid-cols-3">
-        <div>
+      <div className="container mx-auto py-10 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="lg:col-span-2">
           <h3 className="text-sm font-semibold mb-3">Wrap Wizard</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground max-w-2xl">
             Compare athletic training materials across vendors and build the perfect kit.
           </p>
         </div>
@@ -14,7 +14,6 @@ const SiteFooter = () => {
             <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/catalog">Catalog</a></li>
             <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/build">Build a Kit</a></li>
             <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="/blog">Blog</a></li>
-            <li><a className="transition-colors duration-200 hover:underline hover:text-primary" href="#how-it-works">How it works</a></li>
           </ul>
         </div>
         <div>
