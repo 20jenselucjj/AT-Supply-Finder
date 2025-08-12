@@ -55,6 +55,9 @@ const SiteHeader = () => {
           </NavLink>
         </nav>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <a href="#how-it-works">How it works</a>
+          </Button>
           <Button asChild variant="hero">
             <Link to="/catalog">Start Browsing</Link>
           </Button>
