@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, VendorOffer } from '@/components/products/ProductCard';
+import { useAuth } from './auth-context';
 
 export interface KitItem extends Product {
   quantity: number;
@@ -21,6 +22,9 @@ interface KitContextType {
   clearKit: () => void;
   kitCount: number;
   getVendorTotals: () => { vendor: string; total: number; url: string }[];
+  saveKit: () => Promise<void>;
+  loadKit: () => Promise<void>;
+  loading: boolean;
 }
 
 const KitContext = createContext<KitContextType | undefined>(undefined);
@@ -38,15 +42,31 @@ interface KitProviderProps {
 }
 
 export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
-  const [kit, setKit] = useState<KitItem[]>(() => {
-    const savedKit = localStorage.getItem('wrap-wizard-kit');
-    return savedKit ? JSON.parse(savedKit) : [];
-  });
-
-  // Save kit to localStorage whenever it changes
+  const [kit, setKit] = useState<KitItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  
+  // Initialize kit from localStorage for anonymous users
   useEffect(() => {
-    localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
-  }, [kit]);
+    if (user === null) {
+      const savedKit = localStorage.getItem('wrap-wizard-kit');
+      if (savedKit) {
+        try {
+          setKit(JSON.parse(savedKit));
+        } catch (e) {
+          console.error('Failed to parse saved kit', e);
+        }
+      }
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Save kit to localStorage whenever it changes for anonymous users
+  useEffect(() => {
+    if (user === null) {
+      localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
+    }
+  }, [kit, user]);
 
   const addToKit = (product: Product, quantity: number = 1) => {
     setKit(prevKit => {
@@ -120,6 +140,25 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }));
   };
 
+  // Save kit to user's account (placeholder for future implementation)
+  const saveKit = async () => {
+    if (!user) {
+      throw new Error('User must be logged in to save kit');
+    }
+    // This would be implemented when we add database functionality
+    console.log('Saving kit for user:', user.id);
+  };
+
+  // Load kit from user's account (placeholder for future implementation)
+  const loadKit = async () => {
+    if (!user) {
+      throw new Error('User must be logged in to load kit');
+    }
+    // This would be implemented when we add database functionality
+    console.log('Loading kit for user:', user.id);
+    setLoading(false);
+  };
+
   return (
     <KitContext.Provider
       value={{
@@ -129,7 +168,10 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         updateQuantity,
         clearKit,
         kitCount,
-        getVendorTotals
+        getVendorTotals,
+        saveKit,
+        loadKit,
+        loading
       }}
     >
       {children}

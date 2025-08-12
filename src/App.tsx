@@ -9,7 +9,9 @@ import { AnimatePresence } from "framer-motion";
 import SiteHeader from "@/components/layout/SiteHeader";
 import AnimatedPage from "@/components/layout/AnimatedPage";
 import SiteFooter from "@/components/layout/SiteFooter";
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import { KitProvider } from "./context/kit-context";
+import { AuthProvider } from "./context/auth-context";
 
 // Lazy load page components
 const Index = React.lazy(() => import("./pages/Index"));
@@ -21,6 +23,9 @@ const BlogCategory = React.lazy(() => import("./pages/BlogCategory"));
 const BlogTag = React.lazy(() => import("./pages/BlogTag"));
 const BlogAuthor = React.lazy(() => import("./pages/BlogAuthor"));
 const BlogAdmin = React.lazy(() => import("./pages/BlogAdmin"));
+const Login = React.lazy(() => import("./pages/Login"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
+const Profile = React.lazy(() => import("./pages/Profile"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -40,6 +45,9 @@ const AppRoutes = () => {
           <Route path="/blog/author/:author" element={<AnimatedPage><BlogAuthor /></AnimatedPage>} />
           <Route path="/blog/:slug" element={<AnimatedPage><BlogPost /></AnimatedPage>} />
           <Route path="/blog/admin" element={<AnimatedPage><BlogAdmin /></AnimatedPage>} />
+          <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
+          <Route path="/forgot-password" element={<AnimatedPage><ForgotPassword /></AnimatedPage>} />
+          <Route path="/profile" element={<AnimatedPage><ProtectedRoute><Profile /></ProtectedRoute></AnimatedPage>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<AnimatedPage><NotFound /></AnimatedPage>} />
         </Routes>
@@ -51,17 +59,19 @@ const AppRoutes = () => {
 const App = () => (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
-        <KitProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <SiteHeader />
-              <AppRoutes />
-              <SiteFooter />
-            </BrowserRouter>
-          </TooltipProvider>
-        </KitProvider>
+        <AuthProvider>
+          <KitProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <SiteHeader />
+                <AppRoutes />
+                <SiteFooter />
+              </BrowserRouter>
+            </TooltipProvider>
+          </KitProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </HelmetProvider>
   );

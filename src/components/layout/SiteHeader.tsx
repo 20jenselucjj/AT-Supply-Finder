@@ -1,6 +1,7 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useKit } from "@/context/kit-context";
+import { useAuth } from "@/context/auth-context";
 import React from "react";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,6 +11,8 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 const SiteHeader = () => {
   const { kitCount } = useKit();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = React.useState(() => {
     if (typeof window !== "undefined") {
       return document.documentElement.classList.contains("dark");
@@ -24,6 +27,14 @@ const SiteHeader = () => {
       document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
+
+  const handleProfileClick = () => {
+    if (user) {
+      navigate("/profile");
+    } else {
+      navigate("/login");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
@@ -44,11 +55,15 @@ const SiteHeader = () => {
           </NavLink>
         </nav>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <a href="#how-it-works">How it works</a>
-          </Button>
           <Button asChild variant="hero">
             <Link to="/catalog">Start Browsing</Link>
+          </Button>
+          <Button
+            variant="outline"
+            aria-label={user ? "User profile" : "Login"}
+            onClick={handleProfileClick}
+          >
+            {user ? "Profile" : "Login"}
           </Button>
           <Button
             variant="outline"
