@@ -1,8 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, VendorOffer } from '@/components/products/ProductCard';
+import { Product, VendorOffer } from '@/lib/types';
 import { useAuth } from './auth-context';
 
-export interface KitItem extends Product {
+export interface KitItem {
+  id: string;
+  name: string;
+  category: string;
+  brand: string;
+  rating?: number;
+  features?: string[];
+  offers: VendorOffer[];
+  imageUrl?: string;
+  asin?: string;
+  compatibleWith?: string[];
+  dimensions?: string;
+  weight?: string;
+  material?: string;
+  isFavorite?: boolean;
   quantity: number;
 }
 
@@ -21,6 +35,7 @@ interface KitContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearKit: () => void;
   kitCount: number;
+  getProductQuantity: (productId: string) => number;
   getVendorTotals: () => { vendor: string; total: number; url: string }[];
   saveKit: () => Promise<void>;
   loadKit: () => Promise<void>;
@@ -44,11 +59,11 @@ interface KitProviderProps {
 export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   const [kit, setKit] = useState<KitItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   // Initialize kit from localStorage for anonymous users
   useEffect(() => {
-    if (user === null) {
+    if (user === null && !authLoading) {
       const savedKit = localStorage.getItem('wrap-wizard-kit');
       if (savedKit) {
         try {
@@ -58,15 +73,17 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         }
       }
       setLoading(false);
+    } else if (user !== null && !authLoading) {
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   // Save kit to localStorage whenever it changes for anonymous users
   useEffect(() => {
-    if (user === null) {
+    if (user === null && !authLoading) {
       localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
     }
-  }, [kit, user]);
+  }, [kit, user, authLoading]);
 
   const addToKit = (product: Product, quantity: number = 1) => {
     setKit(prevKit => {
@@ -105,6 +122,11 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   };
 
   const kitCount = kit.reduce((total, item) => total + item.quantity, 0);
+
+  const getProductQuantity = (productId: string): number => {
+    const item = kit.find(item => item.id === productId);
+    return item ? item.quantity : 0;
+  };
 
   const getVendorTotals = () => {
     // Create a map of vendor totals
@@ -156,7 +178,9 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }
     // This would be implemented when we add database functionality
     console.log('Loading kit for user:', user.id);
-    setLoading(false);
+    if (!authLoading) {
+      setLoading(false);
+    }
   };
 
   return (
@@ -168,6 +192,7 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         updateQuantity,
         clearKit,
         kitCount,
+        getProductQuantity,
         getVendorTotals,
         saveKit,
         loadKit,

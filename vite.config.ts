@@ -8,13 +8,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080/functions/amazon-pricing',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    }
+    // Removed proxy configuration since the serverless function isn't running in development
+    // The frontend code now handles API failures gracefully
   },
   plugins: [
     react(),

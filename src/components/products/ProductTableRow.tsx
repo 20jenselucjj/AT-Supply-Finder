@@ -8,6 +8,9 @@ import { useKit } from '@/context/kit-context';
 
 interface ProductTableRowProps {
   product: Product;
+  selectedForCompare: string[];
+  toggleCompare: (id: string) => void;
+  setQuickViewProduct?: (product: Product) => void;
 }
 
 const TableRow = motion.tr;
@@ -17,42 +20,52 @@ const rowVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product }) => {
-  const { addToKit } = useKit();
+export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selectedForCompare, toggleCompare, setQuickViewProduct }) => {
+  const { addToKit, getProductQuantity } = useKit();
 
   const bestPrice = product.offers.length > 0
     ? Math.min(...product.offers.map(o => o.price))
     : undefined;
 
   return (
-    <TableRow variants={rowVariants}>
+  <TableRow variants={rowVariants} className="align-top">
       <TableCell>
-        <Checkbox />
+        <Checkbox
+          checked={selectedForCompare.includes(product.id)}
+          onCheckedChange={() => toggleCompare(product.id)}
+        />
       </TableCell>
       <TableCell className="font-medium">
         <div className="flex items-center">
-          <img
-            src={product.imageUrl || 'https://placehold.co/40x40'}
-            alt={product.name}
-            className="w-10 h-10 mr-4 object-cover"
-          />
+          <a
+            href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer"
+          >
+            <img
+              src={product.imageUrl || 'https://placehold.co/40x40'}
+              alt={product.name}
+              className="w-10 h-10 mr-4 object-cover hover:opacity-80 transition-opacity"
+            />
+          </a>
           <div>
             <div className="text-sm md:text-base">{product.name}</div>
             <div className="text-xs md:text-sm text-muted-foreground">{product.category}</div>
           </div>
         </div>
       </TableCell>
-      <TableCell>
-        <ul className="list-disc list-inside text-xs md:text-sm">
+      <TableCell className="hidden lg:table-cell">
+        <ul className="list-disc list-inside text-xs md:text-sm space-y-0.5">
           {product.features?.slice(0, 3).map((feature, index) => (
-            <li key={index} className="truncate max-w-[150px] md:max-w-xs">{feature}</li>
+            <li key={index} className="truncate max-w-[200px]">{feature}</li>
           ))}
         </ul>
       </TableCell>
       <TableCell>
         {bestPrice !== undefined ? `$${bestPrice.toFixed(2)}` : 'N/A'}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div className="flex flex-wrap gap-1">
           {product.offers.slice(0, 3).map((offer) => (
             <Button variant="outline" size="sm" key={offer.name} asChild className="text-xs px-2 py-1 h-auto">
@@ -64,7 +77,28 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product }) => 
         </div>
       </TableCell>
       <TableCell>
-        <Button onClick={() => addToKit(product)} className="text-xs md:text-sm px-2 py-1 h-auto">Add to Kit</Button>
+        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => addToKit(product)}
+              className="text-xs md:text-sm px-2 py-1 h-auto"
+            >
+              Add
+            </Button>
+            {getProductQuantity(product.id) > 0 && (
+              <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium min-w-[20px] text-center">
+                {getProductQuantity(product.id)}
+              </span>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            className="text-xs md:text-sm px-2 py-1 h-auto"
+            onClick={() => setQuickViewProduct && setQuickViewProduct(product)}
+          >
+            View
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );

@@ -1,7 +1,8 @@
 import { Helmet } from "react-helmet-async";
+import PageContainer from "@/components/layout/PageContainer";
 import { Link, useParams } from "react-router-dom";
 import { useMemo } from "react";
-import { BlogPost, getBlogPostBySlug, getRelatedPosts } from "@/lib/blog";
+import { type BlogPost, getBlogPostBySlug, getRelatedPosts } from "@/lib/blog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Clock, Calendar, User } from "lucide-react";
@@ -61,7 +62,8 @@ const BlogPost = () => {
   const canonical = typeof window !== "undefined" ? `${window.location.origin}/blog/${post.slug}` : "";
   
   return (
-    <main className="container mx-auto py-10">
+    <main className="py-10">
+      <PageContainer>
       <Helmet>
         <title>{post.seo.title}</title>
         <meta name="description" content={post.seo.description} />
@@ -198,6 +200,7 @@ const BlogPost = () => {
           </div>
         </section>
       )}
+      </PageContainer>
     </main>
   );
 };

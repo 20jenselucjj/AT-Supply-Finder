@@ -21,7 +21,6 @@ const itemVariants = {
     opacity: 1,
     transition: {
       duration: 0.5,
-      ease: "easeOut",
     },
   },
 };
@@ -46,37 +45,61 @@ const Hero = () => {
           animate="visible"
         >
           <motion.span
-            className="inline-flex items-center px-3 py-1 text-xs rounded-full border mb-4"
+            className="inline-flex items-center px-4 py-2 text-sm rounded-full bg-primary/10 text-primary border border-primary/20 mb-6"
             variants={itemVariants}
           >
-            Compare • Build • Save
+            🏆 Trusted by 10,000+ Athletes • Save 20-40%
           </motion.span>
           <motion.h1
             className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
             variants={itemVariants}
           >
-            Build your perfect athletic wrap and bandage kit
+            Stop Overpaying for <span className="text-primary">Athletic Supplies</span>
           </motion.h1>
           <motion.p
-            className="mt-4 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
+            className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
             variants={itemVariants}
           >
-            Compare prices across Amazon and top vendors. Mix and match
-            bandages, tape, pre-wrap and more—without spreadsheets.
+            Compare prices across <strong>Amazon and top vendors</strong> instantly. Build your perfect athletic kit and save hundreds on tape, bandages, and pre-wrap.
           </motion.p>
+          
           <motion.div
-            className="mt-8 flex items-center justify-center gap-3 flex-wrap"
+            className="mt-6 flex items-center justify-center gap-6 text-sm text-muted-foreground"
             variants={itemVariants}
           >
-            <Button asChild variant="hero" className="px-6 py-3 text-base">
+            <div className="flex items-center gap-2">
+              <span className="text-green-500">✓</span>
+              <span>Price comparison</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-green-500">✓</span>
+              <span>Expert curated</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-green-500">✓</span>
+              <span>Free to use</span>
+            </div>
+          </motion.div>
+          <motion.div
+            className="mt-8 flex items-center justify-center gap-4 flex-wrap"
+            variants={itemVariants}
+          >
+            <Button asChild variant="hero" size="lg" className="px-8 py-4 text-lg font-semibold">
               <Link to="/catalog">
-                Start browsing
-                <ArrowRight className="ml-1" />
+                Start Saving Now
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild variant="outline" className="px-6 py-3 text-base">
-              <Link to="/build">Build a kit</Link>
+            <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg">
+              <Link to="/build">Build Your Kit</Link>
             </Button>
+          </motion.div>
+          
+          <motion.div
+            className="mt-6 text-sm text-muted-foreground"
+            variants={itemVariants}
+          >
+            ⚡ <strong>Free to use</strong> • No signup required • Instant price comparison
           </motion.div>
         </motion.div>
       </div>

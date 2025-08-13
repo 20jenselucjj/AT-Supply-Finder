@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import PageContainer from "@/components/layout/PageContainer";
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { BlogPost, getBlogPosts } from "@/lib/blog";
@@ -53,7 +54,8 @@ const Blog = () => {
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
   
   return (
-    <main className="container mx-auto py-10">
+    <main className="py-10">
+      <PageContainer>
       <Helmet>
         <title>Blog – Athletic Training Tips | Wrap Wizard</title>
         <meta name="description" content="Learn about athletic training, injury prevention, and tape techniques from our expert blog posts." />
@@ -184,6 +186,7 @@ const Blog = () => {
       <div className="mt-6 text-center text-sm text-muted-foreground">
         Showing {paginatedPosts.length} of {filteredPosts.length} posts
       </div>
+      </PageContainer>
     </main>
   );
 };

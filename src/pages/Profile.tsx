@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
+import PageContainer from '@/components/layout/PageContainer';
 import { toast } from 'sonner';
 
 const Profile = () => {
@@ -27,8 +28,8 @@ const Profile = () => {
         <meta name="description" content="Manage your profile and saved kits" />
       </Helmet>
       
-      <div className="container mx-auto py-10">
-        <div className="max-w-3xl mx-auto">
+      <div className="py-10">
+        <PageContainer className="max-w-3xl">
           <Card>
             <CardHeader>
               <CardTitle>Profile</CardTitle>
@@ -74,7 +75,7 @@ const Profile = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </PageContainer>
       </div>
     </>
   );

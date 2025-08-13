@@ -43,7 +43,7 @@ const SiteHeader = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between">
+      <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md" style={{ background: "var(--gradient-primary)" }} />
           <span className="text-lg font-semibold">Wrap Wizard</span>
@@ -66,8 +66,16 @@ const SiteHeader = () => {
                   Catalog
                 </NavLink>
                 <NavLink to="/build" className={navLinkClass}>
-                  Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
+                  <span className="inline-flex items-center">
+                    Build a Kit
+                    {kitCount > 0 && (
+                      <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {kitCount}
+                      </span>
+                    )}
+                  </span>
                 </NavLink>
+                {/* Favorites removed */}
               </nav>
             </SheetContent>
           </Sheet>
@@ -80,19 +88,28 @@ const SiteHeader = () => {
               Catalog
             </NavLink>
             <NavLink to="/build" className={navLinkClass}>
-              Build a Kit {kitCount > 0 && <span className="ml-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{kitCount}</span>}
+              <span className="inline-flex items-center">
+                Build a Kit
+                {kitCount > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {kitCount}
+                  </span>
+                )}
+              </span>
             </NavLink>
+            {/* Favorites removed */}
           </nav>
         )}
         
-        <div className="flex items-center gap-2">
-          <Button asChild variant="hero" className="hidden sm:flex">
-            <Link to="/catalog">Start Browsing</Link>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button asChild variant="hero" className="hidden md:flex">
+            <Link to="/catalog">Browse</Link>
           </Button>
           <Button
             variant="outline"
             aria-label={user ? "User profile" : "Login"}
             onClick={handleProfileClick}
+            className="px-3 sm:px-4"
           >
             {user ? "Profile" : "Login"}
           </Button>
@@ -100,6 +117,7 @@ const SiteHeader = () => {
             variant="outline"
             aria-label="Toggle dark mode"
             onClick={() => setDarkMode((d) => !d)}
+            className="px-3 sm:px-4"
           >
             {darkMode ? "🌙" : "☀️"}
           </Button>
