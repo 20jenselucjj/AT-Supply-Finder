@@ -7,9 +7,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import React from "react";
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-4 py-3 rounded-md text-sm font-medium flex items-center gap-2 transition-colors duration-150 active:scale-[0.94] active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-    isActive ? "bg-secondary text-secondary-foreground shadow-sm" : "hover:bg-accent"
+const navLinkClass = ({ isActive, mobile = false }: { isActive: boolean; mobile?: boolean }) =>
+  `relative ${mobile ? 'px-5 py-4 text-lg font-semibold' : 'px-4 py-3 text-sm font-medium'} rounded-md flex items-center gap-2 transition-colors duration-150 active:scale-[0.94] active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-visible ${
+    isActive
+      ? "bg-secondary text-secondary-foreground shadow-sm after:content-[''] after:absolute after:left-2 after:right-2 after:-bottom-1 after:h-0.5 after:bg-primary after:rounded-full"
+      : "hover:bg-accent"
   }`;
 
 const SiteHeader = () => {
@@ -52,12 +54,10 @@ const SiteHeader = () => {
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src="/Gemini_Generated_Image_n24esqn24esqn24e.png"
-            alt="Wrap Wizard Logo"
-            className="h-12 w-12 rounded-md object-cover object-center bg-background border border-border shadow"
-            style={{ objectFit: 'cover', objectPosition: 'center', background: '#fff' }}
-            decoding="async"
+          <div
+            className="h-12 w-12 rounded-md border-4 border-border shadow"
+            style={{ backgroundColor: '#16a076' }}
+            aria-label="Wrap Wizard Logo"
           />
           <span className="text-lg font-semibold">Wrap Wizard</span>
         </Link>
@@ -80,13 +80,13 @@ const SiteHeader = () => {
                 <span className="font-semibold tracking-tight">Wrap Wizard</span>
               </div>
               <nav className="flex flex-col gap-1 py-4 px-3 overflow-y-auto flex-1" aria-label="Main">
-                <NavLink to="/" className={navLinkClass} end onClick={() => setMobileOpen(false)}>
+                <NavLink to="/" className={(props) => navLinkClass({ ...props, mobile: true })} end onClick={() => setMobileOpen(false)}>
                   Home
                 </NavLink>
-                <NavLink to="/catalog" className={navLinkClass} onClick={() => setMobileOpen(false)}>
+                <NavLink to="/catalog" className={(props) => navLinkClass({ ...props, mobile: true })} onClick={() => setMobileOpen(false)}>
                   Catalog
                 </NavLink>
-                <NavLink to="/build" className={navLinkClass} onClick={() => setMobileOpen(false)}>
+                <NavLink to="/build" className={(props) => navLinkClass({ ...props, mobile: true })} onClick={() => setMobileOpen(false)}>
                   <span className="inline-flex items-center">
                     Build a Kit
                     {kitCount > 0 && (

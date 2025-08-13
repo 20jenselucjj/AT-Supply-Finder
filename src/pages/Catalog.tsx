@@ -171,7 +171,7 @@ const Catalog = () => {
                 </label>
                 <select
                   id="catalog-sort"
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[160px]"
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[120px] w-full max-w-[160px] sm:min-w-[160px] sm:w-auto"
                   value={sort}
                   onChange={(e) => updateParam("sort", e.currentTarget.value)}
                   aria-label="Sort products"
