@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { ProductQuickView } from "@/components/products/ProductQuickView";
 import { ProductGrid } from "@/components/products/ProductGrid";
@@ -50,7 +51,7 @@ const Catalog = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [brands, setBrands] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const isNarrow = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false;
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -161,15 +162,6 @@ const Catalog = () => {
                 >
                   ☰ List
                 </Button>
-                <Button
-                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('table')}
-                  aria-pressed={viewMode === 'table'}
-                  className="px-3 hidden sm:inline-flex"
-                >
-                  ⌗ Table
-                </Button>
               </div>
               
               {/* Sort Dropdown */}
@@ -196,7 +188,10 @@ const Catalog = () => {
           {/* Category Filters */}
           <div>
             <h3 className="text-sm font-medium mb-3 text-muted-foreground">Filter by Category</h3>
-            <div className="flex flex-wrap gap-2" aria-label="Filter by category">
+            <div
+              className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible snap-x"
+              aria-label="Filter by category"
+            >
               {categories.map((c) => {
                 const isActive = c === cat;
                 const productCount = c === "all" ? mock.length : mock.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
@@ -208,11 +203,14 @@ const Catalog = () => {
                     onClick={() => updateParam("cat", c === "all" ? "" : c)}
                     aria-pressed={isActive}
                     aria-label={`Filter by ${c}`}
-                    className="flex-1 min-w-[80px] md:flex-none relative"
+                    className={`whitespace-nowrap rounded-full px-4 h-10 flex-shrink-0 snap-start relative active:scale-[0.95] transition ${isActive ? 'ring-2 ring-primary/40' : ''}`}
                   >
-                    {c === "all" ? "All Products" : c}
-                    <span className="ml-1 text-xs opacity-70">({productCount})</span>
-                    {isActive && <span className="ml-1">✓</span>}
+                    <span className="font-medium text-sm">
+                      {c === "all" ? "All" : c.replace(/_/g, ' ')}
+                    </span>
+                    <span className="ml-2 text-[11px] opacity-70 bg-muted rounded-full px-2 py-0.5 leading-none">
+                      {productCount}
+                    </span>
                   </Button>
                 );
               })}
@@ -224,7 +222,10 @@ const Catalog = () => {
             <div className="flex items-center justify-between px-6 py-4 cursor-pointer select-none" onClick={() => setAdvancedFiltersExpanded(v => !v)}>
               <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <span>Advanced Filters</span>
-                <span className={`transition-transform ${advancedFiltersExpanded ? 'rotate-90' : ''}`}>▶</span>
+                <ChevronDown
+                  className={`h-5 w-5 ml-1 transition-transform duration-200 ${advancedFiltersExpanded ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                />
               </h3>
               <Button 
                 variant="ghost" 
@@ -423,21 +424,9 @@ const Catalog = () => {
             );
           }
           if (viewMode === 'list') {
-            // Mobile card variant; on wider screens fall back to table for richer density
-            if (isNarrow) {
-              return (
-                <ProductListMobile
-                  products={filtered}
-                  selectedForCompare={selectedForCompare}
-                  toggleCompare={(id) => setSelectedForCompare(prev =>
-                    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                  )}
-                  setQuickViewProduct={setQuickViewProduct}
-                />
-              );
-            }
+            // Always use mobile card variant for list view
             return (
-              <ProductTable
+              <ProductListMobile
                 products={filtered}
                 selectedForCompare={selectedForCompare}
                 toggleCompare={(id) => setSelectedForCompare(prev =>
@@ -447,17 +436,17 @@ const Catalog = () => {
               />
             );
           }
-          // explicit table view
-            return (
-              <ProductTable
-                products={filtered}
-                selectedForCompare={selectedForCompare}
-                toggleCompare={(id) => setSelectedForCompare(prev =>
-                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                )}
-                setQuickViewProduct={setQuickViewProduct}
-              />
-            );
+          // grid view
+          return (
+            <ProductGrid
+              products={filtered}
+              selectedForCompare={selectedForCompare}
+              toggleCompare={(id) => setSelectedForCompare(prev =>
+                prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+              )}
+              setQuickViewProduct={setQuickViewProduct}
+            />
+          );
         })()
       )}
     </main>
