@@ -45,7 +45,13 @@ const SiteHeader = () => {
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md" style={{ background: "var(--gradient-primary)" }} />
+          <img
+            src="/Gemini_Generated_Image_n24esqn24esqn24e.png"
+            alt="Wrap Wizard Logo"
+            className="h-12 w-12 rounded-md object-cover object-center bg-background border border-border shadow"
+            style={{ objectFit: 'cover', objectPosition: 'center', background: '#fff' }}
+            decoding="async"
+          />
           <span className="text-lg font-semibold">Wrap Wizard</span>
         </Link>
         
