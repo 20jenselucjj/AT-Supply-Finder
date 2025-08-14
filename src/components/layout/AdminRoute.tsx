@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
@@ -11,23 +11,37 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
-    
-    if (!user) {
-      toast.error('You must be logged in to access this page');
-      navigate('/login', { state: { from: location.pathname } });
-      return;
+    if (!loading && !hasChecked) {
+      setHasChecked(true);
+      
+      if (!user) {
+        const timer = setTimeout(() => {
+          toast.error('You must be logged in to access this page');
+          setShouldRedirect(true);
+          navigate('/login', { state: { from: location.pathname } });
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+      
+      if (user && !isAdmin) {
+        const timer = setTimeout(() => {
+          toast.error('You do not have permission to access the admin area');
+          setShouldRedirect(true);
+          navigate('/');
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+      
+      setShouldRedirect(false);
     }
-    
-    if (!isAdmin && user) {
-      toast.error('You do not have permission to access the admin area');
-      navigate('/');
-    }
-  }, [user, loading, isAdmin, navigate, location.pathname]);
+  }, [user, loading, isAdmin, hasChecked, navigate, location.pathname]);
 
-  if (loading) {
+  // Show loading while checking authentication and admin status
+  if (loading || !hasChecked || shouldRedirect) {
     return (
       <div className="container mx-auto py-10 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
@@ -38,7 +52,8 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  if (!user || !isAdmin) {
+  // Don't render anything if redirecting or user doesn't have access
+  if (!user || !isAdmin || shouldRedirect) {
     return null;
   }
 

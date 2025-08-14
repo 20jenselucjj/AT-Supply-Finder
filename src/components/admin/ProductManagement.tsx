@@ -20,12 +20,14 @@ interface ProductData {
   category: string;
   brand: string;
   rating?: number;
+  price?: number;
   dimensions?: string;
   weight?: string;
   material?: string;
   features?: string[];
   image_url?: string;
   asin?: string;
+  affiliate_link?: string;
   created_at: string;
   updated_at: string;
   vendor_offers?: VendorOffer[];
@@ -60,6 +62,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     category: '',
     brand: '',
     rating: '',
+    price: '',
     dimensions: '',
     weight: '',
     material: '',
@@ -144,6 +147,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       category: '',
       brand: '',
       rating: '',
+      price: '',
       dimensions: '',
       weight: '',
       material: '',
@@ -152,7 +156,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       asin: '',
       affiliate_link: ''
     });
+
   };
+
+
 
   // Extract ASIN from Amazon affiliate link
   const extractASINFromLink = (url: string): string | null => {
@@ -194,27 +201,52 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     setIsLoadingProductInfo(true);
     
     try {
-      // Update ASIN in form
-      setProductForm(prev => ({ ...prev, asin }));
+      // Call our scraping API to get product information
+      const response = await fetch('/api/scrape-amazon-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
       
-      // For now, we'll just extract the ASIN and let the user fill in other details
-      // In a production environment, you would integrate with Amazon Product Advertising API
-      // to fetch product details like name, brand, images, etc.
+      const result = await response.json();
       
-      toast.success(`ASIN extracted: ${asin}. Please fill in the remaining product details.`);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to scrape product information');
+      }
       
-      // TODO: Integrate with Amazon Product Advertising API to auto-populate:
-      // - Product name
-      // - Brand
-      // - Category
-      // - Images
-      // - Features
-      // - Dimensions
-      // - Rating
+      if (result.success && result.data) {
+        const productData = result.data;
+        
+        // Auto-populate the form with scraped data
+        setProductForm(prev => ({
+          ...prev,
+          name: productData.name || prev.name,
+          brand: productData.brand || prev.brand,
+          category: productData.category || prev.category,
+          image_url: productData.image_url || prev.image_url,
+          asin: productData.asin || prev.asin,
+          rating: productData.rating ? productData.rating.toString() : prev.rating,
+          price: productData.price ? productData.price.toString() : prev.price,
+          dimensions: productData.dimensions || prev.dimensions,
+          weight: productData.weight || prev.weight,
+          material: productData.material || prev.material,
+          features: productData.features ? productData.features.join('\n') : prev.features
+        }));
+        
+        toast.success('Product information extracted successfully!');
+      } else {
+        // Fallback to just extracting ASIN
+        setProductForm(prev => ({ ...prev, asin }));
+        toast.success(`ASIN extracted: ${asin}. Please fill in the remaining product details manually.`);
+      }
       
     } catch (error) {
       console.error('Error processing affiliate link:', error);
-      toast.error('Failed to process affiliate link');
+      // Fallback to just extracting ASIN
+      setProductForm(prev => ({ ...prev, asin }));
+      toast.error(`Failed to auto-populate product info: ${error.message}. ASIN extracted: ${asin}`);
     } finally {
       setIsLoadingProductInfo(false);
     }
@@ -232,12 +264,14 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         category: productForm.category,
         brand: productForm.brand,
         rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        price: productForm.price ? parseFloat(productForm.price) : null,
         dimensions: productForm.dimensions || null,
         weight: productForm.weight || null,
         material: productForm.material || null,
         features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
         image_url: productForm.image_url || null,
-        asin: productForm.asin || null
+        asin: productForm.asin || null,
+        affiliate_link: productForm.affiliate_link || null
       };
 
       const { error } = await supabase
@@ -269,12 +303,14 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         category: productForm.category,
         brand: productForm.brand,
         rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        price: productForm.price ? parseFloat(productForm.price) : null,
         dimensions: productForm.dimensions || null,
         weight: productForm.weight || null,
         material: productForm.material || null,
         features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
         image_url: productForm.image_url || null,
         asin: productForm.asin || null,
+        affiliate_link: productForm.affiliate_link || null,
         updated_at: new Date().toISOString()
       };
 
@@ -326,13 +362,16 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       category: product.category,
       brand: product.brand,
       rating: product.rating?.toString() || '',
+      price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
+
+
       weight: product.weight || '',
       material: product.material || '',
       features: product.features?.join('\n') || '',
       image_url: product.image_url || '',
       asin: product.asin || '',
-      affiliate_link: ''
+      affiliate_link: product.affiliate_link || ''
     });
   };
 
@@ -375,13 +414,14 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                   Add Product
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Product</DialogTitle>
                   <DialogDescription>
-                    Create a new product in your catalog.
+                    Create a new product manually.
                   </DialogDescription>
                 </DialogHeader>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
@@ -441,6 +481,18 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                       value={productForm.rating}
                       onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
                       placeholder="4.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={productForm.price}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
+                      placeholder="29.99"
                     />
                   </div>
                   <div>
@@ -674,6 +726,18 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                                       step="0.1"
                                       value={productForm.rating}
                                       onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-price">Price ($)</Label>
+                                    <Input
+                                      id="edit-price"
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={productForm.price}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
+                                      placeholder="29.99"
                                     />
                                   </div>
                                   <div>

@@ -96,34 +96,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      if (session?.user) {
-        await checkAdminStatus();
-      } else {
-        setIsAdmin(false);
-        setHasCheckedAdmin(true);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setUser(null);
+            setIsAdmin(false);
+            setHasCheckedAdmin(true);
+            setLoading(false);
+          }
+          return;
+        }
+        
+        if (mounted) {
+          setUser(session?.user || null);
+          if (session?.user) {
+            await checkAdminStatus();
+          } else {
+            setIsAdmin(false);
+            setHasCheckedAdmin(true);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+        if (mounted) {
+          setUser(null);
+          setIsAdmin(false);
+          setHasCheckedAdmin(true);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
+        if (!mounted) return;
+        
         setUser(session?.user || null);
+        
         if (session?.user) {
           await checkAdminStatus();
         } else {
           setIsAdmin(false);
           setHasCheckedAdmin(true);
         }
+        
         setLoading(false);
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [checkAdminStatus]);

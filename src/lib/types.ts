@@ -11,10 +11,12 @@ export interface Product {
   category: string;
   brand: string;
   rating?: number;
+  price?: number;
   features?: string[];
   offers: VendorOffer[];
   imageUrl?: string;
   asin?: string;
+  affiliateLink?: string;
   compatibleWith?: string[];
   dimensions?: string;
   weight?: string;

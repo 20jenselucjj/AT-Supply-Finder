@@ -7,54 +7,131 @@ import { ProductTable } from "@/components/products/ProductTable";
 import { ProductListMobile } from "@/components/products/ProductListMobile";
 
 import { Product } from "@/lib/types";
-import { products as sharedProducts } from "@/lib/products";
+import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
 
-const mock: Product[] = sharedProducts;
-
 const Catalog = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const [params, setParams] = useSearchParams();
-  const [prices, setPrices] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    const asins = mock.map((p) => p.id).join(",");
-    if (asins) {
-      // Skip API call in development since the serverless function isn't running
-      if (import.meta.env.DEV) {
-        console.log('Skipping Amazon pricing API call in development');
-        setPrices({});
-        return;
-      }
-      
-      fetch(`/api/amazon-pricing?asins=${asins}`)
-        .then(async (res) => {
-          // Check if response is actually JSON
-          const contentType = res.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            return res.json();
-          } else {
-            // If not JSON (likely HTML error page), return empty object
-            console.warn('API endpoint returned non-JSON response, likely not available in development');
-            return {};
-          }
-        })
-        .then((data) => setPrices(data))
-        .catch((error) => {
-          console.warn('Failed to fetch pricing data:', error);
-          // Set empty prices object on error
-          setPrices({});
-        });
-    }
-  }, []);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const q = params.get("q") || "";
   const cat = params.get("cat") || "all";
   const sort = params.get("sort") || "relevance";
+
+  // Load products from database
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        console.log('Starting to load products...');
+        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+        console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+        
+        // Test basic connection first
+        const { data: testData, error: testError } = await supabase
+          .from('products')
+          .select('count')
+          .limit(1);
+        
+        console.log('Connection test:', { testData, testError });
+        
+        // First, let's try a simple query without joins
+        let query = supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Apply search filter
+        if (q) {
+          query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`);
+        }
+
+        // Apply category filter
+        if (cat !== 'all') {
+          query = query.eq('category', cat);
+        }
+
+        const { data, error } = await query;
+        
+        console.log('Supabase query result:', { data, error });
+        
+        if (error) {
+          console.error('Error loading products:', error);
+          setError(`Database error: ${error.message}`);
+          setProducts([]);
+          return;
+        }
+        
+        setError(null); // Clear any previous errors
+
+        // Transform database products to match Product interface
+        const transformedProducts: Product[] = (data || []).map(product => ({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          brand: product.brand,
+          rating: product.rating || 0,
+          imageUrl: product.image_url || '',
+          asin: product.asin || '',
+          dimensions: product.dimensions || '',
+          weight: product.weight || '',
+          material: product.material || '',
+          features: product.features || [],
+          price: product.price,
+          affiliateLink: product.affiliate_link,
+          offers: product.price ? [{
+            name: 'Direct',
+            price: product.price,
+            url: product.affiliate_link || '#',
+            lastUpdated: product.updated_at || new Date().toISOString()
+          }] : []
+        }));
+        
+        console.log('Loaded products from database:', transformedProducts.length);
+        console.log('Sample product:', transformedProducts[0]);
+        setProducts(transformedProducts);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [q, cat]);
+
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('category')
+          .not('category', 'is', null);
+        
+        if (error) {
+          console.error('Error loading categories:', error);
+          return;
+        }
+
+        const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
+    loadCategories();
+  }, []);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [brands, setBrands] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
@@ -65,28 +142,29 @@ const Catalog = () => {
   // Advanced Filters: collapsed by default for more room
   const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(false);
 
-  const categories = useMemo(() => {
-    const set = new Set<string>(mock.map((p) => p.category));
-    return ["all", ...Array.from(set)];
-  }, []);
+  const allCategories = useMemo(() => {
+    return ["all", ...categories];
+  }, [categories]);
 
   const filtered = useMemo(() => {
-    const term = q.toLowerCase().trim();
-    let items = mock.filter((p) =>
-      (!term ||
-        p.name.toLowerCase().includes(term) ||
-        p.category.toLowerCase().includes(term) ||
-        (p.features || []).some((f) => f.toLowerCase().includes(term))) &&
-      (cat === "all" || p.category === cat)
-    );
+    let items = [...products];
+    
+    // Filter by category (additional client-side filtering)
+    if (cat !== "all") {
+      items = items.filter((p) => p.category === cat);
+    }
 
-    const getBestPrice = (p: Product) => Math.min(...p.offers.map(o => o.price));
+    const getBestPrice = (p: Product) => {
+      if (!p.offers || p.offers.length === 0) return 0;
+      return Math.min(...p.offers.map(o => o.price));
+    };
 
     // Apply new filters
     items = items.filter(p => {
       const price = getBestPrice(p);
-      return price >= priceRange[0] &&
-             price <= priceRange[1] &&
+      // Skip price filtering if product has no offers
+      const priceInRange = p.offers.length === 0 || (price >= priceRange[0] && price <= priceRange[1]);
+      return priceInRange &&
              (brands.length === 0 || brands.includes(p.brand)) &&
              (p.rating ? p.rating >= minRating : true);
     });
@@ -104,8 +182,12 @@ const Catalog = () => {
       default:
         break;
     }
+    
+    console.log('Filtered products:', items.length, 'from', products.length, 'total');
+    console.log('Current filters - cat:', cat, 'q:', q, 'priceRange:', priceRange, 'brands:', brands, 'minRating:', minRating);
+    
     return items;
-  }, [q, cat, sort, priceRange, brands, minRating]);
+  }, [products, q, cat, sort, priceRange, brands, minRating]);
 
   const { kitCount } = useKit();
   const updateParam = (key: string, value: string) => {
@@ -199,9 +281,9 @@ const Catalog = () => {
               className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible snap-x"
               aria-label="Filter by category"
             >
-              {categories.map((c) => {
+              {allCategories.map((c) => {
                 const isActive = c === cat;
-                const productCount = c === "all" ? mock.length : mock.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
+                const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
                 return (
                   <Button
                     key={c}
@@ -273,8 +355,8 @@ const Catalog = () => {
                 <div>
                   <label className="block mb-3 text-sm font-medium">🏷️ Brands</label>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {Array.from(new Set(mock.map(p => p.brand))).filter(Boolean).map(brand => {
-                      const productCount = mock.filter(p => p.brand === brand).length;
+                    {Array.from(new Set(products.map(p => p.brand))).filter(Boolean).map(brand => {
+                      const productCount = products.filter(p => p.brand === brand).length;
                       return (
                         <label key={brand} className="flex items-center gap-2 text-sm">
                           <input
@@ -375,7 +457,7 @@ const Catalog = () => {
 
       {selectedForCompare.length > 0 && (
         <ProductComparison
-          products={mock.filter(p => selectedForCompare.includes(p.id))}
+          products={products.filter(p => selectedForCompare.includes(p.id))}
           onClose={() => setSelectedForCompare([])}
         />
       )}
@@ -389,9 +471,26 @@ const Catalog = () => {
         isComparing={selectedForCompare.includes(quickViewProduct?.id || '')}
       />
 
+      {/* Debug info */}
+      <div className="mb-4 p-4 bg-muted rounded-lg text-sm space-y-1">
+        <p><strong>Debug Information:</strong></p>
+        <p>• Total products loaded: {products.length}</p>
+        <p>• Filtered products: {filtered.length}</p>
+        <p>• Loading state: {loading.toString()}</p>
+        <p>• Current category: {cat}</p>
+        <p>• Search query: {q || 'none'}</p>
+        <p>• Supabase URL: {import.meta.env.VITE_SUPABASE_URL ? 'configured' : 'missing'}</p>
+        <p>• Supabase Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'configured' : 'missing'}</p>
+        {error && <p className="text-red-600">• Error: {error}</p>}
+      </div>
 
-
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">⏳</div>
+          <h3 className="text-xl font-semibold mb-2">Loading products...</h3>
+          <p className="text-muted-foreground">Fetching the latest products from database</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold mb-2">No products found</h3>
@@ -417,44 +516,25 @@ const Catalog = () => {
           </div>
         </div>
       ) : (
-        (() => {
-          if (viewMode === 'grid') {
-            return (
-              <ProductGrid
-                products={filtered}
-                selectedForCompare={selectedForCompare}
-                toggleCompare={(id) => setSelectedForCompare(prev =>
-                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                )}
-                setQuickViewProduct={setQuickViewProduct}
-              />
-            );
-          }
-          if (viewMode === 'list') {
-            // Always use mobile card variant for list view
-            return (
-              <ProductListMobile
-                products={filtered}
-                selectedForCompare={selectedForCompare}
-                toggleCompare={(id) => setSelectedForCompare(prev =>
-                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                )}
-                setQuickViewProduct={setQuickViewProduct}
-              />
-            );
-          }
-          // grid view
-          return (
-            <ProductGrid
-              products={filtered}
-              selectedForCompare={selectedForCompare}
-              toggleCompare={(id) => setSelectedForCompare(prev =>
-                prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-              )}
-              setQuickViewProduct={setQuickViewProduct}
-            />
-          );
-        })()
+        viewMode === 'list' ? (
+          <ProductListMobile
+            products={filtered}
+            selectedForCompare={selectedForCompare}
+            toggleCompare={(id) => setSelectedForCompare(prev =>
+              prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+            )}
+            setQuickViewProduct={setQuickViewProduct}
+          />
+        ) : (
+          <ProductGrid
+            products={filtered}
+            selectedForCompare={selectedForCompare}
+            toggleCompare={(id) => setSelectedForCompare(prev =>
+              prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+            )}
+            setQuickViewProduct={setQuickViewProduct}
+          />
+        )
       )}
     </main>
   );
