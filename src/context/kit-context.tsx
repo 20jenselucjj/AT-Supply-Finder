@@ -89,13 +89,19 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     setKit(prevKit => {
       const existingItem = prevKit.find(item => item.id === product.id);
       if (existingItem) {
-        return prevKit.map(item =>
+        const updated = prevKit.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+        const live = document.getElementById('live-region');
+        if (live) live.textContent = `${quantity} added: ${product.name} (total ${existingItem.quantity + quantity})`;
+        return updated;
       } else {
-        return [...prevKit, { ...product, quantity }];
+        const updated = [...prevKit, { ...product, quantity }];
+        const live = document.getElementById('live-region');
+        if (live) live.textContent = `${product.name} added to kit`;
+        return updated;
       }
     });
   };

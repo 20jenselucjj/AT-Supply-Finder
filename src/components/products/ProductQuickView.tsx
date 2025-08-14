@@ -10,9 +10,9 @@ interface ProductQuickViewProps {
   isComparing: boolean;
 }
 
-export const ProductQuickView = ({ 
-  product, 
-  onClose, 
+export const ProductQuickView = ({
+  product,
+  onClose,
   onCompareToggle,
   isComparing
 }: ProductQuickViewProps) => {
@@ -28,7 +28,7 @@ export const ProductQuickView = ({
         <DialogHeader>
           <DialogTitle>{product.name}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-4">
             <a
@@ -37,18 +37,20 @@ export const ProductQuickView = ({
               rel="noopener noreferrer"
               className="cursor-pointer block"
             >
-              <img 
-                src={product.imageUrl || '/placeholder.svg'} 
-                alt={product.name}
-                className="w-full h-64 object-contain hover:opacity-80 transition-opacity"
-              />
+              <div className="bg-secondary/70 border border-border rounded-md p-4 flex items-center justify-center h-64 shadow-sm">
+                <img
+                  src={product.imageUrl || '/placeholder.svg'}
+                  alt={product.name}
+                  className="w-full h-56 object-contain hover:opacity-80 transition-opacity"
+                />
+              </div>
             </a>
             <div className="flex gap-2">
               <Button onClick={() => addToKit(product)} className="flex-1">
                 Add to Kit
               </Button>
-              <Button 
-                variant={isComparing ? 'secondary' : 'outline'} 
+              <Button
+                variant={isComparing ? 'secondary' : 'outline'}
                 onClick={() => onCompareToggle(product.id)}
                 className="flex-1"
               >
@@ -56,7 +58,7 @@ export const ProductQuickView = ({
               </Button>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">Product Details</h3>
@@ -69,7 +71,7 @@ export const ProductQuickView = ({
                 <div><span className="text-muted-foreground">Rating:</span> {product.rating || 'N/A'}</div>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">Features</h3>
               <ul className="list-disc pl-5 text-sm">
@@ -78,7 +80,7 @@ export const ProductQuickView = ({
                 ))}
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-2">Pricing</h3>
               <div className="space-y-2">

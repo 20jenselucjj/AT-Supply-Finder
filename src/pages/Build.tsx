@@ -62,7 +62,7 @@ const Build = () => {
   return (
   <main className="container mx-auto py-10 px-4 sm:px-6">
       <Helmet>
-        <title>Build Your Kit | Wrap Wizard</title>
+  <title>Build Your Kit | AT Supply Finder</title>
         <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>

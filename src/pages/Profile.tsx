@@ -1,13 +1,14 @@
 import { useAuth } from '@/context/auth-context';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
+import { ShieldAlert } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { toast } from 'sonner';
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   
   const handleSignOut = async () => {
@@ -24,7 +25,7 @@ const Profile = () => {
   return (
     <>
       <Helmet>
-        <title>Profile | Wrap Wizard</title>
+  <title>Profile | AT Supply Finder</title>
         <meta name="description" content="Manage your profile and saved kits" />
       </Helmet>
       
@@ -67,6 +68,28 @@ const Profile = () => {
                   <p className="text-sm mt-2">Browse the catalog and favorite products to easily find them later.</p>
                 </div>
               </div>
+              
+              {/* Admin Dashboard Link */}
+              {user && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Admin Access</h3>
+                  <div className="rounded-md border p-4">
+                    {isAdmin ? (
+                    <>
+                      <p className="font-medium text-green-600 mb-2">You have admin privileges</p>
+                      <Button asChild variant="outline" className="w-full">
+                        <Link to="/admin" className="flex items-center justify-center">
+                          <ShieldAlert className="mr-2 h-4 w-4" />
+                          Access Admin Dashboard
+                        </Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">Admin access is restricted to authorized personnel only.</p>
+                  )}
+                  </div>
+                </div>
+              )}
               
               <div className="pt-4 border-t">
                 <Button variant="destructive" onClick={handleSignOut}>

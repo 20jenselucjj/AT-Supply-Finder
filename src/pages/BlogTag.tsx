@@ -39,7 +39,7 @@ const BlogTag = () => {
   return (
     <main className="container mx-auto py-10">
       <Helmet>
-        <title>#{tag} - Blog Tag | Wrap Wizard</title>
+  <title>#{tag} - Blog Tag | AT Supply Finder</title>
         <meta name="description" content={`All blog posts tagged with ${tag}`} />
         <link rel="canonical" href={canonical} />
       </Helmet>

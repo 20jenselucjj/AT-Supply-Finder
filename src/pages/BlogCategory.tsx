@@ -39,7 +39,7 @@ const BlogCategory = () => {
   return (
     <main className="container mx-auto py-10">
       <Helmet>
-        <title>{category} - Blog Category | Wrap Wizard</title>
+  <title>{category} - Blog Category | AT Supply Finder</title>
         <meta name="description" content={`All blog posts in the ${category} category`} />
         <link rel="canonical" href={canonical} />
       </Helmet>

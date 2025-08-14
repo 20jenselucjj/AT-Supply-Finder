@@ -1,9 +1,9 @@
 import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 
-export const ProductComparison = ({ products, onClose }: { 
-  products: Product[], 
-  onClose: () => void 
+export const ProductComparison = ({ products, onClose }: {
+  products: Product[],
+  onClose: () => void
 }) => {
   if (products.length < 2) return null;
 
@@ -21,7 +21,7 @@ export const ProductComparison = ({ products, onClose }: {
           Clear Comparison
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map(product => (
           <div key={product.id} className="border rounded p-3 bg-background">
@@ -31,14 +31,16 @@ export const ProductComparison = ({ products, onClose }: {
               rel="noopener noreferrer"
               className="cursor-pointer block mb-2"
             >
-              <img 
-                src={product.imageUrl || '/placeholder.svg'} 
-                alt={product.name}
-                className="w-full h-32 object-contain hover:opacity-80 transition-opacity"
-              />
+              <div className="bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center h-32 shadow-sm">
+                <img
+                  src={product.imageUrl || '/placeholder.svg'}
+                  alt={product.name}
+                  className="w-full h-28 object-contain hover:opacity-80 transition-opacity"
+                />
+              </div>
             </a>
             <h4 className="font-medium mb-2">{product.name}</h4>
-            
+
             <div className="space-y-1 text-sm">
               <div><span className="font-medium">Brand:</span> {product.brand}</div>
               <div><span className="font-medium">Rating:</span> {product.rating || 'N/A'}</div>

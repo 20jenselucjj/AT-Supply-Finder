@@ -37,7 +37,15 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                   rel="noopener noreferrer"
                   className="shrink-0 w-20 h-20 rounded-md bg-muted flex items-center justify-center overflow-hidden"
                 >
-                  <img src={product.imageUrl || '/placeholder.svg'} alt={product.name} className="object-contain w-full h-full" />
+                  <img
+                    src={product.imageUrl || '/placeholder.svg'}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    width={160}
+                    height={160}
+                    className="object-contain w-full h-full"
+                  />
                 </a>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium leading-tight mb-1 line-clamp-2" title={product.name}>{product.name}</h3>
@@ -63,16 +71,24 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                       </Button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" className="flex-1" onClick={() => addToKit(product)}>
-                      {qty > 0 ? 'Add More' : 'Add to Kit'}
-                    </Button>
-                    {qty > 0 && (
-                      <span className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium min-w-[28px] text-center">{qty}</span>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => setQuickViewProduct && setQuickViewProduct(product)}>View</Button>
-                    <div className="flex items-center gap-1 ml-1">
-                      <Checkbox checked={selectedForCompare.includes(product.id)} onCheckedChange={() => toggleCompare(product.id)} id={`compare-${product.id}`} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Button size="sm" className="flex-1 min-w-[110px]" onClick={() => addToKit(product)}>
+                        {qty > 0 ? 'Add More' : 'Add to Kit'}
+                      </Button>
+                      {qty > 0 && (
+                        <span className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium min-w-[28px] text-center">
+                          {qty}
+                        </span>
+                      )}
+                      <Button size="sm" variant="outline" className="min-w-[84px]" onClick={() => setQuickViewProduct && setQuickViewProduct(product)}>View</Button>
+                    </div>
+                    <div className="flex items-center gap-1 ml-auto w-full justify-end pt-1 border-t border-border/60 mt-2 pt-2">
+                      <Checkbox 
+                        checked={selectedForCompare.includes(product.id)} 
+                        onCheckedChange={() => toggleCompare(product.id)} 
+                        id={`compare-${product.id}`} 
+                      />
                       <label htmlFor={`compare-${product.id}`} className="text-[11px] select-none">Compare</label>
                     </div>
                   </div>

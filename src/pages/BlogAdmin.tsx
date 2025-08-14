@@ -12,8 +12,8 @@ const BlogAdmin = () => {
   return (
     <main className="container mx-auto py-10">
       <Helmet>
-        <title>Blog Admin | Wrap Wizard</title>
-        <meta name="description" content="Manage blog posts for Wrap Wizard" />
+  <title>Blog Admin | AT Supply Finder</title>
+  <meta name="description" content="Manage blog posts for AT Supply Finder" />
       </Helmet>
       
       <Button asChild variant="outline" className="mb-6">

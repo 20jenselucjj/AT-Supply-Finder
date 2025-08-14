@@ -28,7 +28,7 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
     : undefined;
 
   return (
-  <TableRow variants={rowVariants} className="align-top">
+    <TableRow variants={rowVariants} className="align-top">
       <TableCell>
         <Checkbox
           checked={selectedForCompare.includes(product.id)}
@@ -43,11 +43,13 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
             rel="noopener noreferrer"
             className="cursor-pointer"
           >
-            <img
-              src={product.imageUrl || 'https://placehold.co/40x40'}
-              alt={product.name}
-              className="w-10 h-10 mr-4 object-cover hover:opacity-80 transition-opacity"
-            />
+            <div className="bg-secondary/70 border border-border rounded-md p-1 mr-4 flex items-center justify-center w-12 h-12 shadow-sm">
+              <img
+                src={product.imageUrl || 'https://placehold.co/40x40'}
+                alt={product.name}
+                className="w-10 h-10 object-contain hover:opacity-80 transition-opacity"
+              />
+            </div>
           </a>
           <div>
             <div className="text-sm md:text-base">{product.name}</div>

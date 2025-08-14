@@ -35,169 +35,169 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             <img
               src="https://m.media-amazon.com/images/I/81MKOjzOdxL._AC_SX425_PIbundle-4,TopRight,0,0_SH20_.jpg"
               alt="OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards) - Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black"
-            className="h-full object-contain transition-transform duration-300 hover:scale-105 rounded-lg"
-            loading="lazy"
-            width="320"
-            height="160"
-            decoding="async"
-            fetchPriority="low"
-          />
-        </div>
-        <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
-          <div className="flex-1">
-            <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
-            <p className="text-sm text-yellow-700 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
+              className="h-full object-contain transition-transform duration-300 hover:scale-105 rounded-lg"
+              loading="lazy"
+              width="320"
+              height="160"
+              decoding="async"
+              fetchPriority="low"
+            />
           </div>
-          <div className="text-right md:min-w-[120px]">
-            <div className="text-sm">From</div>
-            <div className="text-xl md:text-2xl font-bold text-yellow-800">$11.99</div>
-            <div className="mt-1 flex flex-col items-end gap-1">
-              <Badge variant="secondary" className="bg-yellow-300 text-yellow-900 text-xs md:text-sm">Best price</Badge>
-              <Badge className="bg-yellow-500 text-white text-xs md:text-sm">Best on Amazon</Badge>
+          <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
+              <p className="text-sm text-yellow-700 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
+            </div>
+            <div className="text-right md:min-w-[120px]">
+              <div className="text-sm">From</div>
+              <div className="text-xl md:text-2xl font-bold text-yellow-800">$11.99</div>
+              <div className="mt-1 flex flex-col items-end gap-1">
+                <Badge variant="secondary" className="bg-yellow-300 text-yellow-900 text-xs md:text-sm">Best price</Badge>
+                <Badge className="bg-yellow-500 text-white text-xs md:text-sm">Best on Amazon</Badge>
+              </div>
             </div>
           </div>
-        </div>
-        <ul className="text-base text-yellow-800 list-disc pl-5 flex-1">
-          <li className="text-left">4 rolls, 120 yards total</li>
-          <li className="text-left">Non-adhesive, high quality PU foam</li>
-          <li className="text-left">Breathable, stretchable, comfortable</li>
-          <li className="text-left">Protects skin, can be used as hair band</li>
-        </ul>
-        <div className="flex flex-wrap gap-3 mt-auto">
-          <Button
-            asChild
-            variant="hero"
-            className="transition-transform duration-200 hover:scale-105 shadow-md flex-1 md:flex-none"
-          >
-            <a
-              href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
-              target="_blank"
-              rel="sponsored noopener noreferrer"
-              aria-label="View on Amazon"
+          <ul className="text-base text-yellow-800 list-disc pl-5 flex-1">
+            <li className="text-left">4 rolls, 120 yards total</li>
+            <li className="text-left">Non-adhesive, high quality PU foam</li>
+            <li className="text-left">Breathable, stretchable, comfortable</li>
+            <li className="text-left">Protects skin, can be used as hair band</li>
+          </ul>
+          <div className="flex flex-wrap gap-3 mt-auto">
+            <Button
+              asChild
+              variant="hero"
+              className="transition-transform duration-200 hover:scale-105 shadow-md flex-1 md:flex-none"
             >
-              Amazon · $11.99
-            </a>
-          </Button>
-          <Button
-            onClick={() => addToKit(product)}
-            variant="secondary"
-            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none"
-          >
-            Add to Kit
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 shadow-md flex-1 md:flex-none"
-          >
-            <a
-              href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
-              target="_blank"
-              rel="sponsored noopener noreferrer"
-              aria-label="Add to Amazon Cart"
+              <a
+                href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+                aria-label="View on Amazon"
+              >
+                Amazon · $11.99
+              </a>
+            </Button>
+            <Button
+              onClick={() => addToKit(product)}
+              variant="secondary"
+              className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none"
             >
-              Add to Amazon Cart
-            </a>
-          </Button>
-        </div>
-      </Card>
-    </motion.div>
+              Add to Kit
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 shadow-md flex-1 md:flex-none"
+            >
+              <a
+                href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+                aria-label="Add to Amazon Cart"
+              >
+                Add to Amazon Cart
+              </a>
+            </Button>
+          </div>
+        </Card>
+      </motion.div>
     );
   }
 
   // ...existing code...
   return (
     <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-    <Card className="p-5 flex flex-col gap-4 h-full">
-      <div className="w-full h-40 bg-muted rounded-md flex items-center justify-center overflow-hidden">
-        {loading ? (
-          <Skeleton className="h-full w-full" />
-        ) : (
-          <img
-            src={product.imageUrl || "/placeholder.svg"}
-            alt={`${product.name} product image`}
-            className="h-full object-contain transition-transform duration-300 hover:scale-105"
-            loading="lazy"
-            width="320"
-            height="160"
-            decoding="async"
-            fetchPriority="low"
-          />
-        )}
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
-        <div className="flex-1">
-          <h3 className="text-base md:text-lg font-semibold leading-tight text-left">
-            {loading ? <Skeleton className="h-5 w-32 mb-1" /> : product.name}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1 text-left">
-            {loading ? <Skeleton className="h-3 w-20" /> : product.category}
-          </p>
+      <Card className="p-5 flex flex-col gap-4 h-full">
+        <div className="w-full h-40 bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center overflow-hidden shadow-sm">
+          {loading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <img
+              src={product.imageUrl || "/placeholder.svg"}
+              alt={`${product.name} product image`}
+              className="h-full object-contain transition-transform duration-300 hover:scale-105"
+              loading="lazy"
+              width="320"
+              height="160"
+              decoding="async"
+              fetchPriority="low"
+            />
+          )}
         </div>
-        <div className="text-right md:min-w-[100px]">
-          <div className="text-sm">From</div>
-          <div className="text-lg md:text-xl font-bold">
-            {loading ? <Skeleton className="h-6 w-16" /> : price ? currency(price) : currency(bestOffer.price)}
+
+        <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
+          <div className="flex-1">
+            <h3 className="text-base md:text-lg font-semibold leading-tight text-left">
+              {loading ? <Skeleton className="h-5 w-32 mb-1" /> : product.name}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 text-left">
+              {loading ? <Skeleton className="h-3 w-20" /> : product.category}
+            </p>
           </div>
-          <div className="mt-1 flex flex-col items-end gap-1">
-            {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
-            {bestIsAmazon && !loading && <Badge className="text-xs">Best on Amazon</Badge>}
+          <div className="text-right md:min-w-[100px]">
+            <div className="text-sm">From</div>
+            <div className="text-lg md:text-xl font-bold">
+              {loading ? <Skeleton className="h-6 w-16" /> : price ? currency(price) : currency(bestOffer.price)}
+            </div>
+            <div className="mt-1 flex flex-col items-end gap-1">
+              {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
+              {bestIsAmazon && !loading && <Badge className="text-xs">Best on Amazon</Badge>}
+            </div>
           </div>
         </div>
-      </div>
 
-      {product.features && product.features.length > 0 && (
-        <ul className="text-sm text-muted-foreground list-disc pl-5 flex-1">
-          {loading
-            ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-3 w-24 mb-1" />)
-            : product.features.map((f) => (
+        {product.features && product.features.length > 0 && (
+          <ul className="text-sm text-muted-foreground list-disc pl-5 flex-1">
+            {loading
+              ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-3 w-24 mb-1" />)
+              : product.features.map((f) => (
                 <li key={f} className="text-left">{f}</li>
               ))}
-        </ul>
-      )}
-
-      <div className="flex flex-wrap gap-2 mt-auto">
-        <Button
-          onClick={() => addToKit(product)}
-          variant="secondary"
-          className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
-          disabled={loading}
-        >
-          Add to Kit
-        </Button>
-        {product.offers.map((o) => (
-          <Button
-            key={o.name}
-            asChild
-            variant={o.name.toLowerCase().includes("amazon") ? "hero" : "outline"}
-            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
-            disabled={loading}
-          >
-            <a href={o.url} target="_blank" rel="sponsored noopener noreferrer" aria-label={`View on ${o.name}`}>
-              {o.name} · {currency(o.price)}
-            </a>
-          </Button>
-        ))}
-        {product.asin && (
-          <Button
-            asChild
-            variant="outline"
-            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
-            disabled={loading}
-          >
-            <a
-              href={`https://www.amazon.com/dp/${product.asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
-              target="_blank"
-              rel="sponsored noopener noreferrer"
-              aria-label="Add to Amazon Cart"
-            >
-              Add to Amazon Cart
-            </a>
-          </Button>
+          </ul>
         )}
-      </div>
-    </Card>
+
+        <div className="flex flex-wrap gap-2 mt-auto">
+          <Button
+            onClick={() => addToKit(product)}
+            variant="secondary"
+            className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
+            disabled={loading}
+          >
+            Add to Kit
+          </Button>
+          {product.offers.map((o) => (
+            <Button
+              key={o.name}
+              asChild
+              variant={o.name.toLowerCase().includes("amazon") ? "hero" : "outline"}
+              className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
+              disabled={loading}
+            >
+              <a href={o.url} target="_blank" rel="sponsored noopener noreferrer" aria-label={`View on ${o.name}`}>
+                {o.name} · {currency(o.price)}
+              </a>
+            </Button>
+          ))}
+          {product.asin && (
+            <Button
+              asChild
+              variant="outline"
+              className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
+              disabled={loading}
+            >
+              <a
+                href={`https://www.amazon.com/dp/${product.asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+                aria-label="Add to Amazon Cart"
+              >
+                Add to Amazon Cart
+              </a>
+            </Button>
+          )}
+        </div>
+      </Card>
     </motion.div>
   );
 };

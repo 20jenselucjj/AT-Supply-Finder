@@ -36,72 +36,56 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="relative bg-hero" onMouseMove={handleMove}>
+    <section className="relative bg-gradient-to-b from-background to-secondary border-b border-border" onMouseMove={handleMove}>
       <div className="container mx-auto py-20 md:py-28 lg:py-36">
-        <motion.div
-          className="mx-auto max-w-4xl text-center"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.span
-            className="inline-flex items-center px-4 py-2 text-sm rounded-full bg-primary/10 text-primary border border-primary/20 mb-6"
-            variants={itemVariants}
-          >
-            🏆 Trusted by 10,000+ Athletes • Save 20-40%
-          </motion.span>
-          <motion.h1
-            className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
-            variants={itemVariants}
-          >
-            Stop Overpaying for <span className="text-primary">Athletic Supplies</span>
-          </motion.h1>
-          <motion.p
-            className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
-            variants={itemVariants}
-          >
-            Compare prices across <strong>Amazon and top vendors</strong> instantly. Build your perfect athletic kit and save hundreds on tape, bandages, and pre-wrap.
-          </motion.p>
-          
-          <motion.div
-            className="mt-6 flex items-center justify-center gap-6 text-sm text-muted-foreground"
-            variants={itemVariants}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              <span>Price comparison</span>
+        <div className="mx-auto max-w-4xl text-center animate-fade-in">
+          <span className="inline-flex items-center px-5 py-2.5 text-sm rounded-full bg-primary/15 text-primary border border-primary/30 mb-8 font-medium stagger-item shadow-sm hover:shadow-md hover:bg-primary/20 transition-all duration-300 transform hover:-translate-y-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            Trusted by Professional Athletic Trainers
+          </span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item" style={{ fontFamily: 'var(--font-heading)' }}>
+            Professional <span className="text-primary">Athletic Training</span> Supplies
+          </h1>
+          <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
+            Compare prices across <strong>trusted vendors</strong> instantly. Build your professional athletic training kit with premium quality supplies at competitive prices.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-medium stagger-item">
+            <div className="flex items-center gap-2 bg-secondary/80 px-4 py-2 rounded-full border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+              <span>Premium Quality</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              <span>Expert curated</span>
+            <div className="flex items-center gap-2 bg-secondary/80 px-4 py-2 rounded-full border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+              <span>Expert Curated</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              <span>Free to use</span>
+            <div className="flex items-center gap-2 bg-secondary/80 px-4 py-2 rounded-full border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </span>
+              <span>Competitive Pricing</span>
             </div>
-          </motion.div>
-          <motion.div
-            className="mt-8 flex items-center justify-center gap-4 flex-wrap"
-            variants={itemVariants}
-          >
-            <Button asChild variant="hero" size="lg" className="px-8 py-4 text-lg font-semibold">
-              <Link to="/catalog">
-                Start Saving Now
-                <ArrowRight className="ml-2 h-5 w-5" />
+          </div>
+          <div className="mt-12 flex items-center justify-center gap-5 flex-wrap stagger-item">
+            <Button asChild variant="default" size="lg" className="px-10 py-7 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl bg-gradient-to-r from-primary to-primary/90">
+              <Link to="/catalog" className="flex items-center">
+                Browse Products
+                <ArrowRight className="ml-3 h-5 w-5 animate-pulse" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="px-8 py-4 text-lg">
-              <Link to="/build">Build Your Kit</Link>
+            <Button asChild variant="outline" size="lg" className="px-10 py-7 text-lg font-medium border-2 hover:bg-primary/10 transition-all duration-300 transform hover:-translate-y-1 rounded-xl shadow-sm hover:shadow-md">
+              <Link to="/build" className="flex items-center">Build Your Kit</Link>
             </Button>
-          </motion.div>
-          
-          <motion.div
-            className="mt-6 text-sm text-muted-foreground"
-            variants={itemVariants}
-          >
-            ⚡ <strong>Free to use</strong> • No signup required • Instant price comparison
-          </motion.div>
-        </motion.div>
+          </div>
+
+          <div className="mt-8 text-sm font-medium bg-secondary/80 px-6 py-3 rounded-full border border-border shadow-sm inline-block stagger-item">
+            ⚡ <strong className="text-primary">Free to use</strong> • No signup required • <span className="text-primary">Instant price comparison</span>
+          </div>
+        </div>
       </div>
     </section>
   );

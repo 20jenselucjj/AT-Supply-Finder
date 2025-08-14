@@ -4,7 +4,7 @@ import { Product } from "./types";
 // In a future iteration this can be replaced by a fetch from an API / database layer.
 export const products: Product[] = [
   {
-    id: "amazon-prewrap",
+    id: "550e8400-e29b-41d4-a716-446655440000",
     name: "OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)",
     category: "Pre-wrap",
     brand: "OK TAPE",
@@ -24,7 +24,7 @@ export const products: Product[] = [
     imageUrl: "https://m.media-amazon.com/images/I/81MKOjzOdxL._AC_SX425_PIbundle-4,TopRight,0,0_SH20_.jpg"
   },
   {
-    id: "1",
+    id: "550e8400-e29b-41d4-a716-446655440001",
     name: "Mueller Athletic Tape, 1.5in x 15yd (24 rolls)",
     category: "Athletic Tape",
     brand: "Mueller",
@@ -40,7 +40,7 @@ export const products: Product[] = [
     imageUrl: "https://m.media-amazon.com/images/I/81iDFKQWgZL.__AC_SY300_SX300_QL70_ML2_.jpg"
   },
   {
-    id: "2",
+    id: "550e8400-e29b-41d4-a716-446655440002",
     name: "Coban Self-Adherent Wrap, 3in (12 rolls)",
     category: "Cohesive Bandage",
     brand: "3M Coban",
@@ -56,7 +56,7 @@ export const products: Product[] = [
     imageUrl: "https://m.media-amazon.com/images/I/61TiQ6HBFAL.__AC_SX300_SY300_QL70_ML2_.jpg"
   },
   {
-    id: "3",
+    id: "550e8400-e29b-41d4-a716-446655440003",
     name: "KT Tape Pro, Kinesiology Tape (20 strips)",
     category: "Kinesiology Tape",
     brand: "KT Tape",
@@ -72,7 +72,7 @@ export const products: Product[] = [
     imageUrl: "https://picsum.photos/400/400?random=4"
   },
   {
-    id: "4",
+    id: "550e8400-e29b-41d4-a716-446655440004",
     name: "Elastic Bandage Wrap, 4in x 5yd (6 rolls)",
     category: "Elastic Bandage",
     brand: "ACE",
@@ -88,7 +88,7 @@ export const products: Product[] = [
     imageUrl: "https://picsum.photos/400/400?random=5"
   },
   {
-    id: "5",
+    id: "550e8400-e29b-41d4-a716-446655440005",
     name: "Medical Gauze Pads, 4x4in (100 count)",
     category: "Gauze",
     brand: "Johnson & Johnson",
@@ -104,7 +104,7 @@ export const products: Product[] = [
     imageUrl: "https://picsum.photos/400/400?random=6"
   },
   {
-    id: "6",
+    id: "550e8400-e29b-41d4-a716-446655440006",
     name: "Foam Padding Tape, 2in x 30yd",
     category: "Padding",
     brand: "Mueller",
@@ -120,7 +120,7 @@ export const products: Product[] = [
     imageUrl: "https://picsum.photos/400/400?random=7"
   },
   {
-    id: "7",
+    id: "550e8400-e29b-41d4-a716-446655440007",
     name: "Zinc Oxide Tape, 1in x 15yd (12 rolls)",
     category: "Athletic Tape",
     brand: "Cramer",
@@ -136,7 +136,7 @@ export const products: Product[] = [
     imageUrl: "https://picsum.photos/400/400?random=8"
   },
   {
-    id: "8",
+    id: "550e8400-e29b-41d4-a716-446655440008",
     name: "Self-Stick Bandage Wrap, 2in (12 rolls)",
     category: "Cohesive Bandage",
     brand: "3M",

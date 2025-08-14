@@ -57,7 +57,7 @@ const Blog = () => {
     <main className="py-10">
       <PageContainer>
       <Helmet>
-        <title>Blog – Athletic Training Tips | Wrap Wizard</title>
+  <title>Blog – Athletic Training Tips | AT Supply Finder</title>
         <meta name="description" content="Learn about athletic training, injury prevention, and tape techniques from our expert blog posts." />
         <link rel="canonical" href={canonical} />
       </Helmet>

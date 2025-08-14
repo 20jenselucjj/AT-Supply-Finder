@@ -2,21 +2,21 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useKit } from "@/context/kit-context";
 import { useAuth } from "@/context/auth-context";
+import { ShieldAlert } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import React from "react";
 
 const navLinkClass = ({ isActive, mobile = false }: { isActive: boolean; mobile?: boolean }) =>
-  `relative ${mobile ? 'px-5 py-4 text-lg font-semibold' : 'px-4 py-3 text-sm font-medium'} rounded-md flex items-center gap-2 transition-colors duration-150 active:scale-[0.94] active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-visible ${
-    isActive
-      ? "bg-secondary text-secondary-foreground shadow-sm after:content-[''] after:absolute after:left-2 after:right-2 after:-bottom-1 after:h-0.5 after:bg-primary after:rounded-full"
-      : "hover:bg-accent"
+  `relative ${mobile ? 'px-5 py-4 text-lg font-semibold' : 'px-4 py-3 text-sm font-medium'} rounded-md flex items-center gap-2 transition-colors duration-150 active:scale-[0.94] active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 overflow-visible ${isActive
+    ? "bg-secondary text-secondary-foreground shadow-sm after:content-[''] after:absolute after:left-2 after:right-2 after:-bottom-1 after:h-0.5 after:bg-primary after:rounded-full"
+    : "hover:bg-accent"
   }`;
 
 const SiteHeader = () => {
   const { kitCount } = useKit();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = React.useState(() => {
     if (typeof window !== "undefined") {
@@ -51,17 +51,21 @@ const SiteHeader = () => {
   }, [location.pathname]);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-3 sm:px-4">
-        <Link to="/" className="flex items-center gap-2">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md shadow-sm">
+      <div className="container mx-auto flex h-20 items-center justify-between px-3 sm:px-4">
+        <Link to="/" className="flex items-center gap-3">
           <div
-            className="h-12 w-12 rounded-md border-4 border-border shadow"
-            style={{ backgroundColor: '#16a076' }}
-            aria-label="Wrap Wizard Logo"
-          />
-          <span className="text-lg font-semibold">Wrap Wizard</span>
+            className="h-12 w-12 rounded-md border-2 border-primary/20 shadow-md flex items-center justify-center bg-white overflow-hidden"
+            aria-label="Athletic Training Supply Finder Logo"
+          >
+            <img src="/logo.svg" alt="Athletic Training Supplies Logo" className="h-10 w-10" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>AT Supply Finder</span>
+            <span className="text-sm text-muted-foreground -mt-1">Athletic Training Supplies</span>
+          </div>
         </Link>
-        
+
         {/* Mobile Navigation */}
         {isMobile ? (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -72,12 +76,13 @@ const SiteHeader = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-[270px] sm:w-[320px] p-0 flex flex-col">
               <div className="px-4 pt-4 pb-3 border-b flex items-center gap-3">
-                <img
-                  src="/Gemini_Generated_Image_n24esqn24esqn24e.png"
-                  alt="Wrap Wizard Logo"
-                  className="h-10 w-10 rounded-md object-cover object-center border"
-                />
-                <span className="font-semibold tracking-tight">Wrap Wizard</span>
+                <div
+                  className="h-10 w-10 rounded-md border-2 border-primary/20 overflow-hidden flex items-center justify-center bg-white"
+                  aria-label="AT Supply Finder Logo"
+                >
+                  <img src="/logo.svg" alt="Athletic Training Supplies Logo" className="h-8 w-8" />
+                </div>
+                <span className="font-semibold tracking-tight">AT Supply Finder</span>
               </div>
               <nav className="flex flex-col gap-1 py-4 px-3 overflow-y-auto flex-1" aria-label="Main">
                 <NavLink to="/" className={(props) => navLinkClass({ ...props, mobile: true })} end onClick={() => setMobileOpen(false)}>
@@ -105,6 +110,18 @@ const SiteHeader = () => {
                   >
                     {user ? 'Profile' : 'Login'}
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      asChild
+                      className="justify-start"
+                    >
+                      <Link to="/admin" onClick={() => setMobileOpen(false)}>
+                        <ShieldAlert className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => setDarkMode(d => !d)}
@@ -134,10 +151,18 @@ const SiteHeader = () => {
                 )}
               </span>
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/admin" className={navLinkClass}>
+                <span className="inline-flex items-center">
+                  <ShieldAlert className="mr-1 h-4 w-4" />
+                  Admin
+                </span>
+              </NavLink>
+            )}
             {/* Favorites removed */}
           </nav>
         )}
-        
+
         <div className="flex items-center gap-1 sm:gap-2">
           <Button asChild variant="hero" className="hidden md:flex">
             <Link to="/catalog">Browse</Link>

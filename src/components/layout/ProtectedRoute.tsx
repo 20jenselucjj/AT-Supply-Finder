@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // Redirect to login page if not authenticated
       navigate('/login', { state: { from: location.pathname } });
     }
-  }, [user, loading, navigate, location]);
+  }, [user, loading, navigate, location.pathname]);
 
   if (loading) {
     return (

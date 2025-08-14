@@ -15,7 +15,7 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
   const { addToKit, getProductQuantity } = useKit();
 
   return (
-  <div className="grid gap-5 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-5 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
       {products.map(product => (
         <motion.div
           key={product.id}
@@ -34,11 +34,17 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
             rel="noopener noreferrer"
             className="block cursor-pointer"
           >
-            <img
-              src={product.imageUrl || '/placeholder.svg'}
-              alt={product.name}
-              className="w-full h-48 object-contain mb-4 hover:opacity-80 transition-opacity"
-            />
+            <div className="bg-secondary/70 border border-border rounded-md p-2 mb-4 flex items-center justify-center">
+              <img
+                src={product.imageUrl || '/placeholder.svg'}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                width={320}
+                height={320}
+                className="w-full h-44 object-contain hover:opacity-80 transition-opacity aspect-square"
+              />
+            </div>
           </a>
           <h3 className="font-medium mb-2 pr-6">{product.name}</h3>
           <div className="flex flex-wrap justify-between items-center mb-2 gap-2">

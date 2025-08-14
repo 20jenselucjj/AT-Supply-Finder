@@ -10,6 +10,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import AnimatedPage from "@/components/layout/AnimatedPage";
 import SiteFooter from "@/components/layout/SiteFooter";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import AdminRoute from "@/components/layout/AdminRoute";
 import { KitProvider } from "./context/kit-context";
 import { AuthProvider } from "./context/auth-context";
 
@@ -26,6 +27,7 @@ const BlogAdmin = React.lazy(() => import("./pages/BlogAdmin"));
 const Login = React.lazy(() => import("./pages/Login"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
 const Profile = React.lazy(() => import("./pages/Profile"));
+const Admin = React.lazy(() => import("./pages/Admin"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -48,6 +50,7 @@ const AppRoutes = () => {
           <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
           <Route path="/forgot-password" element={<AnimatedPage><ForgotPassword /></AnimatedPage>} />
           <Route path="/profile" element={<AnimatedPage><ProtectedRoute><Profile /></ProtectedRoute></AnimatedPage>} />
+          <Route path="/admin" element={<AnimatedPage><AdminRoute><Admin /></AdminRoute></AnimatedPage>} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<AnimatedPage><NotFound /></AnimatedPage>} />
@@ -67,6 +70,8 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <SiteHeader />
+                {/* Live region for accessibility announcements */}
+                <div id="live-region" aria-live="polite" className="sr-only" />
                 <AppRoutes />
                 <SiteFooter />
               </BrowserRouter>

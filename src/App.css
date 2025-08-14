@@ -1,42 +1,116 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+/* Professional Athletic Training Website Styles */
+
+/* Base styles */
+body {
+  font-family: var(--font-body);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Professional card styles */
+.pro-card {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-elevated);
+  transition: var(--transition-smooth);
+  background-color: hsl(var(--card));
+}
+
+.pro-card:hover {
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+/* Button enhancements */
+button, .button {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: var(--transition-smooth);
+  border: 2px solid transparent;
+}
+
+button:hover, .button:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  transform: translateY(-1px);
+}
+
+button:active, .button:active {
+  transform: translateY(1px);
+}
+
+/* Professional spacing system */
+.section-padding {
+  padding: 4rem 0;
+}
+
+/* Consistent spacing classes */
+.spacing-xs { margin-bottom: 0.5rem; }
+.spacing-sm { margin-bottom: 1rem; }
+.spacing-md { margin-bottom: 2rem; }
+.spacing-lg { margin-bottom: 3rem; }
+.spacing-xl { margin-bottom: 4rem; }
+
+/* Padding utilities */
+.padding-container {
   padding: 2rem;
-  text-align: center;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Page Transitions and Animations */
+@keyframes subtle-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.card {
-  padding: 2em;
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-.read-the-docs {
-  color: #888;
+.animate-fade-in {
+  animation: subtle-fade-in 0.5s ease-out forwards;
 }
+
+.animate-slide-right {
+  animation: slide-in-right 0.5s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slide-in-left 0.5s ease-out forwards;
+}
+
+.animate-scale {
+  animation: scale-in 0.4s ease-out forwards;
+}
+
+/* Staggered animations for lists */
+.stagger-item {
+  opacity: 0;
+}
+
+.stagger-item:nth-child(1) { animation: subtle-fade-in 0.5s ease-out 0.1s forwards; }
+.stagger-item:nth-child(2) { animation: subtle-fade-in 0.5s ease-out 0.2s forwards; }
+.stagger-item:nth-child(3) { animation: subtle-fade-in 0.5s ease-out 0.3s forwards; }
+.stagger-item:nth-child(4) { animation: subtle-fade-in 0.5s ease-out 0.4s forwards; }
+.stagger-item:nth-child(5) { animation: subtle-fade-in 0.5s ease-out 0.5s forwards; }
+.stagger-item:nth-child(6) { animation: subtle-fade-in 0.5s ease-out 0.6s forwards; }

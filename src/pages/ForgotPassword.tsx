@@ -42,8 +42,8 @@ const ForgotPassword = () => {
   return (
     <>
       <Helmet>
-        <title>Forgot Password | Wrap Wizard</title>
-        <meta name="description" content="Reset your password for your Wrap Wizard account" />
+  <title>Forgot Password | AT Supply Finder</title>
+  <meta name="description" content="Reset your password for your AT Supply Finder account" />
       </Helmet>
       
       <div className="container mx-auto py-10 flex items-center justify-center min-h-[calc(100vh-4rem)]">

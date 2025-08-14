@@ -1,3 +1,5 @@
+/* Tailwind CSS core directives. If your editor warns about unknown @tailwind/@apply rules,
+   they are provided by the Tailwind/PostCSS pipeline. See .vscode/settings.json for lint override. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,37 +10,37 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 30% 94%; /* Light grey background to reduce brightness */
     --foreground: 222.2 70% 7%;
 
-    --card: 0 0% 100%;
+    --card: 210 30% 98%;
     --card-foreground: 222.2 70% 7%;
 
-    --popover: 0 0% 100%;
+    --popover: 210 30% 98%;
     --popover-foreground: 222.2 70% 7%;
 
-    /* Brand palette */
-    --primary: 160 84% 32%; /* sporty teal */
+    /* Brand palette - Professional Athletic Training Theme */
+    --primary: 210 100% 35%; /* Professional blue */
     --primary-foreground: 210 40% 98%;
-    --primary-2: 172 85% 40%;
+    --primary-2: 210 90% 45%;
 
-    --secondary: 160 40% 96.1%;
+    --secondary: 210 35% 90%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 210 35% 90%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 160 45% 95%;
+    --accent: 210 40% 88%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 160 84% 32%;
+    --border: 210 40% 85%; /* Darker, more visible borders */
+    --input: 210 40% 85%;
+    --ring: 210 100% 35%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem; /* More professional, slightly less rounded corners */
 
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
@@ -50,11 +52,13 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 172 85% 40%;
 
-    /* Fancy tokens */
+    /* Professional design tokens */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-2)));
-    --shadow-elevated: 0 10px 30px -10px hsl(var(--primary) / 0.25);
-    --shadow-glow: 0 10px 30px -10px hsl(var(--primary) / 0.35), 0 0 40px hsl(var(--primary-2) / 0.25);
-    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-elevated: 0 8px 24px -8px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 8px 24px -8px hsl(var(--primary) / 0.25), 0 0 30px hsl(var(--primary-2) / 0.15);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-heading: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
   }
 
   .dark {
@@ -104,6 +108,21 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    /* Provide padding for sticky header anchor jumps */
+    scroll-padding-top: 4.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
 }
 
 @layer components {
@@ -120,6 +139,14 @@ All colors MUST be HSL.
   }
   .glass {
     @apply bg-background/60 backdrop-blur-md border;
+  }
+  .safe-area-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  .motion-scale-hover:hover {
+    @media (hover: hover) {
+      transform: scale(1.02);
+    }
   }
   
   /* Text alignment utilities */

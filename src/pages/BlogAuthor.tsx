@@ -42,7 +42,7 @@ const BlogAuthor = () => {
   return (
     <main className="container mx-auto py-10">
       <Helmet>
-        <title>Posts by {authorInfo.name} | Wrap Wizard</title>
+  <title>Posts by {authorInfo.name} | AT Supply Finder</title>
         <meta name="description" content={`All blog posts by ${authorInfo.name}`} />
         <link rel="canonical" href={canonical} />
       </Helmet>

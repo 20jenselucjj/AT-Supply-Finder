@@ -24,6 +24,13 @@ const Catalog = () => {
   useEffect(() => {
     const asins = mock.map((p) => p.id).join(",");
     if (asins) {
+      // Skip API call in development since the serverless function isn't running
+      if (import.meta.env.DEV) {
+        console.log('Skipping Amazon pricing API call in development');
+        setPrices({});
+        return;
+      }
+      
       fetch(`/api/amazon-pricing?asins=${asins}`)
         .then(async (res) => {
           // Check if response is actually JSON
@@ -111,7 +118,7 @@ const Catalog = () => {
   return (
     <main className="container mx-auto py-10">
       <Helmet>
-        <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | Wrap Wizard</title>
+  <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | AT Supply Finder</title>
         <meta name="description" content="Compare prices on athletic tape, bandages, pre-wrap & training supplies across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
         <link rel="canonical" href={canonical} />
       </Helmet>

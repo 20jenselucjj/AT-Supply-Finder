@@ -110,7 +110,7 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>{isSignUp ? 'Sign Up' : 'Login'} | Wrap Wizard</title>
+  <title>{isSignUp ? 'Sign Up' : 'Login'} | AT Supply Finder</title>
         <meta name="description" content={isSignUp ? 'Create a new account' : 'Log in to your account'} />
       </Helmet>
       

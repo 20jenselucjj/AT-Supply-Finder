@@ -1,0 +1,805 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink } from 'lucide-react';
+import { format } from 'date-fns';
+
+interface ProductData {
+  id: string;
+  name: string;
+  category: string;
+  brand: string;
+  rating?: number;
+  dimensions?: string;
+  weight?: string;
+  material?: string;
+  features?: string[];
+  image_url?: string;
+  asin?: string;
+  created_at: string;
+  updated_at: string;
+  vendor_offers?: VendorOffer[];
+}
+
+interface VendorOffer {
+  id: string;
+  vendor_name: string;
+  url: string;
+  price: number;
+  last_updated: string;
+}
+
+interface ProductManagementProps {
+  totalProducts: number;
+  onProductCountChange: (count: number) => void;
+}
+
+export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
+  const [products, setProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  
+  const [productForm, setProductForm] = useState({
+    name: '',
+    category: '',
+    brand: '',
+    rating: '',
+    dimensions: '',
+    weight: '',
+    material: '',
+    features: '',
+    image_url: '',
+    asin: '',
+    affiliate_link: ''
+  });
+  
+  const [isLoadingProductInfo, setIsLoadingProductInfo] = useState(false);
+  
+  const productsPerPage = 10;
+
+  const fetchProducts = async (page = 1, search = '', category = 'all') => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          vendor_offers (
+            id,
+            vendor_name,
+            url,
+            price,
+            last_updated
+          )
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((page - 1) * productsPerPage, page * productsPerPage - 1);
+
+      if (search) {
+        query = query.or(`name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%`);
+      }
+
+      if (category !== 'all') {
+        query = query.eq('category', category);
+      }
+
+      const { data, error, count } = await query;
+      
+      if (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Failed to fetch products');
+        return;
+      }
+
+      setProducts(data || []);
+      setTotalPages(Math.ceil((count || 0) / productsPerPage));
+      onProductCountChange(count || 0);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('category')
+        .not('category', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return;
+      }
+
+      const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setProductForm({
+      name: '',
+      category: '',
+      brand: '',
+      rating: '',
+      dimensions: '',
+      weight: '',
+      material: '',
+      features: '',
+      image_url: '',
+      asin: '',
+      affiliate_link: ''
+    });
+  };
+
+  // Extract ASIN from Amazon affiliate link
+  const extractASINFromLink = (url: string): string | null => {
+    try {
+      // Common Amazon URL patterns
+      const patterns = [
+        /\/dp\/([A-Z0-9]{10})/i,
+        /\/gp\/product\/([A-Z0-9]{10})/i,
+        /\/product\/([A-Z0-9]{10})/i,
+        /asin=([A-Z0-9]{10})/i,
+        /\/([A-Z0-9]{10})(?:\/|\?|$)/i
+      ];
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error extracting ASIN:', error);
+      return null;
+    }
+  };
+
+  // Auto-populate product information from affiliate link
+  const handleAffiliateLinkChange = async (url: string) => {
+    setProductForm(prev => ({ ...prev, affiliate_link: url }));
+    
+    if (!url.trim()) return;
+    
+    const asin = extractASINFromLink(url);
+    if (!asin) {
+      toast.error('Could not extract ASIN from the provided link');
+      return;
+    }
+    
+    setIsLoadingProductInfo(true);
+    
+    try {
+      // Update ASIN in form
+      setProductForm(prev => ({ ...prev, asin }));
+      
+      // For now, we'll just extract the ASIN and let the user fill in other details
+      // In a production environment, you would integrate with Amazon Product Advertising API
+      // to fetch product details like name, brand, images, etc.
+      
+      toast.success(`ASIN extracted: ${asin}. Please fill in the remaining product details.`);
+      
+      // TODO: Integrate with Amazon Product Advertising API to auto-populate:
+      // - Product name
+      // - Brand
+      // - Category
+      // - Images
+      // - Features
+      // - Dimensions
+      // - Rating
+      
+    } catch (error) {
+      console.error('Error processing affiliate link:', error);
+      toast.error('Failed to process affiliate link');
+    } finally {
+      setIsLoadingProductInfo(false);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    try {
+      if (!productForm.name || !productForm.category || !productForm.brand) {
+        toast.error('Name, category, and brand are required');
+        return;
+      }
+
+      const productData = {
+        name: productForm.name,
+        category: productForm.category,
+        brand: productForm.brand,
+        rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        dimensions: productForm.dimensions || null,
+        weight: productForm.weight || null,
+        material: productForm.material || null,
+        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
+        image_url: productForm.image_url || null,
+        asin: productForm.asin || null
+      };
+
+      const { error } = await supabase
+        .from('products')
+        .insert(productData);
+
+      if (error) {
+        toast.error(`Failed to create product: ${error.message}`);
+        return;
+      }
+
+      toast.success('Product created successfully');
+      setIsAddProductOpen(false);
+      resetForm();
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast.error('Failed to create product');
+    }
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct) return;
+
+    try {
+      const productData = {
+        name: productForm.name,
+        category: productForm.category,
+        brand: productForm.brand,
+        rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        dimensions: productForm.dimensions || null,
+        weight: productForm.weight || null,
+        material: productForm.material || null,
+        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
+        image_url: productForm.image_url || null,
+        asin: productForm.asin || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('products')
+        .update(productData)
+        .eq('id', editingProduct.id);
+
+      if (error) {
+        toast.error(`Failed to update product: ${error.message}`);
+        return;
+      }
+
+      toast.success('Product updated successfully');
+      setEditingProduct(null);
+      resetForm();
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Failed to update product');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) {
+        toast.error(`Failed to delete product: ${error.message}`);
+        return;
+      }
+
+      toast.success('Product deleted successfully');
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    }
+  };
+
+  const openEditDialog = (product: ProductData) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      category: product.category,
+      brand: product.brand,
+      rating: product.rating?.toString() || '',
+      dimensions: product.dimensions || '',
+      weight: product.weight || '',
+      material: product.material || '',
+      features: product.features?.join('\n') || '',
+      image_url: product.image_url || '',
+      asin: product.asin || '',
+      affiliate_link: ''
+    });
+  };
+
+  const getMinPrice = (offers: VendorOffer[] = []) => {
+    if (offers.length === 0) return null;
+    return Math.min(...offers.map(offer => offer.price));
+  };
+
+  useEffect(() => {
+    fetchProducts(currentPage, searchTerm, selectedCategory);
+  }, [currentPage, selectedCategory]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchProducts(1, searchTerm, selectedCategory);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Product Management
+              </CardTitle>
+              <CardDescription>
+                Manage your product catalog. Total products: {totalProducts}
+              </CardDescription>
+            </div>
+            <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Product</DialogTitle>
+                  <DialogDescription>
+                    Create a new product in your catalog.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="affiliate_link"
+                        value={productForm.affiliate_link}
+                        onChange={(e) => handleAffiliateLinkChange(e.target.value)}
+                        placeholder="Paste Amazon affiliate link to auto-populate product info"
+                        disabled={isLoadingProductInfo}
+                      />
+                      {isLoadingProductInfo && (
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Paste an Amazon product link to automatically extract the ASIN and help populate product details
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="name">Product Name *</Label>
+                    <Input
+                      id="name"
+                      value={productForm.name}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter product name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Category *</Label>
+                    <Input
+                      id="category"
+                      value={productForm.category}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
+                      placeholder="e.g., Athletic Tape"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="brand">Brand *</Label>
+                    <Input
+                      id="brand"
+                      value={productForm.brand}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
+                      placeholder="e.g., Mueller"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="rating">Rating (0-5)</Label>
+                    <Input
+                      id="rating"
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={productForm.rating}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
+                      placeholder="4.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dimensions">Dimensions</Label>
+                    <Input
+                      id="dimensions"
+                      value={productForm.dimensions}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
+                      placeholder="e.g., 1.5in x 15yd"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weight">Weight</Label>
+                    <Input
+                      id="weight"
+                      value={productForm.weight}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
+                      placeholder="e.g., 3.2 lbs"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="material">Material</Label>
+                    <Input
+                      id="material"
+                      value={productForm.material}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
+                      placeholder="e.g., Cotton blend"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="features">Features (one per line)</Label>
+                    <Textarea
+                      id="features"
+                      value={productForm.features}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
+                      placeholder="High tensile strength\nHypoallergenic adhesive\nEasy tear"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="image_url">Image URL</Label>
+                    <Input
+                      id="image_url"
+                      value={productForm.image_url}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="asin">ASIN</Label>
+                    <Input
+                      id="asin"
+                      value={productForm.asin}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
+                      placeholder="Amazon ASIN"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setIsAddProductOpen(false);
+                    resetForm();
+                  }}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddProduct}>
+                    Create Product
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
+            />
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSearch} variant="outline">
+              Search
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => {
+                    const minPrice = getMinPrice(product.vendor_offers);
+                    return (
+                      <TableRow key={product.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {product.image_url && (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                            )}
+                            <div>
+                              <div className="font-medium">{product.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {product.dimensions && `${product.dimensions} • `}
+                                {product.weight}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{product.category}</Badge>
+                        </TableCell>
+                        <TableCell>{product.brand}</TableCell>
+                        <TableCell>
+                          {product.rating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              {product.rating}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {minPrice && (
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />
+                              {minPrice.toFixed(2)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(product)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Product</DialogTitle>
+                                  <DialogDescription>
+                                    Update product information.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="col-span-2">
+                                    <Label htmlFor="edit-affiliate_link">Amazon Affiliate Link</Label>
+                                    <div className="flex gap-2">
+                                      <Input
+                                        id="edit-affiliate_link"
+                                        value={productForm.affiliate_link}
+                                        onChange={(e) => handleAffiliateLinkChange(e.target.value)}
+                                        placeholder="Paste Amazon affiliate link to auto-populate product info"
+                                        disabled={isLoadingProductInfo}
+                                      />
+                                      {isLoadingProductInfo && (
+                                        <div className="flex items-center">
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      Paste an Amazon product link to automatically extract the ASIN and help populate product details
+                                    </p>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Label htmlFor="edit-name">Product Name *</Label>
+                                    <Input
+                                      id="edit-name"
+                                      value={productForm.name}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-category">Category *</Label>
+                                    <Input
+                                      id="edit-category"
+                                      value={productForm.category}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-brand">Brand *</Label>
+                                    <Input
+                                      id="edit-brand"
+                                      value={productForm.brand}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-rating">Rating (0-5)</Label>
+                                    <Input
+                                      id="edit-rating"
+                                      type="number"
+                                      min="0"
+                                      max="5"
+                                      step="0.1"
+                                      value={productForm.rating}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-dimensions">Dimensions</Label>
+                                    <Input
+                                      id="edit-dimensions"
+                                      value={productForm.dimensions}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-weight">Weight</Label>
+                                    <Input
+                                      id="edit-weight"
+                                      value={productForm.weight}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-material">Material</Label>
+                                    <Input
+                                      id="edit-material"
+                                      value={productForm.material}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Label htmlFor="edit-features">Features (one per line)</Label>
+                                    <Textarea
+                                      id="edit-features"
+                                      value={productForm.features}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
+                                      rows={3}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-image_url">Image URL</Label>
+                                    <Input
+                                      id="edit-image_url"
+                                      value={productForm.image_url}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-asin">ASIN</Label>
+                                    <Input
+                                      id="edit-asin"
+                                      value={productForm.asin}
+                                      onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
+                                    />
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => {
+                                    setEditingProduct(null);
+                                    resetForm();
+                                  }}>
+                                    Cancel
+                                  </Button>
+                                  <Button onClick={handleUpdateProduct}>
+                                    Update Product
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              <div className="flex justify-between items-center mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
