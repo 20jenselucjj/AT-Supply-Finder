@@ -11,44 +11,52 @@ const Build = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const { kit, addToKit } = useKit();
 
-  // Starter templates (could move to dedicated module if grows)
-  const templates = [
+  const starterTemplates = [
     {
       id: 'basic-starter',
       name: 'Basic Tape Starter',
       description: 'Core tape & wrap essentials to get going.',
-      items: [
-        { id: '1', quantity: 1 }, // Mueller Athletic Tape
-        { id: 'amazon-prewrap', quantity: 1 },
-        { id: '2', quantity: 1 }, // Coban
+      products: [
+        { id: '550e8400-e29b-41d4-a716-446655440000', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440001', quantity: 1 },
       ],
     },
     {
       id: 'coverage-plus',
       name: 'Coverage + Support',
       description: 'Adds elastic + gauze for broader treatment.',
-      items: [
-        { id: '1', quantity: 1 },
-        { id: '2', quantity: 1 },
-        { id: '4', quantity: 1 },
-        { id: '5', quantity: 1 },
+      products: [
+        { id: '550e8400-e29b-41d4-a716-446655440000', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440001', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440002', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440004', quantity: 1 },
       ],
     },
     {
       id: 'full-kit',
       name: 'Comprehensive Kit',
       description: 'A balanced set for most training room needs.',
-      items: [
-        { id: '1', quantity: 1 },
-        { id: 'amazon-prewrap', quantity: 1 },
-        { id: '2', quantity: 1 },
-        { id: '3', quantity: 1 },
-        { id: '4', quantity: 1 },
-        { id: '5', quantity: 1 },
-        { id: '6', quantity: 1 },
+      products: [
+        { id: '550e8400-e29b-41d4-a716-446655440000', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440001', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440002', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440003', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440004', quantity: 1 },
+        { id: '550e8400-e29b-41d4-a716-446655440005', quantity: 1 },
       ],
     },
   ];
+
+  const addTemplateToKit = (template: any) => {
+    let addedCount = 0;
+    template.products.forEach(({ id, quantity }: any) => {
+      const product = products.find(p => p.id === id);
+      if (product) {
+        addToKit(product, quantity);
+        addedCount++;
+      }
+    });
+  };
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof kit>();
@@ -60,9 +68,9 @@ const Build = () => {
   }, [kit]);
   
   return (
-  <main className="container mx-auto py-10 px-4 sm:px-6">
+    <main className="container mx-auto py-10 px-4 sm:px-6">
       <Helmet>
-  <title>Build Your Kit | AT Supply Finder</title>
+        <title>Build Your Kit | AT Supply Finder</title>
         <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>
@@ -86,26 +94,28 @@ const Build = () => {
             </Button>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map(t => (
-              <div key={t.id} className="border rounded-lg p-4 flex flex-col justify-between">
+            {starterTemplates.map(template => (
+              <div key={template.id} className="border rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div>
-                  <h3 className="font-semibold mb-1">{t.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-3">{t.description}</p>
+                  <h3 className="font-semibold mb-2">{template.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
                   <ul className="text-xs space-y-1 list-disc pl-4 mb-4">
-                    {t.items.map(it => {
-                      const p = products.find(p => p.id === it.id);
-                      return <li key={it.id}>{p ? p.name : it.id}</li>;
+                    {template.products.slice(0, 3).map(tp => {
+                      const product = products.find(p => p.id === tp.id);
+                      return (
+                        <li key={tp.id}>
+                          {tp.quantity}x {product ? product.name : `Product ${tp.id}`}
+                        </li>
+                      );
                     })}
+                    {template.products.length > 3 && (
+                      <li className="text-muted-foreground">...and {template.products.length - 3} more</li>
+                    )}
                   </ul>
                 </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    t.items.forEach(it => {
-                      const p = products.find(p => p.id === it.id);
-                      if (p) addToKit(p, it.quantity);
-                    });
-                  }}
+                <Button 
+                  onClick={() => addTemplateToKit(template)}
+                  className="w-full"
                 >
                   Add Template
                 </Button>
@@ -114,20 +124,24 @@ const Build = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
-          <ul className="space-y-8" aria-label="Kit items grouped by category">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
             {grouped.map(([category, items]) => (
-              <li key={category} className="space-y-4">
-                <div className="sticky top-0 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 z-10 border-b">
-                  <h2 className="text-lg font-semibold">{category}</h2>
+              <div key={category} className="space-y-3">
+                <h2 className="text-lg font-semibold">{category}</h2>
+                <div className="space-y-2">
+                  {items.map(item => (
+                    <KitItem key={item.id} item={item} />
+                  ))}
                 </div>
-                <div className="space-y-4" role="list">
-                  {items.map(item => <KitItem key={item.id} item={item} />)}
-                </div>
-              </li>
+              </div>
             ))}
-          </ul>
-          <KitSummary />
+          </div>
+          <div className="lg:col-span-1">
+            <div className="sticky top-6">
+              <KitSummary />
+            </div>
+          </div>
         </div>
       )}
     </main>

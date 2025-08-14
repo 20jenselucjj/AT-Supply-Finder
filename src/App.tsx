@@ -51,7 +51,7 @@ const AppRoutes = () => {
           <Route path="/forgot-password" element={<AnimatedPage><ForgotPassword /></AnimatedPage>} />
           <Route path="/profile" element={<AnimatedPage><ProtectedRoute><Profile /></ProtectedRoute></AnimatedPage>} />
           <Route path="/admin" element={<AnimatedPage><AdminRoute><Admin /></AdminRoute></AnimatedPage>} />
-          
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<AnimatedPage><NotFound /></AnimatedPage>} />
         </Routes>
@@ -61,25 +61,25 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <KitProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <SiteHeader />
-                {/* Live region for accessibility announcements */}
-                <div id="live-region" aria-live="polite" className="sr-only" />
-                <AppRoutes />
-                <SiteFooter />
-              </BrowserRouter>
-            </TooltipProvider>
-          </KitProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </HelmetProvider>
-  );
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <KitProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <SiteHeader />
+              {/* Live region for accessibility announcements */}
+              <div id="live-region" aria-live="polite" className="sr-only" />
+              <AppRoutes />
+              <SiteFooter />
+            </BrowserRouter>
+          </TooltipProvider>
+        </KitProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
+);
 
 export default App;

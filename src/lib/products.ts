@@ -151,6 +151,150 @@ export const products: Product[] = [
     ],
     imageUrl: "https://picsum.photos/400/400?random=9"
   },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440009",
+    name: "Instant Ice Packs, Cold Compress (24 pack)",
+    category: "Cold Therapy",
+    brand: "Dynarex",
+    rating: 4.3,
+    dimensions: "6in x 9in",
+    weight: "4.2 lbs",
+    material: "Non-toxic gel compound",
+    features: ["Instant activation", "Single-use", "No refrigeration needed", "Stays cold for 20+ minutes"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 29.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "Medical Supply", url: "https://medicalsupply.com", price: 32.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=10"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440010",
+    name: "Reusable Gel Ice Packs, 6x10in (6 pack)",
+    category: "Cold Therapy",
+    brand: "FlexiKold",
+    rating: 4.6,
+    dimensions: "6in x 10in",
+    weight: "3.8 lbs",
+    material: "Medical grade gel",
+    features: ["Reusable", "Flexible when frozen", "Non-toxic", "Professional grade"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 45.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "FlexiKold", url: "https://flexikold.com", price: 49.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=11"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440011",
+    name: "Athletic Training Scissors, 7.5in (12 pack)",
+    category: "Tools",
+    brand: "Prestige Medical",
+    rating: 4.4,
+    dimensions: "7.5in length",
+    weight: "2.1 lbs",
+    material: "Stainless steel",
+    features: ["Sharp precision blades", "Comfortable grip", "Autoclavable", "Bulk pack"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 89.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "Medical Supply", url: "https://medicalsupply.com", price: 94.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=12"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440012",
+    name: "First Aid Kit, Complete 298-Piece",
+    category: "First Aid",
+    brand: "Johnson & Johnson",
+    rating: 4.7,
+    dimensions: "12in x 8in x 4in",
+    weight: "3.5 lbs",
+    material: "Durable plastic case",
+    features: ["298 pieces", "Organized compartments", "Emergency guide included", "Portable case"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 39.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "CVS", url: "https://cvs.com", price: 44.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=13"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440013",
+    name: "Antiseptic Wipes, Alcohol Prep Pads (1000 count)",
+    category: "First Aid",
+    brand: "BD",
+    rating: 4.8,
+    dimensions: "Individual packets",
+    weight: "2.2 lbs",
+    material: "70% isopropyl alcohol",
+    features: ["Sterile", "Individual packets", "Bulk quantity", "Medical grade"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 24.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "Medical Supply", url: "https://medicalsupply.com", price: 27.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=14"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440014",
+    name: "Tuf-Skin Tape Adherent, 4oz (12 bottles)",
+    category: "Tape Adherent",
+    brand: "Cramer",
+    rating: 4.5,
+    dimensions: "4oz bottles",
+    weight: "3.8 lbs",
+    material: "Rosin-based adhesive",
+    features: ["Improves tape adhesion", "Protects skin", "Professional grade", "Bulk pack"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 89.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "Cramer", url: "https://cramersportsmed.com", price: 94.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=15"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440015",
+    name: "Ankle Braces, Lace-Up Support (6 pack)",
+    category: "Braces",
+    brand: "McDavid",
+    rating: 4.4,
+    dimensions: "Universal fit",
+    weight: "2.4 lbs",
+    material: "Neoprene and nylon",
+    features: ["Adjustable lacing", "Bilateral support", "Breathable material", "Multiple sizes"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 119.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "McDavid", url: "https://mcdavid.com", price: 129.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=16"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440016",
+    name: "Elastic Adhesive Bandage, 3in x 5yd (18 rolls)",
+    category: "Elastic Bandage",
+    brand: "3M Coban",
+    rating: 4.6,
+    dimensions: "3in x 5yd",
+    weight: "4.2 lbs",
+    material: "Elastic non-woven material",
+    features: ["Self-adherent", "Breathable", "No clips needed", "Professional bulk pack"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 54.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "3M", url: "https://3m.com", price: 59.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=17"
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440017",
+    name: "Topical Analgesic Gel, 4oz (24 tubes)",
+    category: "Pain Relief",
+    brand: "Biofreeze",
+    rating: 4.7,
+    dimensions: "4oz tubes",
+    weight: "6.2 lbs",
+    material: "Menthol-based gel",
+    features: ["Fast-acting relief", "Non-greasy formula", "Professional strength", "Bulk quantity"],
+    offers: [
+      { name: "Amazon", url: "https://amazon.com", price: 149.99, lastUpdated: "2024-01-15T00:00:00Z" },
+      { name: "Biofreeze", url: "https://biofreeze.com", price: 159.99, lastUpdated: "2024-01-15T00:00:00Z" },
+    ],
+    imageUrl: "https://picsum.photos/400/400?random=18"
+  }
 ];
 
 export const getProductById = (id: string) => products.find(p => p.id === id);
