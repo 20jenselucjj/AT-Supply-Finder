@@ -41,13 +41,13 @@ const Hero = () => {
         <div className="mx-auto max-w-4xl text-center animate-fade-in">
           <span className="inline-flex items-center px-5 py-2.5 text-sm rounded-full bg-primary/15 text-primary border border-primary/30 mb-8 font-medium stagger-item shadow-sm hover:shadow-md hover:bg-primary/20 transition-all duration-300 transform hover:-translate-y-0.5">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            Trusted by Professional Athletic Trainers
+            Trusted by Medical Professionals
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item" style={{ fontFamily: 'var(--font-heading)' }}>
-            Professional <span className="text-primary">Athletic Training</span> Supplies
+            Professional <span className="text-primary">Medical Equipment</span> Finder
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
-            Compare prices across <strong>trusted vendors</strong> instantly. Build your professional athletic training kit with premium quality supplies at competitive prices.
+            Compare prices across <strong>trusted vendors</strong> instantly. Build your professional medical kit with premium quality supplies at competitive prices.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-medium stagger-item">

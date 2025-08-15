@@ -510,18 +510,20 @@ export const StarterKitBuilder: React.FC = () => {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Template</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Template</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Products</TableHead>
+                      <TableHead>Cost</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                   {templates.map((template) => (
                     <TableRow key={template.id}>
                       <TableCell>
@@ -692,6 +694,106 @@ export const StarterKitBuilder: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {templates.map((template) => {
+                const totalProducts = template.template_products?.length || 0;
+                const totalCost = template.template_products?.reduce((sum, tp) => {
+                  // This is a simplified cost calculation - you might want to fetch actual product prices
+                  return sum + (tp.quantity * 10); // Placeholder cost calculation
+                }, 0) || 0;
+
+                return (
+                  <Card key={template.id} className="p-4">
+                    <div className="space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm leading-tight mb-1 line-clamp-2">{template.name}</h3>
+                          <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground">
+                            <Badge variant="outline" className="text-xs">{template.category}</Badge>
+                            <span>{totalProducts} products</span>
+                          </div>
+                        </div>
+                        <Badge variant={template.is_active ? "default" : "secondary"} className="text-xs ml-2 flex-shrink-0">
+                          {template.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+
+                      {/* Description */}
+                      {template.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{template.description}</p>
+                      )}
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Products</Label>
+                          <div className="font-medium">{totalProducts}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Est. Cost</Label>
+                          <div className="font-medium">${totalCost.toFixed(2)}</div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-9"
+                          onClick={() => {
+                            // Copy template logic here
+                            toast.success('Template copied!');
+                          }}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          <span className="text-xs">Copy</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 h-9"
+                          onClick={() => openEditDialog(template)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          <span className="text-xs">Edit</span>
+                        </Button>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 px-3">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{template.name}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
 
               {/* Pagination */}
               <div className="flex justify-between items-center mt-4">

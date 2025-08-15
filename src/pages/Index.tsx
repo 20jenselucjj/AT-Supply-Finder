@@ -7,8 +7,8 @@ const Index = () => {
   return (
     <div className="animate-fade-in">
       <Helmet>
-        <title>Professional Athletic Training Supplies | Compare & Save</title>
-        <meta name="description" content="Find high-quality athletic training supplies from trusted vendors. Compare prices and build your professional kit with premium products." />
+        <title>Professional Medical Equipment | Compare & Save</title>
+        <meta name="description" content="Find high-quality medical equipment and supplies from trusted vendors. Compare prices and build your professional kit with premium products." />
       </Helmet>
 
       <Hero />
@@ -21,10 +21,10 @@ const Index = () => {
         <div className="bg-gradient-to-br from-background to-secondary/70 rounded-xl shadow-lg p-10 border border-border padding-container animate-fade-in">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-8 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent inline-block" style={{ fontFamily: 'var(--font-heading)' }}>
-              Professional Quality for Athletic Trainers
+              Professional Quality Medical Equipment
             </h2>
             <p className="text-muted-foreground mb-10 text-lg">
-              Our platform is designed specifically for athletic training professionals who demand the highest quality supplies.
+              Our platform is designed specifically for medical professionals who demand the highest quality supplies.
               We partner with trusted vendors to ensure you have access to premium products at competitive prices.
             </p>
 
@@ -36,7 +36,7 @@ const Index = () => {
                   </svg>
                 </div>
                 <h3 className="font-semibold text-lg mb-3">Premium Quality</h3>
-                <p className="text-sm text-muted-foreground">All products meet professional standards for athletic training environments.</p>
+                <p className="text-sm text-muted-foreground">All products meet professional standards for medical and healthcare environments.</p>
               </div>
 
               <div className="p-6 pro-card stagger-item bg-gradient-to-br from-background to-secondary/50 rounded-lg border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1">
@@ -59,7 +59,7 @@ const Index = () => {
                   </svg>
                 </div>
                 <h3 className="font-semibold text-lg mb-3">Expert Curated</h3>
-                <p className="text-sm text-muted-foreground">Products selected by professionals with years of athletic training experience.</p>
+                <p className="text-sm text-muted-foreground">Products selected by professionals with years of medical and healthcare experience.</p>
               </div>
             </div>
           </div>

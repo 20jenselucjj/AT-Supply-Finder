@@ -179,7 +179,7 @@ class AmazonSPAPI {
   }
 
   // Helper method to search for athletic training products specifically
-  async searchAthleticProducts(keywords: string = 'athletic training supplies'): Promise<AmazonProduct[]> {
+  async searchAthleticProducts(keywords: string = 'medical equipment supplies'): Promise<AmazonProduct[]> {
     const categories = [
       'Sports & Outdoors',
       'Health & Personal Care',

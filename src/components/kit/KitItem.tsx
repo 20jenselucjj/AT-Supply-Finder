@@ -50,8 +50,8 @@ const KitItem = ({ item }: KitItemProps) => {
   const bestOffer = item.offers.slice().sort((a, b) => a.price - b.price)[0];
   
   return (
-  <div className="flex items-center gap-4 p-4 border rounded-lg flex-wrap md:flex-nowrap" role="listitem">
-      <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+  <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3 xs:gap-4 p-3 xs:p-4 border rounded-lg" role="listitem">
+      <div className="w-12 h-12 xs:w-16 xs:h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
         <a
           href={item.offers.find(offer => offer.name === "Amazon")?.url || item.offers[0]?.url}
           target="_blank"
@@ -63,8 +63,8 @@ const KitItem = ({ item }: KitItemProps) => {
             alt={`${item.name} product image`}
             className="h-full object-contain hover:opacity-80 transition-opacity"
             loading="lazy"
-            width="64"
-            height="64"
+            width="48"
+            height="48"
             decoding="async"
             // Using lowercase fetchpriority to avoid React warning about unknown prop
             // @ts-ignore - not in the standard JSX typings yet
@@ -73,9 +73,9 @@ const KitItem = ({ item }: KitItemProps) => {
         </a>
       </div>
       
-      <div className="flex-1 min-w-0">
-        <h3 className="font-medium truncate" title={item.name}>{item.name}</h3>
-        <p className="text-sm text-muted-foreground">{item.category}</p>
+      <div className="flex-1 min-w-0 w-full xs:w-auto">
+        <h3 className="font-medium text-sm xs:text-base line-clamp-2 xs:truncate" title={item.name}>{item.name}</h3>
+        <p className="text-xs xs:text-sm text-muted-foreground">{item.category}</p>
         {bestOffer && (
           <p className="text-xs text-muted-foreground mt-1" aria-label={`Best unit price from ${bestOffer.name} at ${bestOffer.price}`}>
             Best: {bestOffer.name} • {formatCurrency(bestOffer.price)} ea
@@ -83,7 +83,7 @@ const KitItem = ({ item }: KitItemProps) => {
         )}
       </div>
       
-      <div className="flex items-center gap-2 my-2 md:my-0">
+      <div className="flex items-center gap-2 order-last xs:order-none">
         <Button
           variant="outline"
           size="icon"
@@ -113,9 +113,9 @@ const KitItem = ({ item }: KitItemProps) => {
         </Button>
       </div>
       
-      <div className="text-right min-w-[110px]">
-        <div className="text-sm text-muted-foreground">Total</div>
-        <div className="font-medium" aria-live="polite">{bestOffer ? formatCurrency(bestOffer.price * item.quantity) : '—'}</div>
+      <div className="text-right min-w-[80px] xs:min-w-[110px] flex-shrink-0">
+        <div className="text-xs xs:text-sm text-muted-foreground">Total</div>
+        <div className="font-medium text-sm xs:text-base" aria-live="polite">{bestOffer ? formatCurrency(bestOffer.price * item.quantity) : '—'}</div>
       </div>
       
       <Button
@@ -123,9 +123,9 @@ const KitItem = ({ item }: KitItemProps) => {
         size="icon"
         onClick={() => removeFromKit(item.id)}
         aria-label="Remove item"
-        className="h-8 w-8"
+        className="h-7 w-7 xs:h-8 xs:w-8 flex-shrink-0 self-start xs:self-center"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3 w-3 xs:h-4 xs:w-4" />
       </Button>
     </div>
   );

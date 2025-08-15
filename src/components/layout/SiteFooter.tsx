@@ -4,11 +4,11 @@ const SiteFooter = () => {
       <div className="container mx-auto py-12 grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
-            <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>Athletic Training Supplies</h3>
+            <img src="/logo.svg" alt="Wrap Wizard Finder Logo" className="h-10 w-10" />
+        <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>Wrap Wizard Finder</h3>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Providing professional athletic trainers with high-quality supplies at competitive prices. Compare products across trusted vendors and build customized kits for your specific needs.
+            Providing medical professionals with high-quality equipment and supplies at competitive prices. Compare products across trusted vendors and build customized kits for your specific needs.
           </p>
           <div className="mt-4 flex gap-3">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Twitter">
@@ -43,7 +43,7 @@ const SiteFooter = () => {
       </div>
       <div className="border-t py-6 text-center text-xs text-muted-foreground">
         <div className="container mx-auto">
-          <p>© {new Date().getFullYear()} Athletic Training Supplies. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Wrap Wizard Finder. All rights reserved.</p>
           <p className="mt-2">As an Amazon Associate, we earn from qualifying purchases. Links to other vendors may also be affiliate links.</p>
         </div>
       </div>

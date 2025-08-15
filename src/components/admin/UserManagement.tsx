@@ -312,9 +312,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
             <div className="flex gap-2">
               <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
                 <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Create/Invite User
+                  <Button className="flex items-center gap-1 text-xs px-2 py-1 h-8 xs:gap-2 xs:text-sm xs:px-3 xs:py-1.5 xs:h-9 sm:px-4 sm:py-2 sm:h-10">
+                    <UserPlus className="h-3 w-3 xs:h-4 xs:w-4" />
+                    <span className="hidden xs:inline">Create/Invite User</span>
+                    <span className="xs:hidden">Add</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -405,139 +406,268 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Last Sign In</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        {user.email}
-                      </TableCell>
-                      <TableCell>
-                        <Select 
-                          value={user.role || 'user'} 
-                          onValueChange={async (newRole) => {
-                            try {
-                              // Check if current user is admin
-                              const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
-                              if (adminError || !isAdminResult) {
-                                toast.error('You must be an admin to update user roles.');
-                                return;
-                              }
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Last Sign In</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {user.email}
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={user.role || 'user'} 
+                            onValueChange={async (newRole) => {
+                              try {
+                                const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
+                                if (adminError || !isAdminResult) {
+                                  toast.error('You must be an admin to update user roles.');
+                                  return;
+                                }
 
-                              if (newRole === 'user') {
-                                // Remove from user_roles table
-                                await supabaseAdmin
-                                  .from('user_roles')
-                                  .delete()
-                                  .eq('user_id', user.id);
-                              } else {
-                                // Insert or update role
-                                await supabaseAdmin
-                                  .from('user_roles')
-                                  .upsert({ user_id: user.id, role: newRole });
-                              }
+                                if (newRole === 'user') {
+                                  await supabaseAdmin
+                                    .from('user_roles')
+                                    .delete()
+                                    .eq('user_id', user.id);
+                                } else {
+                                  await supabaseAdmin
+                                    .from('user_roles')
+                                    .upsert({ user_id: user.id, role: newRole });
+                                }
 
-                              toast.success('User role updated successfully');
-                              fetchUsers(currentPage, searchTerm);
-                            } catch (error) {
-                              console.error('Error updating user role:', error);
-                              toast.error('Failed to update user role');
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="editor">Editor</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {format(new Date(user.created_at), 'MMM dd, yyyy')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {user.last_sign_in_at ? (
+                                toast.success('User role updated successfully');
+                                fetchUsers(currentPage, searchTerm);
+                              } catch (error) {
+                                console.error('Error updating user role:', error);
+                                toast.error('Failed to update user role');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="editor">Editor</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            {format(new Date(user.last_sign_in_at), 'MMM dd, yyyy')}
+                            {format(new Date(user.created_at), 'MMM dd, yyyy')}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">Never</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" title="Deactivate User">
-                                <UserX className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Deactivate User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to deactivate {user.email}? They will not be able to sign in until reactivated.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeactivateUser(user.id)}
-                                  className="bg-orange-600 text-white hover:bg-orange-700"
-                                >
-                                  Deactivate
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                        </TableCell>
+                        <TableCell>
+                          {user.last_sign_in_at ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(user.last_sign_in_at), 'MMM dd, yyyy')}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Never</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" title="Deactivate User">
+                                  <UserX className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to deactivate {user.email}? They will not be able to sign in until reactivated.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeactivateUser(user.id)}
+                                    className="bg-orange-600 text-white hover:bg-orange-700"
+                                  >
+                                    Deactivate
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" title="Delete User">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to permanently delete {user.email}? This action cannot be undone and will remove all user data.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteUser(user.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" title="Delete User">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to permanently delete {user.email}? This action cannot be undone and will remove all user data.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(user.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {users.map((user) => (
+                  <Card key={user.id} className="p-4">
+                    <div className="space-y-3">
+                      {/* User Email */}
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{user.email}</span>
+                      </div>
+                      
+                      {/* Role and Dates */}
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Role</Label>
+                          <Select 
+                            value={user.role || 'user'} 
+                            onValueChange={async (newRole) => {
+                              try {
+                                const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
+                                if (adminError || !isAdminResult) {
+                                  toast.error('You must be an admin to update user roles.');
+                                  return;
+                                }
+
+                                if (newRole === 'user') {
+                                  await supabaseAdmin
+                                    .from('user_roles')
+                                    .delete()
+                                    .eq('user_id', user.id);
+                                } else {
+                                  await supabaseAdmin
+                                    .from('user_roles')
+                                    .upsert({ user_id: user.id, role: newRole });
+                                }
+
+                                toast.success('User role updated successfully');
+                                fetchUsers(currentPage, searchTerm);
+                              } catch (error) {
+                                console.error('Error updating user role:', error);
+                                toast.error('Failed to update user role');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="editor">Editor</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Created</Label>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Last Sign In */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Last Sign In</Label>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {user.last_sign_in_at ? format(new Date(user.last_sign_in_at), 'MMM dd, yyyy') : 'Never'}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1 h-9">
+                              <UserX className="h-4 w-4 mr-2" />
+                              <span className="text-xs">Deactivate</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to deactivate {user.email}? They will not be able to sign in until reactivated.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeactivateUser(user.id)}
+                                className="bg-orange-600 text-white hover:bg-orange-700"
+                              >
+                                Deactivate
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1 h-9">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              <span className="text-xs">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to permanently delete {user.email}? This action cannot be undone and will remove all user data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
 
               {/* Pagination */}
               <div className="flex justify-between items-center mt-4">

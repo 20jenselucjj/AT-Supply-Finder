@@ -275,16 +275,16 @@ const Build = () => {
   }, [kit]);
   
   return (
-    <main className="container mx-auto py-10 px-4 sm:px-6">
+    <main className="container mx-auto py-6 xs:py-8 sm:py-10 px-3 xs:px-4 sm:px-6">
       <Helmet>
         <title>Build Your Kit | AT Supply Finder</title>
         <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold">Build your kit</h1>
+      <div className="flex flex-col xs:flex-row justify-between items-start xs:items-center gap-3 xs:gap-4 mb-4 xs:mb-6">
+        <h1 className="text-2xl xs:text-3xl font-bold">Build your kit</h1>
         {kit.length > 0 && (
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" size="sm" className="xs:size-default">
             <Link to="/catalog">Add More Items</Link>
           </Button>
         )}
@@ -311,7 +311,7 @@ const Build = () => {
               <p className="text-sm text-muted-foreground">Templates created by admins will appear here.</p>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 xs:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                {starterTemplates.map(template => (
                  <TemplateCard key={template.id} template={template} onAddTemplate={addTemplateToKit} />
                ))}
@@ -319,11 +319,11 @@ const Build = () => {
           )}
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid gap-4 xs:gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-4 xs:space-y-6">
             {grouped.map(([category, items]) => (
-              <div key={category} className="space-y-3">
-                <h2 className="text-lg font-semibold">{category}</h2>
+              <div key={category} className="space-y-2 xs:space-y-3">
+                <h2 className="text-base xs:text-lg font-semibold">{category}</h2>
                 <div className="space-y-2">
                   {items.map(item => (
                     <KitItem key={item.id} item={item} />
@@ -333,7 +333,7 @@ const Build = () => {
             ))}
           </div>
           <div className="lg:col-span-1">
-            <div className="sticky top-6">
+            <div className="lg:sticky lg:top-6">
               <KitSummary />
             </div>
           </div>

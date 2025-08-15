@@ -12,7 +12,7 @@ class AmazonProductService {
   private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
   // Search for athletic training products
-  async searchAthleticProducts(searchTerm: string = 'athletic training supplies', forceRefresh: boolean = false): Promise<Product[]> {
+  async searchAthleticProducts(searchTerm: string = 'medical equipment supplies', forceRefresh: boolean = false): Promise<Product[]> {
     const cacheKey = `athletic_${searchTerm}`;
     const cached = this.cache.get(cacheKey);
     

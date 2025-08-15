@@ -61,7 +61,7 @@ const CategoryGrid = () => {
       <div className="max-w-2xl mb-12">
         <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent inline-block" style={{ fontFamily: 'var(--font-heading)' }}>Professional Equipment</h2>
         <p className="text-muted-foreground mt-4" style={{ fontFamily: 'var(--font-body)' }}>
-          High-quality athletic training supplies from trusted manufacturers at competitive prices.
+          High-quality medical equipment and supplies from trusted manufacturers at competitive prices.
         </p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in">

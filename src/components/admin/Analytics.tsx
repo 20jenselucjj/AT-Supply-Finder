@@ -165,7 +165,7 @@ export const Analytics: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -175,9 +175,9 @@ export const Analytics: React.FC = () => {
                 Monitor system performance and user engagement
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full sm:w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,12 +185,16 @@ export const Analytics: React.FC = () => {
                   <SelectItem value="30d">Last 30 days</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button variant="outline" onClick={exportData}>
-                <Download className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleRefresh} disabled={refreshing} size="sm" className="flex-1 sm:flex-none">
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} sm:mr-0 mr-2`} />
+                  <span className="sm:hidden">Refresh</span>
+                </Button>
+                <Button variant="outline" onClick={exportData} size="sm" className="flex-1 sm:flex-none">
+                  <Download className="h-4 w-4 sm:mr-0 mr-2" />
+                  <span className="sm:hidden">Export</span>
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -259,26 +263,45 @@ export const Analytics: React.FC = () => {
             <CardDescription>Most viewed products</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead className="text-right">Views</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analytics.popularProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{product.brand}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{product.views}</TableCell>
+            {/* Desktop Table View */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead className="text-right">Views</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {analytics.popularProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{product.brand}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">{product.views}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {analytics.popularProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm leading-tight mb-1 line-clamp-2">{product.name}</h4>
+                    <Badge variant="outline" className="text-xs">{product.brand}</Badge>
+                  </div>
+                  <div className="text-right ml-3">
+                    <div className="text-sm font-medium">{product.views}</div>
+                    <div className="text-xs text-muted-foreground">views</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
