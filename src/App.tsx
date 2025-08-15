@@ -11,6 +11,7 @@ import AnimatedPage from "@/components/layout/AnimatedPage";
 import SiteFooter from "@/components/layout/SiteFooter";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import AdminRoute from "@/components/layout/AdminRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { KitProvider } from "./context/kit-context";
 import { AuthProvider } from "./context/auth-context";
 
@@ -61,25 +62,27 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <KitProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <SiteHeader />
-              {/* Live region for accessibility announcements */}
-              <div id="live-region" aria-live="polite" className="sr-only" />
-              <AppRoutes />
-              <SiteFooter />
-            </BrowserRouter>
-          </TooltipProvider>
-        </KitProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
+  <ErrorBoundary>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <KitProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <SiteHeader />
+                {/* Live region for accessibility announcements */}
+                <div id="live-region" aria-live="polite" className="sr-only" />
+                <AppRoutes />
+                <SiteFooter />
+              </BrowserRouter>
+            </TooltipProvider>
+          </KitProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  </ErrorBoundary>
 );
 
 export default App;

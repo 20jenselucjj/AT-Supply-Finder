@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/auth-context';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 import { toast } from 'sonner';
-import { AlertCircle, Users, Settings, ShieldAlert, BarChart3, Package, Wrench } from 'lucide-react';
+import { AlertCircle, Users, Settings, ShieldAlert, BarChart3, Package, Wrench, Shield, AlertTriangle } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { ProductManagement } from '@/components/admin/ProductManagement';
-import { SystemSettings } from '@/components/admin/SystemSettings';
 import { StarterKitBuilder } from '@/components/admin/StarterKitBuilder';
+import { Analytics } from '@/components/admin/Analytics';
 
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -54,13 +54,13 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch real user count from user_roles table
-      const { count: usersCount, error: usersError } = await supabase
-        .from('user_roles')
+      // Fetch real user count from user_profiles view
+      const { count: usersCount, error: usersError } = await supabaseAdmin
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true });
 
       // Fetch real product count
-      const { count: productsCount, error: productsError } = await supabase
+      const { count: productsCount, error: productsError } = await supabaseAdmin
         .from('products')
         .select('*', { count: 'exact', head: true });
 
@@ -121,56 +121,92 @@ const Admin = () => {
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-105 transition-all duration-300 border-l-4 border-l-blue-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-full">
+                    <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userCount || stats.totalUsers}</div>
                   <p className="text-xs text-muted-foreground">Registered accounts</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-105 transition-all duration-300 border-l-4 border-l-green-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-full">
+                    <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.activeUsers}</div>
                   <p className="text-xs text-muted-foreground">Active in last 30 days</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-105 transition-all duration-300 border-l-4 border-l-purple-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 rounded-full">
+                    <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{productCount || stats.totalProducts}</div>
                   <p className="text-xs text-muted-foreground">Products in catalog</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="hover:shadow-lg hover:scale-105 transition-all duration-300 border-l-4 border-l-emerald-500">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">System Status</CardTitle>
+                  <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800 rounded-full">
+                    <ShieldAlert className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalOrders}</div>
-                  <p className="text-xs text-muted-foreground">Processed orders</p>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Online</div>
+                  <p className="text-xs text-muted-foreground">All systems operational</p>
                 </CardContent>
               </Card>
             </div>
 
+
+
             {/* Admin Tabs */}
-            <Tabs defaultValue="users" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
-                <TabsTrigger value="templates">Starter Kits</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+            <Tabs defaultValue="users" className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-lg p-1 shadow-sm border">
+                <TabsList className="grid w-full grid-cols-4 bg-transparent">
+                  <TabsTrigger 
+                    value="users" 
+                    className="flex items-center gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-900 dark:data-[state=active]:text-blue-300"
+                  >
+                    <Users className="h-4 w-4" />
+                    Users
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="products" 
+                    className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-900 dark:data-[state=active]:text-green-300"
+                  >
+                    <Package className="h-4 w-4" />
+                    Products
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="templates" 
+                    className="flex items-center gap-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900 dark:data-[state=active]:text-purple-300"
+                  >
+                    <Wrench className="h-4 w-4" />
+                    Starter Kits
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="analytics" 
+                    className="flex items-center gap-2 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-300"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               <TabsContent value="users" className="space-y-4">
                 <UserManagement
@@ -190,9 +226,11 @@ const Admin = () => {
                 <StarterKitBuilder />
               </TabsContent>
 
-              <TabsContent value="settings" className="space-y-4">
-                <SystemSettings />
+              <TabsContent value="analytics" className="space-y-4">
+                <Analytics />
               </TabsContent>
+
+
             </Tabs>
           </div>
         </PageContainer>

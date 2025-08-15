@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from '@/lib/supabase';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink } from 'lucide-react';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProductData {
@@ -56,6 +57,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [productForm, setProductForm] = useState({
     name: '',
@@ -80,7 +83,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     try {
       setLoading(true);
       
-      let query = supabase
+      let query = supabaseAdmin
         .from('products')
         .select(`
           *,
@@ -124,7 +127,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('products')
         .select('category')
         .not('category', 'is', null);
@@ -156,8 +159,60 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       asin: '',
       affiliate_link: ''
     });
-
   };
+
+  // Bulk selection functions
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    } else {
+      setSelectedProducts(new Set());
+    }
+  };
+
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    const newSelected = new Set(selectedProducts);
+    if (checked) {
+      newSelected.add(productId);
+    } else {
+      newSelected.delete(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error('No products selected');
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const productIds = Array.from(selectedProducts);
+      
+      const { error } = await supabaseAdmin
+        .from('products')
+        .delete()
+        .in('id', productIds);
+
+      if (error) {
+        toast.error(`Failed to delete products: ${error.message}`);
+        return;
+      }
+
+      toast.success(`Successfully deleted ${productIds.length} product${productIds.length > 1 ? 's' : ''}`);
+      setSelectedProducts(new Set());
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+    } catch (error) {
+      console.error('Error deleting products:', error);
+      toast.error('Failed to delete products');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isAllSelected = products.length > 0 && selectedProducts.size === products.length;
+  const isIndeterminate = selectedProducts.size > 0 && selectedProducts.size < products.length;
 
 
 
@@ -202,7 +257,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     
     try {
       // Call our scraping API to get product information
-      const response = await fetch('/api/scrape-amazon-product', {
+      const response = await fetch('http://localhost:3001/api/scrape-amazon-product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -274,7 +329,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         affiliate_link: productForm.affiliate_link || null
       };
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('products')
         .insert(productData);
 
@@ -314,7 +369,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('products')
         .update(productData)
         .eq('id', editingProduct.id);
@@ -337,7 +392,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('products')
         .delete()
         .eq('id', productId);
@@ -590,6 +645,30 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             <Button onClick={handleSearch} variant="outline">
               Search
             </Button>
+            {selectedProducts.size > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={isDeleting}>
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedProducts.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Products</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting}>
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           {loading ? (
@@ -601,6 +680,15 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
+                        ref={(el) => {
+                          if (el) el.indeterminate = isIndeterminate;
+                        }}
+                      />
+                    </TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Brand</TableHead>
@@ -614,6 +702,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                     const minPrice = getMinPrice(product.vendor_offers);
                     return (
                       <TableRow key={product.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedProducts.has(product.id)}
+                            onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {product.image_url && (
@@ -644,13 +738,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {minPrice && (
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4" />
-                              {minPrice.toFixed(2)}
-                            </div>
-                          )}
+                        <TableCell className="text-right">
+                          {product.vendor_offers && product.vendor_offers.length > 0
+                            ? `$${product.vendor_offers.reduce((min, p) => p.price < min ? p.price : min, product.vendor_offers[0].price).toFixed(2)}`
+                            : product.price ? `$${product.price.toFixed(2)}` : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">

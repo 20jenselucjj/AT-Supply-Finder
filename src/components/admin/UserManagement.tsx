@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { User, UserPlus, Trash2, Edit, Shield, Mail, Calendar } from 'lucide-react';
+import { User, UserPlus, Trash2, Edit, Shield, Mail, Calendar, UserX } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface UserData {
@@ -19,6 +19,7 @@ interface UserData {
   created_at: string;
   last_sign_in_at?: string;
   role?: string;
+  email_confirmed_at?: string;
 }
 
 interface UserManagementProps {
@@ -32,9 +33,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState('user');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'user' | 'editor' | 'admin'>('user');
+  const [inviteMode, setInviteMode] = useState<'invite' | 'create'>('invite');
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editUserRole, setEditUserRole] = useState('');
 
@@ -52,67 +55,29 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         return;
       }
 
-      // Try to get user profiles with roles first
-      let usersWithRoles: UserData[] = [];
-      
-      try {
-        const { data: usersData, error: usersError, count: profilesCount } = await supabase
-          .from('user_profiles')
-          .select(`
-            id,
-            email,
-            full_name,
-            created_at,
-            last_sign_in_at,
-            user_roles!inner(role)
-          `, { count: 'exact' })
-          .range((page - 1) * usersPerPage, page * usersPerPage - 1);
+      // Use the user_profiles view which includes role information
+      const { data: usersData, error: usersError, count: profilesCount } = await supabaseAdmin
+        .from('user_profiles')
+        .select('*', { count: 'exact' })
+        .range((page - 1) * usersPerPage, page * usersPerPage - 1);
 
-        if (usersError) {
-          throw usersError;
-        }
-
-        // Transform the data to match our UserData interface
-        usersWithRoles = usersData?.map((user: any) => ({
-          id: user.id,
-          email: user.email || 'No email',
-          created_at: user.created_at,
-          last_sign_in_at: user.last_sign_in_at,
-          role: user.user_roles?.role || 'user'
-        })) || [];
-        
-        setTotalPages(Math.ceil((profilesCount || 0) / usersPerPage));
-        onUserCountChange(profilesCount || 0);
-        
-      } catch (profilesError) {
-        console.warn('user_profiles table not available, falling back to user_roles:', profilesError);
-        
-        // Fallback to user_roles table with current user info
-        const { data: userRoles, error: rolesError, count } = await supabase
-          .from('user_roles')
-          .select('user_id, role, created_at', { count: 'exact' })
-          .range((page - 1) * usersPerPage, page * usersPerPage - 1);
-
-        if (rolesError) {
-          console.error('Error fetching user roles:', rolesError);
-          toast.error('Failed to fetch users. Please run the setup_user_profiles.sql script in your Supabase dashboard.');
-          return;
-        }
-
-        // Get current user info to show at least one real email
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        
-        usersWithRoles = userRoles?.map((userRole, index) => ({
-          id: userRole.user_id,
-          email: userRole.user_id === currentUser?.id ? currentUser.email || 'No email' : `user${index + 1}@example.com`,
-          created_at: userRole.created_at,
-          last_sign_in_at: userRole.user_id === currentUser?.id ? currentUser.last_sign_in_at : null,
-          role: userRole.role
-        })) || [];
-        
-        setTotalPages(Math.ceil((count || 0) / usersPerPage));
-        onUserCountChange(count || 0);
+      if (usersError) {
+        console.error('Error fetching user profiles:', usersError);
+        toast.error('Failed to fetch users. Please ensure the user_profiles view is set up correctly.');
+        return;
       }
+
+      // Transform the data to match our UserData interface
+      const usersWithRoles = usersData?.map((user: any) => ({
+        id: user.id,
+        email: user.email || 'No email',
+        created_at: user.created_at,
+        last_sign_in_at: user.last_sign_in_at,
+        role: user.role || 'user'
+      })) || [];
+      
+      setTotalPages(Math.ceil((profilesCount || 0) / usersPerPage));
+      onUserCountChange(profilesCount || 0);
 
       // Filter by search term if provided
       const filteredUsers = search
@@ -130,40 +95,97 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
     }
   };
 
-  const handleAddUser = async () => {
+  const handleCreateUser = async () => {
     try {
       if (!newUserEmail) {
-        toast.error('User ID is required');
+        toast.error('Email is required');
+        return;
+      }
+
+      if (inviteMode === 'create' && !newUserPassword) {
+        toast.error('Password is required for direct user creation');
         return;
       }
 
       // Check if current user is admin
       const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
       if (adminError || !isAdminResult) {
-        toast.error('You must be an admin to add user roles.');
+        toast.error('You must be an admin to create users.');
         return;
       }
 
-      // Add role for existing user (user must already exist in auth.users)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: newUserEmail, role: newUserRole }); // Using email as user_id for now
+      if (inviteMode === 'invite') {
+        // Send invite email using Supabase Admin API
+        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+          newUserEmail,
+          {
+            redirectTo: `${window.location.origin}/set-password`,
+            data: {
+              role: newUserRole
+            }
+          }
+        );
 
-      if (roleError) {
-        toast.error(`Failed to assign role: ${roleError.message}`);
-        return;
+        if (inviteError) {
+          toast.error(`Failed to send invite: ${inviteError.message}`);
+          return;
+        }
+
+        // Assign role in user_roles table if it's not the default 'user' role
+        if (newUserRole !== 'user' && inviteData.user) {
+          const { error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .insert({
+              user_id: inviteData.user.id,
+              role: newUserRole
+            });
+
+          if (roleError) {
+            console.error('Error assigning role:', roleError);
+            toast.error('Invite sent but role assignment failed');
+          }
+        }
+
+        toast.success('Invitation sent successfully! User will receive an email to set their password.');
+      } else {
+        // Create user directly with password
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: newUserEmail,
+          password: newUserPassword,
+          email_confirm: true
+        });
+
+        if (createError) {
+          toast.error(`Failed to create user: ${createError.message}`);
+          return;
+        }
+
+        // Assign role to the new user if not 'user' (default)
+        if (newUserRole !== 'user' && newUser.user) {
+          const { error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .insert({ user_id: newUser.user.id, role: newUserRole });
+
+          if (roleError) {
+            console.warn('Failed to assign role, but user was created:', roleError.message);
+          }
+        }
+
+        toast.success('User created successfully');
       }
 
-      toast.success('User role assigned successfully');
-      setIsAddUserOpen(false);
+      setIsCreateUserOpen(false);
       setNewUserEmail('');
+      setNewUserPassword('');
       setNewUserRole('user');
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
-      console.error('Error creating user:', error);
-      toast.error('Failed to create user');
+      console.error('Error creating/inviting user:', error);
+      toast.error('Failed to create/invite user');
     }
   };
+
+
 
   const handleUpdateUserRole = async () => {
     if (!editingUser) return;
@@ -178,13 +200,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
 
       if (editUserRole === 'user') {
         // Remove from user_roles table
-        await supabase
+        await supabaseAdmin
           .from('user_roles')
           .delete()
           .eq('user_id', editingUser.id);
       } else {
         // Insert or update role
-        await supabase
+        await supabaseAdmin
           .from('user_roles')
           .upsert({ user_id: editingUser.id, role: editUserRole });
       }
@@ -207,22 +229,52 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         return;
       }
 
-      // Remove user from user_roles table (we can't actually delete auth users without service role)
-      const { error } = await supabase
+      // Delete user from auth.users using admin client
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        toast.error(`Failed to delete user: ${deleteError.message}`);
+        return;
+      }
+
+      // Also remove from user_roles table (cascade should handle this, but let's be explicit)
+      await supabaseAdmin
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
-      if (error) {
-        toast.error(`Failed to remove user role: ${error.message}`);
+      toast.success('User deleted successfully');
+      fetchUsers(currentPage, searchTerm);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    }
+  };
+
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      // Check if current user is admin
+      const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
+      if (adminError || !isAdminResult) {
+        toast.error('You must be an admin to deactivate users.');
         return;
       }
 
-      toast.success('User role removed successfully');
+      // Update user to set email_confirmed_at to null (effectively deactivating)
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        email_confirm: false
+      });
+
+      if (error) {
+        toast.error(`Failed to deactivate user: ${error.message}`);
+        return;
+      }
+
+      toast.success('User deactivated successfully');
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
-      console.error('Error removing user:', error);
-      toast.error('Failed to remove user');
+      console.error('Error deactivating user:', error);
+      toast.error('Failed to deactivate user');
     }
   };
 
@@ -257,55 +309,81 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                 Manage user accounts, roles, and permissions. Total users: {totalUsers}
               </CardDescription>
             </div>
-            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Assign Role
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Assign User Role</DialogTitle>
-                  <DialogDescription>
-                    Assign a role to an existing user account.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="userId">User ID</Label>
-                    <Input
-                      id="userId"
-                      type="text"
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      placeholder="Enter user UUID"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={newUserRole} onValueChange={setNewUserRole}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="editor">Editor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
-                    Cancel
+            <div className="flex gap-2">
+              <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Create/Invite User
                   </Button>
-                  <Button onClick={handleAddUser}>
-                    Assign Role
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create/Invite New User</DialogTitle>
+                    <DialogDescription>
+                      Send an invitation email or create a user account directly.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Mode</Label>
+                      <Select value={inviteMode} onValueChange={(value: 'invite' | 'create') => setInviteMode(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="invite">Send Invitation Email</SelectItem>
+                          <SelectItem value="create">Create User Directly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newUserEmail}
+                        onChange={(e) => setNewUserEmail(e.target.value)}
+                        placeholder="user@example.com"
+                      />
+                    </div>
+                    {inviteMode === 'create' && (
+                      <div>
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={newUserPassword}
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          placeholder="Enter password"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="role">Role</Label>
+                      <Select value={newUserRole} onValueChange={(value: 'user' | 'editor' | 'admin') => setNewUserRole(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="editor">Editor</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateUser}>
+                      {inviteMode === 'invite' ? 'Send Invitation' : 'Create User'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -345,9 +423,47 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                         {user.email}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {user.role}
-                        </Badge>
+                        <Select 
+                          value={user.role || 'user'} 
+                          onValueChange={async (newRole) => {
+                            try {
+                              // Check if current user is admin
+                              const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
+                              if (adminError || !isAdminResult) {
+                                toast.error('You must be an admin to update user roles.');
+                                return;
+                              }
+
+                              if (newRole === 'user') {
+                                // Remove from user_roles table
+                                await supabaseAdmin
+                                  .from('user_roles')
+                                  .delete()
+                                  .eq('user_id', user.id);
+                              } else {
+                                // Insert or update role
+                                await supabaseAdmin
+                                  .from('user_roles')
+                                  .upsert({ user_id: user.id, role: newRole });
+                              }
+
+                              toast.success('User role updated successfully');
+                              fetchUsers(currentPage, searchTerm);
+                            } catch (error) {
+                              console.error('Error updating user role:', error);
+                              toast.error('Failed to update user role');
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="editor">Editor</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -367,55 +483,34 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingUser(user);
-                                  setEditUserRole(user.role || 'user');
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" title="Deactivate User">
+                                <UserX className="h-4 w-4" />
                               </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Edit User Role</DialogTitle>
-                                <DialogDescription>
-                                  Change the role for {user.email}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="edit-role">Role</Label>
-                                  <Select value={editUserRole} onValueChange={setEditUserRole}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="user">User</SelectItem>
-                                      <SelectItem value="editor">Editor</SelectItem>
-                                      <SelectItem value="admin">Admin</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => setEditingUser(null)}>
-                                  Cancel
-                                </Button>
-                                <Button onClick={handleUpdateUserRole}>
-                                  Update Role
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to deactivate {user.email}? They will not be able to sign in until reactivated.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeactivateUser(user.id)}
+                                  className="bg-orange-600 text-white hover:bg-orange-700"
+                                >
+                                  Deactivate
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
 
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" title="Delete User">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -423,7 +518,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete User</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete {user.email}? This action cannot be undone.
+                                  Are you sure you want to permanently delete {user.email}? This action cannot be undone and will remove all user data.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

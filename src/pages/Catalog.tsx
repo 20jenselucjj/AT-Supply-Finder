@@ -10,44 +10,85 @@ import { Product } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
+
+// Storage key for product cache
+const PRODUCTS_CACHE_KEY = 'wrap_wizard_products_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const Catalog = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const [params, setParams] = useSearchParams();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    // Initialize from cache if available and not expired
+    try {
+      const cached = localStorage.getItem(PRODUCTS_CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      }
+    } catch {
+      // Ignore cache errors
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const q = params.get("q") || "";
   const cat = params.get("cat") || "all";
   const sort = params.get("sort") || "relevance";
 
-  // Load products from database
-  useEffect(() => {
-    const loadProducts = async () => {
+  // Cache products data
+  const cacheProducts = useCallback((productsData: Product[]) => {
+    try {
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({
+        data: productsData,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to cache products:', error);
+    }
+  }, []);
+
+  // Load products from database with retry logic
+  const loadProducts = useCallback(async (isRetry = false) => {
+    if (!isRetry) {
       setLoading(true);
-      try {
-        console.log('Starting to load products...');
-        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-        console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-        
-        // Test basic connection first
-        const { data: testData, error: testError } = await supabase
-          .from('products')
-          .select('count')
-          .limit(1);
-        
-        console.log('Connection test:', { testData, testError });
-        
-        // First, let's try a simple query without joins
-        let query = supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
+      setError(null);
+    } else {
+      setIsRetrying(true);
+    }
+    
+    try {
+      console.log('Starting to load products...', isRetry ? '(retry)' : '');
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+      
+      // Test basic connection first
+      const { data: testData, error: testError } = await supabase
+        .from('products')
+        .select('count')
+        .limit(1);
+      
+      console.log('Connection test:', { testData, testError });
+      
+      if (testError) {
+        throw new Error(`Connection test failed: ${testError.message}`);
+      }
+      
+      // First, let's try a simple query without joins
+      let query = supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
 
         // Apply search filter
         if (q) {
@@ -98,16 +139,40 @@ const Catalog = () => {
         console.log('Loaded products from database:', transformedProducts.length);
         console.log('Sample product:', transformedProducts[0]);
         setProducts(transformedProducts);
+        
+        // Cache the products data
+        cacheProducts(transformedProducts);
+        
+        // Reset retry count on success
+        setRetryCount(0);
+        setError(null);
       } catch (error) {
         console.error('Error loading products:', error);
-        setProducts([]);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setError(`Failed to load products: ${errorMessage}`);
+        
+        // Only clear products if this is not a retry and we don't have cached data
+        if (!isRetry) {
+          setProducts([]);
+        }
       } finally {
         setLoading(false);
+        setIsRetrying(false);
       }
-    };
+    }, [q, cat, cacheProducts]);
 
+  // Retry function
+  const retryLoadProducts = useCallback(() => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      loadProducts(true);
+    }
+  }, [retryCount, loadProducts]);
+
+  // Load products from database
+  useEffect(() => {
     loadProducts();
-  }, [q, cat]);
+  }, [loadProducts]);
 
   // Load categories
   useEffect(() => {
@@ -471,24 +536,52 @@ const Catalog = () => {
         isComparing={selectedForCompare.includes(quickViewProduct?.id || '')}
       />
 
-      {/* Debug info */}
-      <div className="mb-4 p-4 bg-muted rounded-lg text-sm space-y-1">
-        <p><strong>Debug Information:</strong></p>
-        <p>• Total products loaded: {products.length}</p>
-        <p>• Filtered products: {filtered.length}</p>
-        <p>• Loading state: {loading.toString()}</p>
-        <p>• Current category: {cat}</p>
-        <p>• Search query: {q || 'none'}</p>
-        <p>• Supabase URL: {import.meta.env.VITE_SUPABASE_URL ? 'configured' : 'missing'}</p>
-        <p>• Supabase Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'configured' : 'missing'}</p>
-        {error && <p className="text-red-600">• Error: {error}</p>}
-      </div>
 
-      {loading ? (
+
+      {loading || isRetrying ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">⏳</div>
-          <h3 className="text-xl font-semibold mb-2">Loading products...</h3>
-          <p className="text-muted-foreground">Fetching the latest products from database</p>
+          <h3 className="text-xl font-semibold mb-2">
+            {isRetrying ? 'Retrying...' : 'Loading products...'}
+          </h3>
+          <p className="text-muted-foreground">
+            {isRetrying ? 'Attempting to reconnect to database' : 'Fetching the latest products from database'}
+          </p>
+          {isRetrying && (
+            <div className="mt-4">
+              <div className="text-sm text-muted-foreground">Retry attempt {retryCount} of 3</div>
+            </div>
+          )}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h3 className="text-xl font-semibold mb-2">Failed to load products</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            {error}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {retryCount < 3 && (
+              <Button 
+                onClick={retryLoadProducts}
+                disabled={isRetrying}
+                className="min-w-32"
+              >
+                {isRetrying ? 'Retrying...' : 'Try Again'}
+              </Button>
+            )}
+            {products.length > 0 && (
+              <Button 
+                variant="outline"
+                onClick={() => setError(null)}
+              >
+                Show Cached Products ({products.length})
+              </Button>
+            )}
+            <Button asChild variant="outline">
+              <Link to="/">Go Home</Link>
+            </Button>
+          </div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">

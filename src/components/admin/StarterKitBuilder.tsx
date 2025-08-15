@@ -20,9 +20,6 @@ interface StarterKitTemplate {
   name: string;
   description?: string;
   category: string;
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-  estimated_cost?: number;
-  estimated_time?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -62,6 +59,7 @@ export const StarterKitBuilder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isAddTemplateOpen, setIsAddTemplateOpen] = useState(false);
+  const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<StarterKitTemplate | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<{ [productId: string]: { quantity: number; isRequired: boolean; notes: string } }>({});
@@ -70,9 +68,6 @@ export const StarterKitBuilder: React.FC = () => {
     name: '',
     description: '',
     category: '',
-    difficulty_level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
-    estimated_cost: '',
-    estimated_time: '',
     is_active: true
   });
 
@@ -156,9 +151,6 @@ export const StarterKitBuilder: React.FC = () => {
       name: '',
       description: '',
       category: '',
-      difficulty_level: 'beginner',
-      estimated_cost: '',
-      estimated_time: '',
       is_active: true
     });
     setSelectedProducts({});
@@ -175,9 +167,6 @@ export const StarterKitBuilder: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        difficulty_level: templateForm.difficulty_level,
-        estimated_cost: templateForm.estimated_cost ? parseFloat(templateForm.estimated_cost) : null,
-        estimated_time: templateForm.estimated_time || null,
         is_active: templateForm.is_active
       };
 
@@ -230,9 +219,6 @@ export const StarterKitBuilder: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        difficulty_level: templateForm.difficulty_level,
-        estimated_cost: templateForm.estimated_cost ? parseFloat(templateForm.estimated_cost) : null,
-        estimated_time: templateForm.estimated_time || null,
         is_active: templateForm.is_active,
         updated_at: new Date().toISOString()
       };
@@ -275,6 +261,7 @@ export const StarterKitBuilder: React.FC = () => {
 
       toast.success('Starter kit template updated successfully');
       setEditingTemplate(null);
+      setIsEditTemplateOpen(false);
       resetForm();
       fetchTemplates(currentPage, searchTerm, selectedCategory);
       fetchCategories();
@@ -304,55 +291,7 @@ export const StarterKitBuilder: React.FC = () => {
     }
   };
 
-  const handleDuplicateTemplate = async (template: StarterKitTemplate) => {
-    try {
-      const templateData = {
-        name: `${template.name} (Copy)`,
-        description: template.description,
-        category: template.category,
-        difficulty_level: template.difficulty_level,
-        estimated_cost: template.estimated_cost,
-        estimated_time: template.estimated_time,
-        is_active: false // Set as inactive by default
-      };
 
-      const { data: newTemplate, error: templateError } = await supabase
-        .from('starter_kit_templates')
-        .insert(templateData)
-        .select()
-        .single();
-
-      if (templateError) {
-        toast.error(`Failed to duplicate template: ${templateError.message}`);
-        return;
-      }
-
-      // Copy template products
-      if (template.template_products && template.template_products.length > 0) {
-        const productEntries = template.template_products.map(tp => ({
-          template_id: newTemplate.id,
-          product_id: tp.product_id,
-          quantity: tp.quantity,
-          is_required: tp.is_required,
-          notes: tp.notes
-        }));
-
-        const { error: productsError } = await supabase
-          .from('template_products')
-          .insert(productEntries);
-
-        if (productsError) {
-          toast.error(`Template duplicated but failed to copy products: ${productsError.message}`);
-        }
-      }
-
-      toast.success('Starter kit template duplicated successfully');
-      fetchTemplates(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
-      console.error('Error duplicating template:', error);
-      toast.error('Failed to duplicate starter kit template');
-    }
-  };
 
   const openEditDialog = (template: StarterKitTemplate) => {
     setEditingTemplate(template);
@@ -360,9 +299,6 @@ export const StarterKitBuilder: React.FC = () => {
       name: template.name,
       description: template.description || '',
       category: template.category,
-      difficulty_level: template.difficulty_level,
-      estimated_cost: template.estimated_cost?.toString() || '',
-      estimated_time: template.estimated_time || '',
       is_active: template.is_active
     });
 
@@ -376,6 +312,7 @@ export const StarterKitBuilder: React.FC = () => {
       };
     });
     setSelectedProducts(productSelection);
+    setIsEditTemplateOpen(true);
   };
 
   const handleProductSelection = (productId: string, selected: boolean) => {
@@ -403,14 +340,7 @@ export const StarterKitBuilder: React.FC = () => {
     }));
   };
 
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'beginner': return 'bg-green-100 text-green-800';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+
 
   useEffect(() => {
     fetchTemplates(currentPage, searchTerm, selectedCategory);
@@ -476,53 +406,16 @@ export const StarterKitBuilder: React.FC = () => {
                         rows={3}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="category">Category *</Label>
-                        <Input
-                          id="category"
-                          value={templateForm.category}
-                          onChange={(e) => setTemplateForm(prev => ({ ...prev, category: e.target.value }))}
-                          placeholder="e.g., Sports Medicine"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="difficulty">Difficulty Level</Label>
-                        <Select value={templateForm.difficulty_level} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setTemplateForm(prev => ({ ...prev, difficulty_level: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="advanced">Advanced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div>
+                      <Label htmlFor="category">Category *</Label>
+                      <Input
+                        id="category"
+                        value={templateForm.category}
+                        onChange={(e) => setTemplateForm(prev => ({ ...prev, category: e.target.value }))}
+                        placeholder="e.g., Sports Medicine"
+                      />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="cost">Estimated Cost ($)</Label>
-                        <Input
-                          id="cost"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={templateForm.estimated_cost}
-                          onChange={(e) => setTemplateForm(prev => ({ ...prev, estimated_cost: e.target.value }))}
-                          placeholder="99.99"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="time">Estimated Time</Label>
-                        <Input
-                          id="time"
-                          value={templateForm.estimated_time}
-                          onChange={(e) => setTemplateForm(prev => ({ ...prev, estimated_time: e.target.value }))}
-                          placeholder="e.g., 30 minutes"
-                        />
-                      </div>
-                    </div>
+
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="active"
@@ -622,7 +515,6 @@ export const StarterKitBuilder: React.FC = () => {
                   <TableRow>
                     <TableHead>Template</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Difficulty</TableHead>
                     <TableHead>Products</TableHead>
                     <TableHead>Cost</TableHead>
                     <TableHead>Status</TableHead>
@@ -640,20 +532,11 @@ export const StarterKitBuilder: React.FC = () => {
                               {template.description}
                             </div>
                           )}
-                          {template.estimated_time && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              ⏱️ {template.estimated_time}
-                            </div>
-                          )}
+
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{template.category}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getDifficultyColor(template.difficulty_level)}>
-                          {template.difficulty_level}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
@@ -661,12 +544,7 @@ export const StarterKitBuilder: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {template.estimated_cost && (
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-4 w-4" />
-                            {template.estimated_cost.toFixed(2)}
-                          </div>
-                        )}
+                        
                       </TableCell>
                       <TableCell>
                         <Badge variant={template.is_active ? 'default' : 'secondary'}>
@@ -675,16 +553,15 @@ export const StarterKitBuilder: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditDialog(template)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(template)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          
+                          <Dialog open={isEditTemplateOpen} onOpenChange={setIsEditTemplateOpen}>
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Edit Starter Kit Template</DialogTitle>
@@ -712,50 +589,15 @@ export const StarterKitBuilder: React.FC = () => {
                                       rows={3}
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <Label htmlFor="edit-category">Category *</Label>
-                                      <Input
-                                        id="edit-category"
-                                        value={templateForm.category}
-                                        onChange={(e) => setTemplateForm(prev => ({ ...prev, category: e.target.value }))}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-difficulty">Difficulty Level</Label>
-                                      <Select value={templateForm.difficulty_level} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setTemplateForm(prev => ({ ...prev, difficulty_level: value }))}>
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="beginner">Beginner</SelectItem>
-                                          <SelectItem value="intermediate">Intermediate</SelectItem>
-                                          <SelectItem value="advanced">Advanced</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
+                                  <div>
+                                    <Label htmlFor="edit-category">Category *</Label>
+                                    <Input
+                                      id="edit-category"
+                                      value={templateForm.category}
+                                      onChange={(e) => setTemplateForm(prev => ({ ...prev, category: e.target.value }))}
+                                    />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                      <Label htmlFor="edit-cost">Estimated Cost ($)</Label>
-                                      <Input
-                                        id="edit-cost"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={templateForm.estimated_cost}
-                                        onChange={(e) => setTemplateForm(prev => ({ ...prev, estimated_cost: e.target.value }))}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-time">Estimated Time</Label>
-                                      <Input
-                                        id="edit-time"
-                                        value={templateForm.estimated_time}
-                                        onChange={(e) => setTemplateForm(prev => ({ ...prev, estimated_time: e.target.value }))}
-                                      />
-                                    </div>
-                                  </div>
+
                                   <div className="flex items-center space-x-2">
                                     <Checkbox
                                       id="edit-active"
@@ -806,6 +648,7 @@ export const StarterKitBuilder: React.FC = () => {
                               <DialogFooter>
                                 <Button variant="outline" onClick={() => {
                                   setEditingTemplate(null);
+                                  setIsEditTemplateOpen(false);
                                   resetForm();
                                 }}>
                                   Cancel
@@ -817,13 +660,7 @@ export const StarterKitBuilder: React.FC = () => {
                             </DialogContent>
                           </Dialog>
 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDuplicateTemplate(template)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+
 
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

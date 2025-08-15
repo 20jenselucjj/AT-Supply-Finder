@@ -1,6 +1,7 @@
 import { useAuth } from '@/context/auth-context';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,43 +9,50 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [shouldRedirect, setShouldRedirect] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    if (!loading) {
-      setHasChecked(true);
-      
-      if (!user) {
-        // Add a small delay to prevent immediate redirect on page refresh
-        const timer = setTimeout(() => {
-          setShouldRedirect(true);
-          navigate('/login', { state: { from: location.pathname } });
-        }, 200);
-        
-        return () => clearTimeout(timer);
-      } else {
-        setShouldRedirect(false);
-      }
-    }
-  }, [user, loading, navigate, location.pathname]);
+    // Give more time for authentication to initialize on page refresh
+    const initTimer = setTimeout(() => {
+      setInitialLoad(false);
+    }, 1000); // Increased delay for better reliability
 
-  // Show loading while auth is being checked or during the redirect delay
-  if (loading || (!user && !hasChecked) || (!user && hasChecked && !shouldRedirect)) {
+    return () => clearTimeout(initTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && !user && !initialLoad) {
+      // Add a delay to prevent immediate redirect on page refresh
+      const timer = setTimeout(() => {
+        setShouldRedirect(true);
+      }, 300);
+
+      return () => clearTimeout(timer);
+    } else if (user) {
+      setShouldRedirect(false);
+    }
+  }, [user, loading, initialLoad]);
+
+  // Show loading spinner while checking authentication or during initial load
+  if (loading || initialLoad) {
     return (
-      <div className="container mx-auto py-10 flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-          <p className="mt-2">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  // Don't render anything if redirecting
+  // Redirect to login if not authenticated
   if (!user && shouldRedirect) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Don't render anything while waiting for redirect decision
+  if (!user && !shouldRedirect) {
     return null;
   }
 

@@ -20,6 +20,11 @@ const pageTransition = {
 };
 
 const AnimatedPage = ({ children }: { children: React.ReactNode }) => {
+  // Scroll to top when component mounts (page changes)
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <motion.div
       initial="initial"
