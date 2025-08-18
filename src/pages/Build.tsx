@@ -49,13 +49,7 @@ const Build = () => {
         <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>
-      {kit.length > 0 && (
-        <div className="flex justify-end mb-4 xs:mb-6">
-          <Button asChild variant="outline" size="sm" className="xs:size-default">
-            <Link to="/catalog">Add More Items</Link>
-          </Button>
-        </div>
-      )}
+
       
       <div className={kit.length > 0 ? "grid gap-4 xs:gap-6 lg:grid-cols-3" : ""}>
         <div className={kit.length > 0 ? "lg:col-span-2" : ""}>
