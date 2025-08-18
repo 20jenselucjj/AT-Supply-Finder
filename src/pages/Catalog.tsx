@@ -206,6 +206,7 @@ const Catalog = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   // Advanced Filters: collapsed by default for more room
   const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(true);
 
   const allCategories = useMemo(() => {
     return ["all", ...categories];
@@ -263,167 +264,170 @@ const Catalog = () => {
   };
 
   return (
-    <main className="container mx-auto py-10">
+    <main className="container mx-auto py-6">
       <Helmet>
-  <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | AT Supply Finder</title>
+        <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | AT Supply Finder</title>
         <meta name="description" content="Compare prices on athletic tape, bandages, pre-wrap & training supplies across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
         <link rel="canonical" href={canonical} />
       </Helmet>
 
-
-
-      <section className="mb-8">
-        <div className="flex flex-col gap-6">
-          {/* Search and Controls Row */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex-1 max-w-md">
-              <label htmlFor="catalog-search" className="sr-only">
-                Search products
-              </label>
-              <div className="relative">
-                <Input
-                  id="catalog-search"
-                  placeholder="Search tapes, bandages, brands..."
-                  value={q}
-                  onChange={(e) => updateParam("q", e.currentTarget.value)}
-                  aria-label="Search products"
-                  className="pl-10"
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                  🔍
-                </div>
+      {/* Top Search Bar */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <label htmlFor="catalog-search" className="sr-only">
+              Search products
+            </label>
+            <div className="relative">
+              <Input
+                id="catalog-search"
+                placeholder="Search tapes, bandages, brands..."
+                value={q}
+                onChange={(e) => updateParam("q", e.currentTarget.value)}
+                aria-label="Search products"
+                className="pl-10"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                🔍
               </div>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 border rounded-md p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                className="px-3"
+              >
+                ⊞ Grid
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                className="px-3"
+              >
+                ☰ List
+              </Button>
+            </div>
             
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="flex gap-1 border rounded-md p-1">
-                <Button
-                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  aria-pressed={viewMode === 'grid'}
-                  className="px-3"
+            {/* Sort Dropdown */}
+            <div>
+              <label htmlFor="catalog-sort" className="sr-only">
+                Sort products
+              </label>
+              <select
+                id="catalog-sort"
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[120px] w-full max-w-[160px] sm:min-w-[160px] sm:w-auto"
+                value={sort}
+                onChange={(e) => updateParam("sort", e.currentTarget.value)}
+                aria-label="Sort products"
+              >
+                <option value="relevance">Sort: Relevance</option>
+                <option value="price-asc">💰 Price: Low to High</option>
+                <option value="price-desc">💰 Price: High to Low</option>
+                <option value="name-asc">🔤 Name: A to Z</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content with Sidebar Layout */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Sidebar - Filters */}
+        <aside className="lg:w-80 flex-shrink-0">
+          <div className="bg-card border rounded-lg sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
+            {/* Category Filters */}
+            <div className="p-4 border-b flex-shrink-0">
+              <button
+                onClick={() => setCategoriesExpanded(!categoriesExpanded)}
+                className="flex items-center justify-between w-full text-sm font-semibold mb-3 hover:text-primary transition-colors"
+              >
+                <span>Categories</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${categoriesExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {categoriesExpanded && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                {allCategories.map((c) => {
+                  const isActive = c === cat;
+                  const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => updateParam("cat", c === "all" ? "" : c)}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                        isActive 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'hover:bg-muted'
+                      }`}
+                    >
+                      <span>{c === "all" ? "All Categories" : c.replace(/_/g, ' ')}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        isActive 
+                          ? 'bg-primary-foreground/20 text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {productCount}
+                      </span>
+                    </button>
+                  );
+                })}
+                </div>
+              )}
+            </div>
+
+            {/* Advanced Filters */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold">Filters</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setPriceRange([0, 1000]);
+                    setBrands([]);
+                    setMinRating(0);
+                  }}
+                  className="text-xs h-auto p-1"
                 >
-                  ⊞ Grid
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  aria-pressed={viewMode === 'list'}
-                  className="px-3"
-                >
-                  ☰ List
+                  Clear
                 </Button>
               </div>
               
-              {/* Sort Dropdown */}
-              <div>
-                <label htmlFor="catalog-sort" className="sr-only">
-                  Sort products
-                </label>
-                <select
-                  id="catalog-sort"
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[120px] w-full max-w-[160px] sm:min-w-[160px] sm:w-auto"
-                  value={sort}
-                  onChange={(e) => updateParam("sort", e.currentTarget.value)}
-                  aria-label="Sort products"
-                >
-                  <option value="relevance">Sort: Relevance</option>
-                  <option value="price-asc">💰 Price: Low to High</option>
-                  <option value="price-desc">💰 Price: High to Low</option>
-                  <option value="name-asc">🔤 Name: A to Z</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Category Filters */}
-          <div>
-            <h3 className="text-sm font-medium mb-3 text-muted-foreground">Filter by Category</h3>
-            <div
-              className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible snap-x"
-              aria-label="Filter by category"
-            >
-              {allCategories.map((c) => {
-                const isActive = c === cat;
-                const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
-                return (
-                  <Button
-                    key={c}
-                    variant={isActive ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => updateParam("cat", c === "all" ? "" : c)}
-                    aria-pressed={isActive}
-                    aria-label={`Filter by ${c}`}
-                    className={`whitespace-nowrap rounded-full px-4 h-10 flex-shrink-0 snap-start relative active:scale-[0.95] transition ${isActive ? 'ring-2 ring-primary/40' : ''}`}
-                  >
-                    <span className="font-medium text-sm">
-                      {c === "all" ? "All" : c.replace(/_/g, ' ')}
-                    </span>
-                    <span className="ml-2 text-[11px] opacity-70 bg-muted rounded-full px-2 py-0.5 leading-none">
-                      {productCount}
-                    </span>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Advanced Filters (collapsible) */}
-          <div className="bg-muted/30 rounded-lg p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 cursor-pointer select-none" onClick={() => setAdvancedFiltersExpanded(v => !v)}>
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <span>Advanced Filters</span>
-                <ChevronDown
-                  className={`h-5 w-5 ml-1 transition-transform duration-200 ${advancedFiltersExpanded ? 'rotate-180' : ''}`}
-                  aria-hidden="true"
-                />
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={e => {
-                  e.stopPropagation();
-                  setPriceRange([0, 1000]);
-                  setBrands([]);
-                  setMinRating(0);
-                }}
-                className="text-xs"
-              >
-                Clear All
-              </Button>
-            </div>
-            {advancedFiltersExpanded && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 pb-6">
+              <div className="space-y-4">
+                {/* Price Range */}
                 <div>
-                  <label className="block mb-3 text-sm font-medium">💰 Price Range</label>
+                  <label className="block mb-2 text-sm font-medium">Price Range</label>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">${priceRange[0]}</span>
+                      <span className="text-xs">${priceRange[0]}</span>
                       <input
                         type="range"
                         min="0"
                         max="1000"
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                        className="w-full"
+                        className="flex-1"
                       />
-                      <span className="text-sm">${priceRange[1]}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground text-center">
-                      Showing products up to ${priceRange[1]}
+                      <span className="text-xs">${priceRange[1]}</span>
                     </div>
                   </div>
                 </div>
+                
+                {/* Brands */}
                 <div>
-                  <label className="block mb-3 text-sm font-medium">🏷️ Brands</label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {Array.from(new Set(products.map(p => p.brand))).filter(Boolean).map(brand => {
+                  <label className="block mb-2 text-sm font-medium">Brands</label>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {Array.from(new Set(products.map(p => p.brand))).filter(Boolean).slice(0, 8).map(brand => {
                       const productCount = products.filter(p => p.brand === brand).length;
                       return (
-                        <label key={brand} className="flex items-center gap-2 text-sm">
+                        <label key={brand} className="flex items-center gap-2 text-sm cursor-pointer">
                           <input
                             type="checkbox"
                             checked={brands.includes(brand)}
@@ -436,21 +440,23 @@ const Catalog = () => {
                             }}
                             className="rounded"
                           />
-                          <span>{brand}</span>
+                          <span className="flex-1 truncate">{brand}</span>
                           <span className="text-xs text-muted-foreground">({productCount})</span>
                         </label>
                       );
                     })}
                   </div>
                 </div>
+                
+                {/* Rating */}
                 <div>
-                  <label className="block mb-3 text-sm font-medium">⭐ Minimum Rating</label>
+                  <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map(rating => (
                       <button
                         key={`rating-${rating}`}
                         onClick={() => setMinRating(minRating === rating ? 0 : rating)}
-                        className={`p-2 rounded text-sm transition-colors ${
+                        className={`p-1 rounded text-xs transition-colors ${
                           minRating >= rating 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted hover:bg-muted/80'
@@ -461,18 +467,16 @@ const Catalog = () => {
                       </button>
                     ))}
                   </div>
-                  {minRating > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {minRating}+ stars only
-                    </div>
-                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
+        </aside>
 
+        {/* Right Content - Products */}
+        <div className="flex-1 min-w-0">
           {/* Results Summary */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b">
             <div className="flex items-center gap-4">
               <div className="text-sm">
                 <span className="font-medium">{filtered.length}</span> 
@@ -512,14 +516,105 @@ const Catalog = () => {
                   </Button>
                 </div>
               )}
-              <div className="hidden sm:block">
-                💡 Tip: Click images to view on Amazon
-              </div>
             </div>
           </div>
-        </div>
-      </section>
 
+          {/* Product Display */}
+          {loading || isRetrying ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⏳</div>
+              <h3 className="text-xl font-semibold mb-2">
+                {isRetrying ? 'Retrying...' : 'Loading products...'}
+              </h3>
+              <p className="text-muted-foreground">
+                {isRetrying ? 'Attempting to reconnect to database' : 'Fetching the latest products from database'}
+              </p>
+              {isRetrying && (
+                <div className="mt-4">
+                  <div className="text-sm text-muted-foreground">Retry attempt {retryCount} of 3</div>
+                </div>
+              )}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-xl font-semibold mb-2">Failed to load products</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                {error}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {retryCount < 3 && (
+                  <Button 
+                    onClick={retryLoadProducts}
+                    disabled={isRetrying}
+                    className="min-w-32"
+                  >
+                    {isRetrying ? 'Retrying...' : 'Try Again'}
+                  </Button>
+                )}
+                {products.length > 0 && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setError(null)}
+                  >
+                    Show Cached Products ({products.length})
+                  </Button>
+                )}
+                <Button asChild variant="outline">
+                  <Link to="/">Go Home</Link>
+                </Button>
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold mb-2">No products found</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                No products match your current filters. Try adjusting your search terms or clearing some filters.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    updateParam("q", "");
+                    updateParam("cat", "");
+                    setBrands([]);
+                    setMinRating(0);
+                    setPriceRange([0, 1000]);
+                  }}
+                >
+                  Clear All Filters
+                </Button>
+                <Button asChild variant="hero">
+                  <Link to="/">Browse Categories</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            viewMode === 'list' ? (
+              <ProductListMobile
+                products={filtered}
+                selectedForCompare={selectedForCompare}
+                toggleCompare={(id) => setSelectedForCompare(prev =>
+                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                )}
+                setQuickViewProduct={setQuickViewProduct}
+              />
+            ) : (
+              <ProductGrid
+                products={filtered}
+                selectedForCompare={selectedForCompare}
+                toggleCompare={(id) => setSelectedForCompare(prev =>
+                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                )}
+                setQuickViewProduct={setQuickViewProduct}
+              />
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
       {selectedForCompare.length > 0 && (
         <ProductComparison
           products={products.filter(p => selectedForCompare.includes(p.id))}
@@ -535,100 +630,6 @@ const Catalog = () => {
         )}
         isComparing={selectedForCompare.includes(quickViewProduct?.id || '')}
       />
-
-
-
-      {loading || isRetrying ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">⏳</div>
-          <h3 className="text-xl font-semibold mb-2">
-            {isRetrying ? 'Retrying...' : 'Loading products...'}
-          </h3>
-          <p className="text-muted-foreground">
-            {isRetrying ? 'Attempting to reconnect to database' : 'Fetching the latest products from database'}
-          </p>
-          {isRetrying && (
-            <div className="mt-4">
-              <div className="text-sm text-muted-foreground">Retry attempt {retryCount} of 3</div>
-            </div>
-          )}
-        </div>
-      ) : error ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h3 className="text-xl font-semibold mb-2">Failed to load products</h3>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            {error}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {retryCount < 3 && (
-              <Button 
-                onClick={retryLoadProducts}
-                disabled={isRetrying}
-                className="min-w-32"
-              >
-                {isRetrying ? 'Retrying...' : 'Try Again'}
-              </Button>
-            )}
-            {products.length > 0 && (
-              <Button 
-                variant="outline"
-                onClick={() => setError(null)}
-              >
-                Show Cached Products ({products.length})
-              </Button>
-            )}
-            <Button asChild variant="outline">
-              <Link to="/">Go Home</Link>
-            </Button>
-          </div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-semibold mb-2">No products found</h3>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            No products match your current filters. Try adjusting your search terms or clearing some filters.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              variant="outline"
-              onClick={() => {
-                updateParam("q", "");
-                updateParam("cat", "");
-                setBrands([]);
-                setMinRating(0);
-                setPriceRange([0, 1000]);
-              }}
-            >
-              Clear All Filters
-            </Button>
-            <Button asChild variant="hero">
-              <Link to="/">Browse Categories</Link>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        viewMode === 'list' ? (
-          <ProductListMobile
-            products={filtered}
-            selectedForCompare={selectedForCompare}
-            toggleCompare={(id) => setSelectedForCompare(prev =>
-              prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-            )}
-            setQuickViewProduct={setQuickViewProduct}
-          />
-        ) : (
-          <ProductGrid
-            products={filtered}
-            selectedForCompare={selectedForCompare}
-            toggleCompare={(id) => setSelectedForCompare(prev =>
-              prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-            )}
-            setQuickViewProduct={setQuickViewProduct}
-          />
-        )
-      )}
     </main>
   );
 };

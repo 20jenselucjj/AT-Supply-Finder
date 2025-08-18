@@ -30,7 +30,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [ratingFilter, setRatingFilter] = useState<string>("any");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { kit, addToKit, removeFromKit, updateQuantity, getProductQuantity } = useKit();
@@ -272,170 +272,172 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+      {/* Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <Select value={sortBy} onValueChange={(value: "name" | "price" | "rating" | "brand") => setSortBy(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="price">Price</SelectItem>
+              <SelectItem value="rating">Rating</SelectItem>
+              <SelectItem value="brand">Brand</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Main Layout with Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Sidebar - Filters */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-hidden flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Filters
+                </div>
+                <button
+                  onClick={() => setFiltersExpanded(!filtersExpanded)}
+                  className="p-1 hover:bg-muted rounded transition-colors"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
+                </button>
+              </CardTitle>
+            </CardHeader>
+            {filtersExpanded && (
+              <CardContent className="flex-1 overflow-y-auto space-y-6">
+                {/* Brand Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Brand</label>
+                <Select value={brandFilter} onValueChange={setBrandFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All brands" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All brands</SelectItem>
+                    {availableBrands.map(brand => (
+                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Price Range Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Price Range</label>
+                <div className="space-y-2">
                   <Input
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    type="number"
+                    placeholder="Min price"
+                    value={priceRange.min}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Max price"
+                    value={priceRange.max}
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
                   />
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <Select value={sortBy} onValueChange={(value: "name" | "price" | "rating" | "brand") => setSortBy(value)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sort by" />
+              {/* Rating Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Minimum Rating</label>
+                <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any rating" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="price">Price</SelectItem>
-                    <SelectItem value="rating">Rating</SelectItem>
-                    <SelectItem value="brand">Brand</SelectItem>
+                    <SelectItem value="any">Any rating</SelectItem>
+                    <SelectItem value="4">4+ stars</SelectItem>
+                    <SelectItem value="3">3+ stars</SelectItem>
+                    <SelectItem value="2">2+ stars</SelectItem>
+                    <SelectItem value="1">1+ stars</SelectItem>
                   </SelectContent>
                 </Select>
-                
+              </div>
+              
+              {/* Actions */}
+              <div className="space-y-2">
                 <Button
                   variant="outline"
-                  onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className="flex items-center gap-2"
+                  onClick={clearAllFilters}
+                  className="w-full"
+                  size="sm"
                 >
-                  <Filter className="w-4 h-4" />
-                  Filters
-                  {filtersExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  Clear All Filters
                 </Button>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{filteredAndSortedProducts.length} of {products.length} products</span>
-            </div>
-            
-            {filtersExpanded && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Brand</label>
-                  <Select value={brandFilter} onValueChange={setBrandFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All brands" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All brands</SelectItem>
-                      {availableBrands.map(brand => (
-                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Price Range</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={priceRange.min}
-                      onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                      className="w-full"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={priceRange.max}
-                      onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Minimum Rating</label>
-                  <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any rating" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any rating</SelectItem>
-                      <SelectItem value="4">4+ stars</SelectItem>
-                      <SelectItem value="3">3+ stars</SelectItem>
-                      <SelectItem value="2">2+ stars</SelectItem>
-                      <SelectItem value="1">1+ stars</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Actions</label>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={clearAllFilters}
-                      className="w-full"
-                      size="sm"
-                    >
-                      Clear All Filters
-                    </Button>
-                    <Badge variant="outline" className="text-center">
-                      {filteredAndSortedProducts.length} products
-                    </Badge>
-                  </div>
+                <div className="text-center">
+                  <Badge variant="outline">
+                    {filteredAndSortedProducts.length} of {products.length} products
+                  </Badge>
                 </div>
               </div>
+              </CardContent>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-
-
-      {/* Products Display */}
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading products...</p>
+          </Card>
         </div>
-      ) : filteredAndSortedProducts.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              {products.length === 0 
-                ? "No products available in this category yet." 
-                : "No products match your current filters."}
-            </p>
-            {searchTerm || (brandFilter && brandFilter !== "all") ? (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchTerm("");
-                  setBrandFilter("all");
-                }}
-              >
-                Clear Filters
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : viewMode === "table" ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12"></TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("name")} className="flex items-center gap-2 p-0">
-                    Product
-                    {getSortIcon("name")}
+
+        {/* Right Content - Products */}
+        <div className="lg:col-span-3">
+          {/* Products Display */}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          ) : filteredAndSortedProducts.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  {products.length === 0 
+                    ? "No products available in this category yet." 
+                    : "No products match your current filters."}
+                </p>
+                {searchTerm || (brandFilter && brandFilter !== "all") ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchTerm("");
+                      setBrandFilter("all");
+                    }}
+                  >
+                    Clear Filters
                   </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("brand")} className="flex items-center gap-2 p-0">
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : viewMode === "table" ? (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort("name")} className="flex items-center gap-2 p-0">
+                        Product
+                        {getSortIcon("name")}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort("brand")} className="flex items-center gap-2 p-0">
                     Brand
                     {getSortIcon("brand")}
                   </Button>
@@ -584,18 +586,18 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                   </TableRow>
                 );
               })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAndSortedProducts.map((product) => {
-            const isInKit = isProductInKit(product.id);
-            const bestOffer = product.offers[0];
-            
-            return (
-              <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary' : ''}`}>
-                <CardContent className="p-4">
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredAndSortedProducts.map((product) => {
+                const isInKit = isProductInKit(product.id);
+                const bestOffer = product.offers[0];
+                
+                return (
+                  <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary' : ''}`}>
+                    <CardContent className="p-4">
                   <div className="space-y-4">
                     <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                       {product.imageUrl ? (
@@ -703,12 +705,14 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
