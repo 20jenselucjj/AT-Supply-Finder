@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Minus } from 'lucide-react';
 
 interface ProductListMobileProps {
   products: Product[];
@@ -13,7 +14,7 @@ interface ProductListMobileProps {
 
 // Mobile card variant replacing horizontal scroll table under a breakpoint.
 export const ProductListMobile = ({ products, selectedForCompare, toggleCompare, setQuickViewProduct }: ProductListMobileProps) => {
-  const { addToKit, getProductQuantity } = useKit();
+  const { addToKit, getProductQuantity, updateQuantity, removeFromKit } = useKit();
 
   return (
     <div className="space-y-4">
@@ -73,13 +74,32 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Button size="sm" className="flex-1 min-w-[110px]" onClick={() => addToKit(product)}>
-                        {qty > 0 ? 'Add More' : 'Add to Kit'}
-                      </Button>
-                      {qty > 0 && (
-                        <span className="bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs font-medium min-w-[28px] text-center">
-                          {qty}
-                        </span>
+                      {qty > 0 ? (
+                        <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1 flex-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateQuantity(product.id, qty - 1)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="font-medium text-xs px-2 min-w-[40px] text-center">
+                            {qty}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addToKit(product, 1)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" className="flex-1 min-w-[110px]" onClick={() => addToKit(product)}>
+                          Add to Kit
+                        </Button>
                       )}
                       <Button size="sm" variant="outline" className="min-w-[84px]" onClick={() => setQuickViewProduct && setQuickViewProduct(product)}>View</Button>
                     </div>

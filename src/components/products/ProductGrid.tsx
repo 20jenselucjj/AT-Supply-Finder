@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
+import { Plus, Minus } from 'lucide-react';
 
 interface ProductGridProps {
   products: Product[];
@@ -12,7 +13,7 @@ interface ProductGridProps {
 }
 
 export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQuickViewProduct }: ProductGridProps) => {
-  const { addToKit, getProductQuantity } = useKit();
+  const { addToKit, getProductQuantity, updateQuantity, removeFromKit } = useKit();
 
   return (
     <div className="grid gap-5 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -58,27 +59,44 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
               </div>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-3">
-            <Button
-              onClick={() => addToKit(product)}
-              className="w-full sm:flex-1"
-            >
-              Add to Kit
-            </Button>
-            <div className="flex items-center gap-2 sm:flex-1">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setQuickViewProduct && setQuickViewProduct(product)}
-              >
-                Quick View
-              </Button>
-              {getProductQuantity(product.id) > 0 && (
-                <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium min-w-[28px] text-center">
-                  {getProductQuantity(product.id)}
+          <div className="flex flex-col gap-2 mt-3">
+            {getProductQuantity(product.id) > 0 ? (
+              <div className="flex items-center justify-between bg-muted/50 rounded-md p-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateQuantity(product.id, getProductQuantity(product.id) - 1)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="font-medium text-sm px-3">
+                  Qty: {getProductQuantity(product.id)}
                 </span>
-              )}
-            </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addToKit(product, 1)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={() => addToKit(product)}
+                className="w-full"
+              >
+                Add to Kit
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setQuickViewProduct && setQuickViewProduct(product)}
+            >
+              Quick View
+            </Button>
           </div>
         </motion.div>
       ))}

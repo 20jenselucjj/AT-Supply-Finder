@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKit } from "@/context/kit-context";
+import { useFavorites } from "@/context/favorites-context";
 import { Product } from "@/lib/types";
+import { Heart } from "lucide-react";
 
 const currency = (n: number) => `$${n.toFixed(2)}`;
 
@@ -22,15 +24,40 @@ const cardVariants = {
 
 const ProductCard = ({ product, price, loading = false }: { product: Product, price?: number, loading?: boolean }) => {
   const { addToKit } = useKit();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const bestOffer = product.offers.slice().sort((a, b) => a.price - b.price)[0];
   const bestIsAmazon = bestOffer?.name.toLowerCase().includes("amazon");
+  const isProductFavorite = isFavorite(product.id);
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await toggleFavorite(product.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
 
   // Example: Add Amazon affiliate product if product.id === "amazon-prewrap"
   if (product.id === "amazon-prewrap") {
     const asin = "B0C6TP64FL";
     return (
       <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 h-full">
+        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 h-full relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-yellow-200/50"
+            onClick={handleToggleFavorite}
+            aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart 
+              className={`h-4 w-4 transition-colors ${
+                isProductFavorite ? 'fill-red-500 text-red-500' : 'text-yellow-600 hover:text-red-500'
+              }`} 
+            />
+          </Button>
           <div className="w-full h-44 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-md">
             <img
               src="https://m.media-amazon.com/images/I/81MKOjzOdxL._AC_SX425_PIbundle-4,TopRight,0,0_SH20_.jpg"
@@ -108,7 +135,21 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
   // ...existing code...
   return (
     <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-      <Card className="p-5 flex flex-col gap-4 h-full">
+      <Card className="p-5 flex flex-col gap-4 h-full relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-accent/50 z-10"
+          onClick={handleToggleFavorite}
+          disabled={loading}
+          aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart 
+            className={`h-4 w-4 transition-colors ${
+              isProductFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-500'
+            }`} 
+          />
+        </Button>
         <div className="w-full h-40 bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center overflow-hidden shadow-sm">
           {loading ? (
             <Skeleton className="h-full w-full" />

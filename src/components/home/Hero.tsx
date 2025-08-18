@@ -72,13 +72,13 @@ const Hero = () => {
           </div>
           <div className="mt-12 flex items-center justify-center gap-5 flex-wrap stagger-item">
             <Button asChild variant="default" size="lg" className="px-10 py-7 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl bg-gradient-to-r from-primary to-primary/90">
-              <Link to="/catalog" className="flex items-center">
-                Browse Products
+              <Link to="/build" className="flex items-center">
+                Build Your Kit
                 <ArrowRight className="ml-3 h-5 w-5 animate-pulse" />
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="px-10 py-7 text-lg font-medium border-2 hover:bg-primary/10 transition-all duration-300 transform hover:-translate-y-1 rounded-xl shadow-sm hover:shadow-md">
-              <Link to="/build" className="flex items-center">Build Your Kit</Link>
+              <Link to="/catalog" className="flex items-center">Browse Products</Link>
             </Button>
           </div>
 

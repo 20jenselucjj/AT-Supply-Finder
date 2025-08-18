@@ -5,7 +5,7 @@ const SiteFooter = () => {
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <img src="/logo.svg" alt="Wrap Wizard Finder Logo" className="h-10 w-10" />
-        <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>Wrap Wizard Finder</h3>
+        <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>AT Supply Finder</h3>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">
             Providing medical professionals with high-quality equipment and supplies at competitive prices. Compare products across trusted vendors and build customized kits for your specific needs.
@@ -43,7 +43,7 @@ const SiteFooter = () => {
       </div>
       <div className="border-t py-6 text-center text-xs text-muted-foreground">
         <div className="container mx-auto">
-          <p>© {new Date().getFullYear()} Wrap Wizard Finder. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} AT Supply Finder. All rights reserved.</p>
           <p className="mt-2">As an Amazon Associate, we earn from qualifying purchases. Links to other vendors may also be affiliate links.</p>
         </div>
       </div>

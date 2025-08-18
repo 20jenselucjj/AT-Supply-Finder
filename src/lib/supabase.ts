@@ -1,9 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Debug logging for environment variables
+console.log('Environment check:', {
+  SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  availableKeys: Object.keys(import.meta.env)
+})
+
 // Create a single supabase client for interacting with your database
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  import.meta.env.VITE_SUPABASE_URL || 'https://kplhjddghkjjewznxcou.supabase.co',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGhqZGRnaGtqamV3em54Y291Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMDU2MjIsImV4cCI6MjA3MDU4MTYyMn0.nuF9IKOHsWynCM2-M41Gwf0Y6a05JTZiGrbwj60J8Eo',
   {
     auth: {
       persistSession: true,

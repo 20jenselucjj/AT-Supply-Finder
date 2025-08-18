@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, VendorOffer } from '@/lib/types';
 import { useAuth } from './auth-context';
+import { supabase } from '@/lib/supabase';
 
 export interface KitItem {
   id: string;
@@ -20,6 +21,16 @@ export interface KitItem {
   quantity: number;
 }
 
+export interface SavedKit {
+  id: string;
+  name: string;
+  description?: string;
+  kit_data: KitItem[];
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Kit {
   id: string;
   name: string;
@@ -37,9 +48,12 @@ interface KitContextType {
   kitCount: number;
   getProductQuantity: (productId: string) => number;
   getVendorTotals: () => { vendor: string; total: number; url: string }[];
-  saveKit: () => Promise<void>;
-  loadKit: () => Promise<void>;
+  saveKit: (name: string, description?: string, isPublic?: boolean) => Promise<void>;
+  loadKit: (kitId: string) => Promise<void>;
+  getUserKits: () => Promise<SavedKit[]>;
+  deleteKit: (kitId: string) => Promise<void>;
   loading: boolean;
+  savedKits: SavedKit[];
 }
 
 const KitContext = createContext<KitContextType | undefined>(undefined);
@@ -59,6 +73,7 @@ interface KitProviderProps {
 export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   const [kit, setKit] = useState<KitItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savedKits, setSavedKits] = useState<SavedKit[]>([]);
   const { user, loading: authLoading } = useAuth();
   
   // Initialize kit from localStorage for anonymous users
@@ -168,26 +183,119 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }));
   };
 
-  // Save kit to user's account (placeholder for future implementation)
-  const saveKit = async () => {
+  // Save current kit to user's account
+  const saveKit = async (name: string, description?: string, isPublic: boolean = false) => {
     if (!user) {
       throw new Error('User must be logged in to save kit');
     }
-    // This would be implemented when we add database functionality
-    console.log('Saving kit for user:', user.id);
+    
+    if (kit.length === 0) {
+      throw new Error('Cannot save empty kit');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_kits')
+        .insert({
+          user_id: user.id,
+          name,
+          description,
+          kit_data: kit,
+          is_public: isPublic
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Refresh saved kits list
+      await getUserKits();
+      
+      return data;
+    } catch (error) {
+      console.error('Error saving kit:', error);
+      throw error;
+    }
   };
 
-  // Load kit from user's account (placeholder for future implementation)
-  const loadKit = async () => {
+  // Load a specific kit by ID
+  const loadKit = async (kitId: string) => {
     if (!user) {
       throw new Error('User must be logged in to load kit');
     }
-    // This would be implemented when we add database functionality
-    console.log('Loading kit for user:', user.id);
-    if (!authLoading) {
-      setLoading(false);
+
+    try {
+      const { data, error } = await supabase
+        .from('user_kits')
+        .select('*')
+        .eq('id', kitId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setKit(data.kit_data);
+      }
+    } catch (error) {
+      console.error('Error loading kit:', error);
+      throw error;
     }
   };
+
+  // Get all user's saved kits
+  const getUserKits = async (): Promise<SavedKit[]> => {
+    if (!user) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_kits')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setSavedKits(data || []);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user kits:', error);
+      return [];
+    }
+  };
+
+  // Delete a saved kit
+  const deleteKit = async (kitId: string) => {
+    if (!user) {
+      throw new Error('User must be logged in to delete kit');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_kits')
+        .delete()
+        .eq('id', kitId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      // Refresh saved kits list
+      await getUserKits();
+    } catch (error) {
+      console.error('Error deleting kit:', error);
+      throw error;
+    }
+  };
+
+  // Load user's saved kits when user changes
+  useEffect(() => {
+    if (user && !authLoading) {
+      getUserKits();
+    } else if (!user) {
+      setSavedKits([]);
+    }
+  }, [user, authLoading]);
 
   return (
     <KitContext.Provider
@@ -202,7 +310,10 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         getVendorTotals,
         saveKit,
         loadKit,
-        loading
+        getUserKits,
+        deleteKit,
+        loading,
+        savedKits
       }}
     >
       {children}
