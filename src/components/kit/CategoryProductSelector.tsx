@@ -478,11 +478,6 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={product.imageUrl || "/placeholder.svg"} 
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
                         <div>
                           <button 
                             className="font-medium text-left hover:text-blue-600 hover:underline"

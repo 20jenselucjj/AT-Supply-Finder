@@ -55,7 +55,7 @@ class AmazonSPAPI {
       return this.accessToken;
     } catch (error) {
       console.error('Error getting access token:', error);
-      throw new Error('Failed to authenticate with Amazon SP-API');
+      throw new Error('Failed to authenticate with Amazon ');
     }
   }
 
