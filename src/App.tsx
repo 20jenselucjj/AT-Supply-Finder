@@ -11,6 +11,7 @@ import { FavoritesProvider } from "@/context/favorites-context";
 import ScrollToTop from "@/components/ScrollToTop";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
+import ChatBot from "@/components/chatbot/ChatBot";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import Build from "./pages/Build";
@@ -50,6 +51,7 @@ const App = () => {
                     </main>
                     <SiteFooter />
                   </div>
+                  <ChatBot apiKey={import.meta.env.VITE_GEMINI_API_KEY || ''} />
                   <Toaster />
                   <Sonner />
                 </BrowserRouter>

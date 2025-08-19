@@ -22,6 +22,7 @@ export interface ProductSpecifications {
   dimensions?: string;
   weight?: string;
   material?: string;
+  materials?: string;
   color?: string;
   size?: string;
   capacity?: string;
@@ -48,22 +49,30 @@ export interface Product {
   features?: string[];
   offers: VendorOffer[];
   imageUrl?: string;
+  image_url?: string;
   asin?: string;
   affiliateLink?: string;
   compatibleWith?: string[];
   dimensions?: string;
   weight?: string;
   material?: string;
+  materials?: string;
   isFavorite?: boolean;
   specifications?: ProductSpecifications;
   description?: string;
   reviews?: Review[];
   subcategory?: string;
   lastUpdated?: string;
+  vendor_offers?: VendorOffer[];
 }
 
 export interface KitItem {
   id: string;
+  product_id?: string;
+  product_name?: string;
+  product_brand?: string;
+  product_category?: string;
+  product_image_url?: string;
   name: string;
   category: string;
   brand: string;
@@ -71,6 +80,7 @@ export interface KitItem {
   price?: number;
   imageUrl?: string;
   offers: VendorOffer[];
+  reasoning?: string;
 }
 
 export interface StarterKitTemplate {

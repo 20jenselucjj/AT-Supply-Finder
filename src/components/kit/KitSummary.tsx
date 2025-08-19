@@ -84,7 +84,10 @@ const KitSummary = () => {
       ? vendorTotals.reduce((best, current) => current.total < best.total ? current : best)
       : null;
     const subtotal = kit.reduce((total, item) => {
-      const bestPrice = item.offers.slice().sort((a, b) => a.price - b.price)[0]?.price || 0;
+      const offers = item.offers || [];
+      const bestPrice = offers.length > 0 
+        ? offers.slice().sort((a, b) => a.price - b.price)[0]?.price || 0
+        : 0;
       return total + (bestPrice * item.quantity);
     }, 0);
     
@@ -231,7 +234,8 @@ const KitSummary = () => {
         {showDetailedItems && (
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {kit.map((item) => {
-              const bestOffer = item.offers.slice().sort((a, b) => a.price - b.price)[0];
+              const offers = item.offers || [];
+        const bestOffer = offers.length > 0 ? offers.slice().sort((a, b) => a.price - b.price)[0] : null;
               return (
                 <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg bg-gray-50">
                   {/* Product Image */}

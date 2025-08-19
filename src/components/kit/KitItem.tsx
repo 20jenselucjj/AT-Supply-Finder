@@ -65,13 +65,14 @@ const KitItem = ({ item }: KitItemProps) => {
     updateQuantity(item.id, item.quantity - 1);
   };
   
-  const bestOffer = item.offers.slice().sort((a, b) => a.price - b.price)[0];
+  const offers = item.offers || [];
+  const bestOffer = offers.length > 0 ? offers.slice().sort((a, b) => a.price - b.price)[0] : null;
   
   return (
   <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3 xs:gap-4 p-3 xs:p-4 border rounded-lg" role="listitem">
       <div className="w-12 h-12 xs:w-16 xs:h-16 bg-muted rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
         <a
-          href={item.offers.find(offer => offer.name === "Amazon")?.url || item.offers[0]?.url}
+          href={offers.find(offer => offer.name === "Amazon")?.url || offers[0]?.url || '#'}
           target="_blank"
           rel="noopener noreferrer"
           className="cursor-pointer h-full w-full flex items-center justify-center"

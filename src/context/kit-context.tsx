@@ -155,8 +155,9 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     
     // Iterate through each item in the kit
     kit.forEach(item => {
-      // For each item, iterate through its offers
-      item.offers.forEach(offer => {
+      // For each item, iterate through its offers (with safety check)
+      const offers = item.offers || [];
+      offers.forEach(offer => {
         const vendorName = offer.name;
         const itemTotal = offer.price * item.quantity;
         
