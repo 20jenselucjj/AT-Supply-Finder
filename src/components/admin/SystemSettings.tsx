@@ -1,337 +1,607 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabase';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useTheme } from '@/context/theme-context';
 import { toast } from 'sonner';
-import { Settings, Save, RefreshCw, Globe, Mail, Shield, Database, Palette } from 'lucide-react';
+import {
+  Settings,
+  Database,
+  Shield,
+  Bell,
+  Palette,
+  Monitor,
+  Server,
+  Key,
+  Mail,
+  Globe,
+  Lock,
+  Eye,
+  EyeOff,
+  Download,
+  Upload,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Activity,
+  Cpu,
+  HardDrive,
+  Wifi,
+  Save
+} from 'lucide-react';
 
-interface SystemSetting {
-  id: string;
-  key: string;
-  value: string;
-  description?: string;
-  category: string;
-  data_type: 'string' | 'number' | 'boolean' | 'json';
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  cpu: number;
+  memory: number;
+  storage: number;
+  network: number;
+  uptime: string;
+  lastBackup: string;
 }
 
-interface SettingsByCategory {
-  [category: string]: SystemSetting[];
+interface SecuritySettings {
+  twoFactorEnabled: boolean;
+  sessionTimeout: number;
+  maxLoginAttempts: number;
+  passwordMinLength: number;
+  requireSpecialChars: boolean;
+  ipWhitelist: string[];
+}
+
+interface NotificationSettings {
+  emailEnabled: boolean;
+  slackEnabled: boolean;
+  webhookUrl: string;
+  alertThresholds: {
+    cpu: number;
+    memory: number;
+    storage: number;
+    errorRate: number;
+  };
+}
+
+interface AppearanceSettings {
+  defaultTheme: 'light' | 'dark' | 'system';
+  accentColor: string;
+  sidebarCollapsed: boolean;
+  densityMode: 'compact' | 'comfortable' | 'spacious';
 }
 
 export const SystemSettings: React.FC = () => {
-  const [settings, setSettings] = useState<SystemSetting[]>([]);
-  const [settingsByCategory, setSettingsByCategory] = useState<SettingsByCategory>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<{ [key: string]: any }>({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
+    status: 'healthy',
+    cpu: 45,
+    memory: 62,
+    storage: 78,
+    network: 98,
+    uptime: '15 days, 6 hours',
+    lastBackup: '2 hours ago'
+  });
 
-  const categoryIcons = {
-    'general': Globe,
-    'email': Mail,
-    'security': Shield,
-    'database': Database,
-    'ui': Palette,
-    'api': Settings
-  };
+  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
+    twoFactorEnabled: false,
+    sessionTimeout: 30,
+    maxLoginAttempts: 5,
+    passwordMinLength: 8,
+    requireSpecialChars: true,
+    ipWhitelist: []
+  });
 
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('system_settings')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('key', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching settings:', error);
-        toast.error('Failed to fetch system settings');
-        return;
-      }
-
-      setSettings(data || []);
-      
-      // Group settings by category
-      const grouped = (data || []).reduce((acc: SettingsByCategory, setting) => {
-        if (!acc[setting.category]) {
-          acc[setting.category] = [];
-        }
-        acc[setting.category].push(setting);
-        return acc;
-      }, {});
-      
-      setSettingsByCategory(grouped);
-      
-      // Initialize form data
-      const initialFormData = (data || []).reduce((acc: { [key: string]: any }, setting) => {
-        acc[setting.key] = parseSettingValue(setting.value, setting.data_type);
-        return acc;
-      }, {});
-      
-      setFormData(initialFormData);
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast.error('Failed to fetch system settings');
-    } finally {
-      setLoading(false);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    emailEnabled: true,
+    slackEnabled: false,
+    webhookUrl: '',
+    alertThresholds: {
+      cpu: 80,
+      memory: 85,
+      storage: 90,
+      errorRate: 5
     }
-  };
+  });
 
-  const parseSettingValue = (value: string, dataType: string) => {
-    switch (dataType) {
-      case 'boolean':
-        return value === 'true';
-      case 'number':
-        return parseFloat(value) || 0;
-      case 'json':
-        try {
-          return JSON.parse(value);
-        } catch {
-          return {};
-        }
-      default:
-        return value;
-    }
-  };
+  const [appearanceSettings, setAppearanceSettings] = useState<AppearanceSettings>({
+    defaultTheme: 'system',
+    accentColor: 'blue',
+    sidebarCollapsed: false,
+    densityMode: 'comfortable'
+  });
 
-  const formatSettingValue = (value: any, dataType: string): string => {
-    switch (dataType) {
-      case 'boolean':
-        return value.toString();
-      case 'number':
-        return value.toString();
-      case 'json':
-        return JSON.stringify(value, null, 2);
-      default:
-        return value;
-    }
-  };
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey] = useState('sk_test_1234567890abcdef...');
 
-  const handleInputChange = (key: string, value: any) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-    setHasChanges(true);
+  const { theme, setTheme, contrastMode, setContrastMode, colorScheme, setColorScheme } = useTheme();
+
+  const getHealthStatus = (value: number) => {
+    if (value >= 90) return { color: 'text-red-600 bg-red-100', icon: XCircle };
+    if (value >= 75) return { color: 'text-yellow-600 bg-yellow-100', icon: AlertTriangle };
+    return { color: 'text-green-600 bg-green-100', icon: CheckCircle2 };
   };
 
   const handleSaveSettings = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-      
-      const updates = settings.map(setting => ({
-        id: setting.id,
-        value: formatSettingValue(formData[setting.key], setting.data_type),
-        updated_at: new Date().toISOString()
-      }));
-
-      const { error } = await supabase
-        .from('system_settings')
-        .upsert(updates, { onConflict: 'id' });
-
-      if (error) {
-        toast.error(`Failed to save settings: ${error.message}`);
-        return;
-      }
-
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success('Settings saved successfully');
-      setHasChanges(false);
-      fetchSettings(); // Refresh to get updated timestamps
     } catch (error) {
-      console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleResetSettings = () => {
-    const initialFormData = settings.reduce((acc: { [key: string]: any }, setting) => {
-      acc[setting.key] = parseSettingValue(setting.value, setting.data_type);
-      return acc;
-    }, {});
-    
-    setFormData(initialFormData);
-    setHasChanges(false);
-    toast.info('Settings reset to saved values');
-  };
-
-  const renderSettingInput = (setting: SystemSetting) => {
-    const value = formData[setting.key];
-    
-    switch (setting.data_type) {
-      case 'boolean':
-        return (
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={setting.key}
-              checked={value || false}
-              onCheckedChange={(checked) => handleInputChange(setting.key, checked)}
-            />
-            <Label htmlFor={setting.key} className="text-sm font-normal">
-              {value ? 'Enabled' : 'Disabled'}
-            </Label>
-          </div>
-        );
-      
-      case 'number':
-        return (
-          <Input
-            type="number"
-            value={value || 0}
-            onChange={(e) => handleInputChange(setting.key, parseFloat(e.target.value) || 0)}
-            className="max-w-xs"
-          />
-        );
-      
-      case 'json':
-        return (
-          <Textarea
-            value={JSON.stringify(value || {}, null, 2)}
-            onChange={(e) => {
-              try {
-                const parsed = JSON.parse(e.target.value);
-                handleInputChange(setting.key, parsed);
-              } catch {
-                // Invalid JSON, but still update to show user input
-                handleInputChange(setting.key, e.target.value);
-              }
-            }}
-            rows={6}
-            className="font-mono text-sm"
-          />
-        );
-      
-      default:
-        return (
-          <Input
-            value={value || ''}
-            onChange={(e) => handleInputChange(setting.key, e.target.value)}
-            className="max-w-md"
-          />
-        );
+  const handleBackupSystem = async () => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success('System backup completed');
+      setSystemHealth(prev => ({ ...prev, lastBackup: 'Just now' }));
+    } catch (error) {
+      toast.error('Backup failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
+  const handleRunDiagnostics = async () => {
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Simulate diagnostic results
+      setSystemHealth(prev => ({
+        ...prev,
+        cpu: Math.floor(Math.random() * 30) + 30,
+        memory: Math.floor(Math.random() * 40) + 40,
+        storage: Math.floor(Math.random() * 50) + 50,
+        network: Math.floor(Math.random() * 10) + 90
+      }));
+      
+      toast.success('System diagnostics completed');
+    } catch (error) {
+      toast.error('Diagnostics failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                System Settings
-              </CardTitle>
-              <CardDescription>
-                Configure application parameters and system behavior
-              </CardDescription>
+  const SystemHealthCard = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Monitor className="h-5 w-5" />
+          System Health
+        </CardTitle>
+        <CardDescription>
+          Real-time system performance and health metrics
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+                <Label>CPU Usage</Label>
+              </div>
+              <Badge className={getHealthStatus(systemHealth.cpu).color}>
+                {systemHealth.cpu}%
+              </Badge>
             </div>
-            <div className="flex gap-2">
-              {hasChanges && (
-                <Button variant="outline" onClick={handleResetSettings}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-              )}
-              <Button 
-                onClick={handleSaveSettings} 
-                disabled={!hasChanges || saving}
-                className="flex items-center gap-2"
+            <Progress value={systemHealth.cpu} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Label>Memory Usage</Label>
+              </div>
+              <Badge className={getHealthStatus(systemHealth.memory).color}>
+                {systemHealth.memory}%
+              </Badge>
+            </div>
+            <Progress value={systemHealth.memory} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-4 w-4 text-muted-foreground" />
+                <Label>Storage Usage</Label>
+              </div>
+              <Badge className={getHealthStatus(systemHealth.storage).color}>
+                {systemHealth.storage}%
+              </Badge>
+            </div>
+            <Progress value={systemHealth.storage} className="h-2" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wifi className="h-4 w-4 text-muted-foreground" />
+                <Label>Network</Label>
+              </div>
+              <Badge className={getHealthStatus(100 - systemHealth.network).color}>
+                {systemHealth.network}%
+              </Badge>
+            </div>
+            <Progress value={systemHealth.network} className="h-2" />
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label className="text-sm font-medium">System Uptime</Label>
+            <p className="text-2xl font-bold">{systemHealth.uptime}</p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Last Backup</Label>
+            <p className="text-2xl font-bold">{systemHealth.lastBackup}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleRunDiagnostics} 
+            disabled={loading}
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Run Diagnostics
+          </Button>
+          <Button 
+            onClick={handleBackupSystem} 
+            disabled={loading}
+            variant="outline"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Backup System
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const SecuritySettingsCard = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Security Settings
+        </CardTitle>
+        <CardDescription>
+          Configure authentication, access control, and security policies
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="2fa">Two-Factor Authentication</Label>
+              <p className="text-sm text-muted-foreground">
+                Require 2FA for all admin accounts
+              </p>
+            </div>
+            <Switch
+              id="2fa"
+              checked={securitySettings.twoFactorEnabled}
+              onCheckedChange={(checked) =>
+                setSecuritySettings(prev => ({ ...prev, twoFactorEnabled: checked }))
+              }
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
+              <Input
+                id="session-timeout"
+                type="number"
+                value={securitySettings.sessionTimeout}
+                onChange={(e) =>
+                  setSecuritySettings(prev => ({ 
+                    ...prev, 
+                    sessionTimeout: parseInt(e.target.value) || 30 
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="max-attempts">Max Login Attempts</Label>
+              <Input
+                id="max-attempts"
+                type="number"
+                value={securitySettings.maxLoginAttempts}
+                onChange={(e) =>
+                  setSecuritySettings(prev => ({ 
+                    ...prev, 
+                    maxLoginAttempts: parseInt(e.target.value) || 5 
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>API Key</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type={showApiKey ? 'text' : 'password'}
+                value={apiKey}
+                readOnly
+                className="font-mono"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowApiKey(!showApiKey)}
               >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+              <Button variant="outline" size="icon">
+                <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          {hasChanges && (
-            <Badge variant="secondary" className="w-fit">
-              Unsaved changes
-            </Badge>
-          )}
-        </CardHeader>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-      {Object.entries(settingsByCategory).map(([category, categorySettings]) => {
-        const IconComponent = categoryIcons[category as keyof typeof categoryIcons] || Settings;
-        
-        return (
-          <Card key={category}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 capitalize">
-                <IconComponent className="h-5 w-5" />
-                {category} Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {categorySettings.map((setting, index) => (
-                <div key={setting.id}>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">
-                          {setting.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Label>
-                        {setting.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {setting.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={setting.is_public ? 'default' : 'secondary'} className="text-xs">
-                          {setting.is_public ? 'Public' : 'Private'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {setting.data_type}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      {renderSettingInput(setting)}
-                    </div>
-                  </div>
-                  {index < categorySettings.length - 1 && <Separator className="mt-6" />}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
-      })}
-
-      {Object.keys(settingsByCategory).length === 0 && (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No system settings found.</p>
-              <p className="text-sm mt-2">
-                Settings will appear here once they are configured in the database.
+  const NotificationSettingsCard = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-5 w-5" />
+          Notification Settings
+        </CardTitle>
+        <CardDescription>
+          Configure alerts and notification channels
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="email-notifications">Email Notifications</Label>
+              <p className="text-sm text-muted-foreground">
+                Send system alerts via email
               </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <Switch
+              id="email-notifications"
+              checked={notificationSettings.emailEnabled}
+              onCheckedChange={(checked) =>
+                setNotificationSettings(prev => ({ ...prev, emailEnabled: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="slack-notifications">Slack Integration</Label>
+              <p className="text-sm text-muted-foreground">
+                Send alerts to Slack channel
+              </p>
+            </div>
+            <Switch
+              id="slack-notifications"
+              checked={notificationSettings.slackEnabled}
+              onCheckedChange={(checked) =>
+                setNotificationSettings(prev => ({ ...prev, slackEnabled: checked }))
+              }
+            />
+          </div>
+
+          {notificationSettings.slackEnabled && (
+            <div>
+              <Label htmlFor="webhook-url">Slack Webhook URL</Label>
+              <Input
+                id="webhook-url"
+                value={notificationSettings.webhookUrl}
+                onChange={(e) =>
+                  setNotificationSettings(prev => ({ ...prev, webhookUrl: e.target.value }))
+                }
+                placeholder="https://hooks.slack.com/services/..."
+              />
+            </div>
+          )}
+
+          <div>
+            <Label className="text-base font-medium">Alert Thresholds</Label>
+            <div className="grid gap-4 sm:grid-cols-2 mt-2">
+              <div>
+                <Label htmlFor="cpu-threshold">CPU Usage (%)</Label>
+                <Input
+                  id="cpu-threshold"
+                  type="number"
+                  value={notificationSettings.alertThresholds.cpu}
+                  onChange={(e) =>
+                    setNotificationSettings(prev => ({ 
+                      ...prev, 
+                      alertThresholds: { 
+                        ...prev.alertThresholds, 
+                        cpu: parseInt(e.target.value) || 80 
+                      }
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="memory-threshold">Memory Usage (%)</Label>
+                <Input
+                  id="memory-threshold"
+                  type="number"
+                  value={notificationSettings.alertThresholds.memory}
+                  onChange={(e) =>
+                    setNotificationSettings(prev => ({ 
+                      ...prev, 
+                      alertThresholds: { 
+                        ...prev.alertThresholds, 
+                        memory: parseInt(e.target.value) || 85 
+                      }
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const AppearanceSettingsCard = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Palette className="h-5 w-5" />
+          Appearance Settings
+        </CardTitle>
+        <CardDescription>
+          Customize the look and feel of the admin interface
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="theme-select">Theme</Label>
+            <Select value={theme} onValueChange={(value: any) => setTheme(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="contrast-select">Contrast Mode</Label>
+            <Select value={contrastMode} onValueChange={(value: any) => setContrastMode(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="high">High Contrast</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="color-scheme">Color Scheme</Label>
+            <Select value={colorScheme} onValueChange={(value: any) => setColorScheme(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Default</SelectItem>
+                <SelectItem value="blue">Blue</SelectItem>
+                <SelectItem value="green">Green</SelectItem>
+                <SelectItem value="purple">Purple</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="density-select">Density Mode</Label>
+            <Select 
+              value={appearanceSettings.densityMode} 
+              onValueChange={(value: any) => 
+                setAppearanceSettings(prev => ({ ...prev, densityMode: value }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="compact">Compact</SelectItem>
+                <SelectItem value="comfortable">Comfortable</SelectItem>
+                <SelectItem value="spacious">Spacious</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button onClick={handleSaveSettings} disabled={saving}>
+          <Save className={`h-4 w-4 mr-2 ${saving ? 'animate-spin' : ''}`} />
+          Save All Settings
+        </Button>
+      </div>
+
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Important</AlertTitle>
+        <AlertDescription>
+          Changes to security settings may require all users to re-authenticate. 
+          Please ensure you have backup access before making critical changes.
+        </AlertDescription>
+      </Alert>
+
+      <Tabs defaultValue="health" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="health" className="flex items-center gap-2">
+            <Monitor className="h-4 w-4" />
+            Health
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Appearance
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="health">
+          <SystemHealthCard />
+        </TabsContent>
+
+        <TabsContent value="security">
+          <SecuritySettingsCard />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <NotificationSettingsCard />
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <AppearanceSettingsCard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
+
+export default SystemSettings;

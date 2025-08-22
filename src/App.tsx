@@ -17,9 +17,17 @@ import Catalog from "./pages/Catalog";
 import Build from "./pages/Build";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminKits from "./pages/admin/AdminKits";
+import AdminSettings from "./pages/admin/AdminSettings";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import AdminRoute from "./components/layout/AdminRoute";
+import { Navigate } from "react-router-dom";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -43,7 +51,19 @@ const App = () => {
                         <Route path="/catalog" element={<Catalog />} />
                         <Route path="/build" element={<Build />} />
                         <Route path="/profile" element={<Profile />} />
-                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/admin" element={
+                          <AdminRoute>
+                            <Admin />
+                          </AdminRoute>
+                        }>
+                          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                          <Route path="dashboard" element={<AdminDashboard />} />
+                          <Route path="users" element={<AdminUsers />} />
+                          <Route path="products" element={<AdminProducts />} />
+                          <Route path="analytics" element={<AdminAnalytics />} />
+                          <Route path="templates" element={<AdminKits />} />
+                          <Route path="system" element={<AdminSettings />} />
+                        </Route>
                         <Route path="/login" element={<Login />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="*" element={<NotFound />} />

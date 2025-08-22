@@ -98,7 +98,7 @@ Remember, prevention is always better than cure. By taking proactive steps to pr
     tags: ["ankle", "injury prevention", "sports medicine", "taping"],
     readingTime: 5,
     seo: {
-      title: "Preventing Ankle Injuries: A Complete Guide | Wrap Wizard",
+      title: "Preventing Ankle Injuries: A Complete Guide | AT Supply Finder",
       description: "Learn effective techniques and products to prevent common ankle injuries in athletes.",
       keywords: ["ankle injury", "prevention", "sports medicine", "taping", "athletic tape"]
     }
@@ -212,7 +212,7 @@ By understanding the different types of athletic tape and their applications, yo
     tags: ["athletic tape", "kinesiology tape", "cohesive bandage", "pre-wrap", "taping techniques"],
     readingTime: 7,
     seo: {
-      title: "Choosing the Right Athletic Tape for Your Needs | Wrap Wizard",
+      title: "Choosing the Right Athletic Tape for Your Needs | AT Supply Finder",
       description: "A comprehensive guide to understanding the different types of athletic tape and their applications.",
       keywords: ["athletic tape", "kinesiology tape", "cohesive bandage", "pre-wrap", "taping techniques"]
     }
@@ -331,7 +331,7 @@ Remember, both tape and braces are tools in the injury prevention toolkit. The m
     tags: ["tape", "braces", "injury prevention", "sports medicine", "comparison"],
     readingTime: 8,
     seo: {
-      title: "Tape vs. Braces: Which is Better for Injury Prevention? | Wrap Wizard",
+      title: "Tape vs. Braces: Which is Better for Injury Prevention? | AT Supply Finder",
       description: "Comparing the effectiveness of athletic tape and braces for preventing sports injuries.",
       keywords: ["tape", "braces", "injury prevention", "sports medicine", "comparison"]
     }

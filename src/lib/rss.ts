@@ -18,7 +18,7 @@ export const generateRSS = () => {
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Wrap Wizard Blog</title>
+    <title>AT Supply Finder Blog</title>
     <description>Athletic training tips, injury prevention, and tape techniques</description>
     <link>${siteUrl}/blog</link>
     <language>en-us</language>

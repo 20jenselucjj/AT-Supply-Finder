@@ -4,7 +4,7 @@ const SiteFooter = () => {
       <div className="container mx-auto py-12 grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <img src="/logo.svg" alt="Wrap Wizard Finder Logo" className="h-10 w-10" />
+            <img src="/logo.svg" alt="AT Supply Finder Logo" className="h-10 w-10" />
         <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>AT Supply Finder</h3>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">

@@ -4,10 +4,28 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { BarChart3, TrendingUp, Users, Package, Eye, Download, RefreshCw } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Package, Eye, Download, RefreshCw, Calendar, Activity, Target } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 interface AnalyticsData {
   totalUsers: number;
@@ -20,7 +38,16 @@ interface AnalyticsData {
     brand: string;
     views: number;
   }>;
-
+  userGrowthData: Array<{
+    date: string;
+    users: number;
+    newUsers: number;
+  }>;
+  productCategoryData: Array<{
+    category: string;
+    value: number;
+    color: string;
+  }>;
   systemMetrics: {
     databaseSize: string;
     responseTime: number;
@@ -35,7 +62,8 @@ export const Analytics: React.FC = () => {
     newUsersThisWeek: 0,
     totalProducts: 0,
     popularProducts: [],
-
+    userGrowthData: [],
+    productCategoryData: [],
     systemMetrics: {
       databaseSize: '0 MB',
       responseTime: 0,
@@ -96,6 +124,26 @@ export const Analytics: React.FC = () => {
         views: Math.floor(Math.random() * 1000) + 100 // Mock view data
       }));
 
+      // Generate user growth data for the last 30 days
+      const userGrowthData = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = subDays(new Date(), i);
+        userGrowthData.push({
+          date: format(date, 'MMM dd'),
+          users: Math.floor(Math.random() * 50) + 100 + i * 2,
+          newUsers: Math.floor(Math.random() * 10) + 1
+        });
+      }
+
+      // Generate product category data
+      const productCategoryData = [
+        { category: 'Electronics', value: 35, color: '#8884d8' },
+        { category: 'Home & Garden', value: 25, color: '#82ca9d' },
+        { category: 'Sports', value: 20, color: '#ffc658' },
+        { category: 'Books', value: 12, color: '#ff7300' },
+        { category: 'Other', value: 8, color: '#d084d0' }
+      ];
+
 
 
       // Mock system metrics
@@ -111,7 +159,8 @@ export const Analytics: React.FC = () => {
         newUsersThisWeek: newUsersThisWeek || 0,
         totalProducts: totalProducts || 0,
         popularProducts,
-
+        userGrowthData,
+        productCategoryData,
         systemMetrics
       });
 
