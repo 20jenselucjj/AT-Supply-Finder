@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,11 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
+import { logger } from '@/lib/logger';
+import { useRBAC } from '@/hooks/use-rbac';
 import {
   LayoutDashboard,
   Users,
@@ -27,7 +30,21 @@ import {
   Moon,
   Sun,
   Wrench,
-  ChevronDown
+  ChevronDown,
+  Search,
+  Bell,
+  HelpCircle,
+  UserCog,
+  Home,
+  ShoppingCart,
+  FileBarChart,
+  CreditCard,
+  Mail,
+  MapPin,
+  Tag,
+  Filter,
+  Download,
+  Upload
 } from 'lucide-react';
 import { NotificationsPanel } from '@/components/admin/NotificationsPanel';
 import { cn } from '@/lib/utils';
@@ -40,6 +57,7 @@ interface SidebarItem {
   badge?: string;
   badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
   children?: SidebarItem[];
+  requiredRole?: 'user' | 'editor' | 'admin';
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -54,31 +72,71 @@ const sidebarItems: SidebarItem[] = [
     label: 'User Management',
     icon: Users,
     href: '/admin/users',
-    badge: 'New'
+    badge: 'New',
+    requiredRole: 'admin'
   },
   {
     id: 'products',
     label: 'Products',
     icon: Package,
-    href: '/admin/products'
+    href: '/admin/products',
+    requiredRole: 'editor'
+  },
+  {
+    id: 'orders',
+    label: 'Orders',
+    icon: ShoppingCart,
+    href: '/admin/orders',
+    requiredRole: 'editor'
   },
   {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
-    href: '/admin/analytics'
+    href: '/admin/analytics',
+    requiredRole: 'editor'
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: FileBarChart,
+    href: '/admin/reports',
+    requiredRole: 'editor'
   },
   {
     id: 'templates',
     label: 'Starter Kits',
     icon: Wrench,
-    href: '/admin/templates'
+    href: '/admin/templates',
+    requiredRole: 'editor'
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing',
+    icon: Mail,
+    href: '/admin/marketing',
+    requiredRole: 'editor',
+    children: [
+      {
+        id: 'email-campaigns',
+        label: 'Email Campaigns',
+        icon: Mail,
+        href: '/admin/marketing/email-campaigns'
+      },
+      {
+        id: 'coupons',
+        label: 'Coupons',
+        icon: Tag,
+        href: '/admin/marketing/coupons'
+      }
+    ]
   },
   {
     id: 'system',
     label: 'System Settings',
     icon: Settings,
-    href: '/admin/system'
+    href: '/admin/system',
+    requiredRole: 'admin'
   }
 ];
 
@@ -90,8 +148,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { userRole, loading: rbacLoading } = useRBAC();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -110,6 +171,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigate to search results page
+      navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery('');
+    }
+  }, [searchQuery, navigate]);
+
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
       prev.includes(itemId) 
@@ -117,6 +187,37 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         : [...prev, itemId]
     );
   };
+
+  const filterSidebarItemsByRole = (items: SidebarItem[]): SidebarItem[] => {
+    if (rbacLoading || !userRole) return [];
+    
+    return items.filter(item => {
+      // If no role requirement, show to all authenticated users
+      if (!item.requiredRole) return true;
+      
+      // Admins see everything
+      if (userRole === 'admin') return true;
+      
+      // Editors see editor and user items
+      if (userRole === 'editor') {
+        return item.requiredRole === 'editor' || item.requiredRole === 'user';
+      }
+      
+      // Users only see user items
+      return item.requiredRole === 'user';
+    }).map(item => {
+      // Also filter children if they exist
+      if (item.children) {
+        return {
+          ...item,
+          children: filterSidebarItemsByRole(item.children)
+        };
+      }
+      return item;
+    });
+  };
+
+  const filteredSidebarItems = filterSidebarItemsByRole(sidebarItems);
 
   const renderSidebarItem = (item: SidebarItem, level: number = 0) => {
     const isActive = location.pathname === item.href;
@@ -241,16 +342,40 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       </div>
 
-      {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-2">
-          {sidebarItems.map(item => renderSidebarItem(item))}
-        </nav>
-      </ScrollArea>
+      {/* Loading state for RBAC */}
+      {rbacLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        /* Navigation */
+        <ScrollArea className="flex-1 px-3 py-4">
+          <nav className="space-y-2">
+            {filteredSidebarItems.map(item => renderSidebarItem(item))}
+          </nav>
+        </ScrollArea>
+      )}
+      
+      {/* Quick Actions */}
+      {!collapsed && (
+        <div className="px-3 pb-4">
+          <Separator className="mb-3" />
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full justify-start gap-2" size="sm">
+              <Upload className="h-4 w-4" />
+              <span>Import Data</span>
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2" size="sm">
+              <Download className="h-4 w-4" />
+              <span>Export Data</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className={cn("p-4 border-t border-border", collapsed && "px-2")}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/placeholder.svg" />
             <AvatarFallback className="text-xs">
@@ -266,15 +391,25 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
         
         {!collapsed && (
-          <div className="flex items-center gap-2 mt-3">
-            <Button variant="outline" size="sm" onClick={toggleTheme}>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1">
               {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+              <span className="ml-2">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={async () => {
                 try {
+                  // Log the sign out action
+                  await logger.auditLog({
+                    action: 'ADMIN_SIGN_OUT',
+                    entity_type: 'USER',
+                    details: {
+                      email: user?.email
+                    }
+                  });
+                  
                   await signOut();
                   navigate('/'); // Redirect to home after sign out
                 } catch (error) {
@@ -283,8 +418,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               }} 
               className="flex-1"
             >
-              <LogOut className="h-3 w-3 mr-1" />
-              Sign Out
+              <LogOut className="h-3 w-3" />
+              <span className="ml-2">Sign Out</span>
             </Button>
           </div>
         )}
@@ -362,7 +497,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2">
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="relative hidden md:block">
+                <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-64' : 'w-40'}`}>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                    className="pl-9 pr-4 w-full"
+                  />
+                </div>
+              </form>
+              
+              <Button variant="ghost" size="icon">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
               <NotificationsPanel />
+              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setCollapsed(!collapsed)}>
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
         </header>

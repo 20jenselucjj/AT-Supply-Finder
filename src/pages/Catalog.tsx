@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Grid, List, SlidersHorizontal, X, Filter } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { ProductQuickView } from "@/components/products/ProductQuickView";
 import { ProductGrid } from "@/components/products/ProductGrid";
@@ -13,6 +13,21 @@ import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Storage key for product cache
 const PRODUCTS_CACHE_KEY = 'wrap_wizard_products_cache';
@@ -245,6 +260,9 @@ const Catalog = () => {
       case "name-asc":
         items.sort((a, b) => a.name.localeCompare(b.name));
         break;
+      case "rating-desc":
+        items.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
       default:
         break;
     }
@@ -263,6 +281,21 @@ const Catalog = () => {
     setParams(next, { replace: true });
   };
 
+  // Get unique brands for filtering
+  const uniqueBrands = useMemo(() => {
+    return Array.from(new Set(products.map(p => p.brand))).filter(Boolean).slice(0, 12);
+  }, [products]);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (cat !== "all") count++;
+    if (brands.length > 0) count += brands.length;
+    if (minRating > 0) count++;
+    if (priceRange[1] < 1000) count++;
+    return count;
+  }, [cat, brands, minRating, priceRange]);
+
   return (
     <main className="container mx-auto py-6">
       <Helmet>
@@ -271,31 +304,20 @@ const Catalog = () => {
         <link rel="canonical" href={canonical} />
       </Helmet>
 
-      {/* Top Search Bar */}
+      {/* Header with Breadcrumbs */}
       <div className="mb-6">
+        <nav className="text-sm text-muted-foreground mb-2">
+          <Link to="/" className="hover:text-primary">Home</Link> / Catalog
+        </nav>
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 max-w-md">
-            <label htmlFor="catalog-search" className="sr-only">
-              Search products
-            </label>
-            <div className="relative">
-              <Input
-                id="catalog-search"
-                placeholder="Search tapes, bandages, brands..."
-                value={q}
-                onChange={(e) => updateParam("q", e.currentTarget.value)}
-                aria-label="Search products"
-                className="pl-10"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                🔍
-              </div>
-            </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Product Catalog</h1>
+            <p className="text-muted-foreground mt-1">Discover professional-grade medical supplies and equipment</p>
           </div>
           
           <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
-            <div className="flex gap-1 border rounded-md p-1">
+            <div className="flex gap-1 border rounded-md p-1 bg-muted/50">
               <Button
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"
@@ -303,7 +325,7 @@ const Catalog = () => {
                 aria-pressed={viewMode === 'grid'}
                 className="px-3"
               >
-                ⊞ Grid
+                <Grid className="w-4 h-4" />
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -312,27 +334,43 @@ const Catalog = () => {
                 aria-pressed={viewMode === 'list'}
                 className="px-3"
               >
-                ☰ List
+                <List className="w-4 h-4" />
               </Button>
             </div>
             
             {/* Sort Dropdown */}
-            <div>
+            <div className="hidden sm:block">
               <label htmlFor="catalog-sort" className="sr-only">
                 Sort products
               </label>
-              <select
-                id="catalog-sort"
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm min-w-[120px] w-full max-w-[160px] sm:min-w-[160px] sm:w-auto"
-                value={sort}
-                onChange={(e) => updateParam("sort", e.currentTarget.value)}
-                aria-label="Sort products"
-              >
-                <option value="relevance">Sort: Relevance</option>
-                <option value="price-asc">💰 Price: Low to High</option>
-                <option value="price-desc">💰 Price: High to Low</option>
-                <option value="name-asc">🔤 Name: A to Z</option>
-              </select>
+              <Select value={sort} onValueChange={(value) => updateParam("sort", value)}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                  <SelectItem value="name-asc">Name: A to Z</SelectItem>
+                  <SelectItem value="rating-desc">Top Rated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Mobile Sort */}
+            <div className="sm:hidden">
+              <Select value={sort} onValueChange={(value) => updateParam("sort", value)}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="price-asc">Price: Low</SelectItem>
+                  <SelectItem value="price-desc">Price: High</SelectItem>
+                  <SelectItem value="name-asc">Name: A-Z</SelectItem>
+                  <SelectItem value="rating-desc">Top Rated</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -340,9 +378,33 @@ const Catalog = () => {
 
       {/* Main Content with Sidebar Layout */}
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Sidebar - Filters */}
-        <aside className="lg:w-80 flex-shrink-0">
+        {/* Left Sidebar - Filters (Desktop) */}
+        <aside className="lg:w-80 flex-shrink-0 hidden lg:block">
           <div className="bg-card border rounded-lg sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
+            <div className="p-4 border-b flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Filters</h2>
+                {activeFilterCount > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      updateParam("cat", "");
+                      setBrands([]);
+                      setMinRating(0);
+                      setPriceRange([0, 1000]);
+                    }}
+                    className="text-xs h-auto p-1"
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {activeFilterCount > 0 ? `${activeFilterCount} active filter${activeFilterCount > 1 ? 's' : ''}` : 'No filters applied'}
+              </p>
+            </div>
+            
             {/* Category Filters */}
             <div className="p-4 border-b flex-shrink-0">
               <button
@@ -352,40 +414,47 @@ const Catalog = () => {
                 <span>Categories</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${categoriesExpanded ? 'rotate-180' : ''}`} />
               </button>
-              {categoriesExpanded && (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                {allCategories.map((c) => {
-                  const isActive = c === cat;
-                  const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => updateParam("cat", c === "all" ? "" : c)}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
-                        isActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'hover:bg-muted'
-                      }`}
-                    >
-                      <span>{c === "all" ? "All Categories" : c.replace(/_/g, ' ')}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        isActive 
-                          ? 'bg-primary-foreground/20 text-primary-foreground' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {productCount}
-                      </span>
-                    </button>
-                  );
-                })}
-                </div>
-              )}
+              <AnimatePresence>
+                {categoriesExpanded && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="space-y-2 max-h-48 overflow-y-auto"
+                  >
+                    {allCategories.map((c) => {
+                      const isActive = c === cat;
+                      const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => updateParam("cat", c === "all" ? "" : c)}
+                          className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                            isActive 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'hover:bg-muted'
+                          }`}
+                        >
+                          <span>{c === "all" ? "All Categories" : c.replace(/_/g, ' ')}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            isActive 
+                              ? 'bg-primary-foreground/20 text-primary-foreground' 
+                              : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {productCount}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Advanced Filters */}
             <div className="flex-1 overflow-y-auto p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold">Filters</h3>
+                <h3 className="text-sm font-semibold">More Filters</h3>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -400,13 +469,25 @@ const Catalog = () => {
                 </Button>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* Price Range */}
                 <div>
                   <label className="block mb-2 text-sm font-medium">Price Range</label>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="bg-muted px-2 py-1 rounded">${priceRange[0]}</span>
+                      <div className="flex-1 h-px bg-border"></div>
+                      <span className="bg-muted px-2 py-1 rounded">${priceRange[1]}</span>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs">${priceRange[0]}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1000"
+                        value={priceRange[0]}
+                        onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                        className="flex-1"
+                      />
                       <input
                         type="range"
                         min="0"
@@ -415,7 +496,6 @@ const Catalog = () => {
                         onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                         className="flex-1"
                       />
-                      <span className="text-xs">${priceRange[1]}</span>
                     </div>
                   </div>
                 </div>
@@ -423,14 +503,15 @@ const Catalog = () => {
                 {/* Brands */}
                 <div>
                   <label className="block mb-2 text-sm font-medium">Brands</label>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {Array.from(new Set(products.map(p => p.brand))).filter(Boolean).slice(0, 8).map(brand => {
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {uniqueBrands.map(brand => {
                       const productCount = products.filter(p => p.brand === brand).length;
+                      const isChecked = brands.includes(brand);
                       return (
                         <label key={brand} className="flex items-center gap-2 text-sm cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={brands.includes(brand)}
+                            checked={isChecked}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 setBrands([...brands, brand]);
@@ -456,7 +537,7 @@ const Catalog = () => {
                       <button
                         key={`rating-${rating}`}
                         onClick={() => setMinRating(minRating === rating ? 0 : rating)}
-                        className={`p-1 rounded text-xs transition-colors ${
+                        className={`p-2 rounded text-sm transition-colors flex-1 flex items-center justify-center ${
                           minRating >= rating 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted hover:bg-muted/80'
@@ -475,35 +556,193 @@ const Catalog = () => {
 
         {/* Right Content - Products */}
         <div className="flex-1 min-w-0">
-          {/* Results Summary */}
+          {/* Top Bar - Search, Results, Mobile Filters */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b">
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="flex-1 max-w-md">
+                <label htmlFor="catalog-search" className="sr-only">
+                  Search products
+                </label>
+                <div className="relative">
+                  <Input
+                    id="catalog-search"
+                    placeholder="Search tapes, bandages, brands..."
+                    value={q}
+                    onChange={(e) => updateParam("q", e.currentTarget.value)}
+                    aria-label="Search products"
+                    className="pl-10"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                    🔍
+                  </div>
+                </div>
+              </div>
+              
+              {/* Mobile Filter Trigger */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="lg:hidden">
+                    <SlidersHorizontal className="w-4 h-4 mr-2" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                    <div className="flex items-center justify-between pt-2">
+                      <p className="text-sm text-muted-foreground">
+                        {activeFilterCount > 0 ? `${activeFilterCount} active filter${activeFilterCount > 1 ? 's' : ''}` : 'No filters applied'}
+                      </p>
+                      {activeFilterCount > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            updateParam("cat", "");
+                            setBrands([]);
+                            setMinRating(0);
+                            setPriceRange([0, 1000]);
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
+                  </SheetHeader>
+                  
+                  <div className="py-4 space-y-6">
+                    {/* Category Filters */}
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3">Categories</h3>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {allCategories.map((c) => {
+                          const isActive = c === cat;
+                          const productCount = c === "all" ? products.length : products.filter(p => p.category.toLowerCase() === c.toLowerCase()).length;
+                          return (
+                            <button
+                              key={c}
+                              onClick={() => {
+                                updateParam("cat", c === "all" ? "" : c);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                                isActive 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'hover:bg-muted'
+                              }`}
+                            >
+                              <span>{c === "all" ? "All Categories" : c.replace(/_/g, ' ')}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                isActive 
+                                  ? 'bg-primary-foreground/20 text-primary-foreground' 
+                                  : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {productCount}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Price Range */}
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3">Price Range</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="bg-muted px-2 py-1 rounded">${priceRange[0]}</span>
+                          <div className="flex-1 h-px bg-border"></div>
+                          <span className="bg-muted px-2 py-1 rounded">${priceRange[1]}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            value={priceRange[0]}
+                            onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
+                            className="flex-1"
+                          />
+                          <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            value={priceRange[1]}
+                            onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Brands */}
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3">Brands</h3>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {uniqueBrands.map(brand => {
+                          const productCount = products.filter(p => p.brand === brand).length;
+                          const isChecked = brands.includes(brand);
+                          return (
+                            <label key={brand} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setBrands([...brands, brand]);
+                                  } else {
+                                    setBrands(brands.filter(b => b !== brand));
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <span className="flex-1 truncate">{brand}</span>
+                              <span className="text-xs text-muted-foreground">({productCount})</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Rating */}
+                    <div>
+                      <h3 className="text-sm font-semibold mb-3">Minimum Rating</h3>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(rating => (
+                          <button
+                            key={`rating-${rating}`}
+                            onClick={() => setMinRating(minRating === rating ? 0 : rating)}
+                            className={`p-2 rounded text-sm transition-colors flex-1 flex items-center justify-center ${
+                              minRating >= rating 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted hover:bg-muted/80'
+                            }`}
+                            title={`${rating} stars and above`}
+                          >
+                            {rating}★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+            
+            <div className="flex items-center gap-4 text-sm text-muted-foreground w-full sm:w-auto justify-between sm:justify-end">
+              <div>
                 <span className="font-medium">{filtered.length}</span> 
                 <span className="text-muted-foreground"> result{filtered.length !== 1 ? "s" : ""}</span>
                 {q && (
                   <span className="text-muted-foreground"> for "{q}"</span>
                 )}
               </div>
-              {(q || cat !== "all" || brands.length > 0 || minRating > 0 || priceRange[1] < 1000) && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    updateParam("q", "");
-                    updateParam("cat", "");
-                    setBrands([]);
-                    setMinRating(0);
-                    setPriceRange([0, 1000]);
-                  }}
-                  className="text-xs"
-                >
-                  Clear all filters
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              
               {selectedForCompare.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span>Comparing {selectedForCompare.length} products</span>
@@ -512,7 +751,7 @@ const Catalog = () => {
                     size="sm"
                     onClick={() => setSelectedForCompare([])}
                   >
-                    Clear comparison
+                    Clear
                   </Button>
                 </div>
               )}

@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Heart, Star } from 'lucide-react';
+import { useFavorites } from '@/context/favorites-context';
 
 interface ProductGridProps {
   products: Product[];
@@ -14,92 +15,154 @@ interface ProductGridProps {
 
 export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQuickViewProduct }: ProductGridProps) => {
   const { addToKit, getProductQuantity, updateQuantity, removeFromKit } = useKit();
+  const { toggleFavorite, isFavorite } = useFavorites();
+
+  // Get the best price from offers
+  const getBestPrice = (product: Product) => {
+    if (!product.offers || product.offers.length === 0) return 0;
+    return Math.min(...product.offers.map(o => o.price));
+  };
 
   return (
-    <div className="grid gap-5 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-      {products.map(product => (
-        <motion.div
-          key={product.id}
-          whileHover={{ scale: 1.03 }}
-          className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-card text-card-foreground relative"
-        >
-          <div className="absolute top-2 right-2 flex gap-2">
-            <Checkbox
-              checked={selectedForCompare.includes(product.id)}
-              onCheckedChange={() => toggleCompare(product.id)}
-            />
-          </div>
-          <a
-            href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block cursor-pointer"
+    <div className="grid gap-6 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+      {products.map((product, index) => {
+        const bestPrice = getBestPrice(product);
+        const isProductFavorite = isFavorite(product.id);
+        const hasMultipleOffers = product.offers && product.offers.length > 1;
+        
+        return (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            whileHover={{ y: -5 }}
+            className="border rounded-xl p-5 hover:shadow-lg transition-all duration-300 bg-card text-card-foreground relative overflow-hidden group"
           >
-            <div className="bg-secondary/70 border border-border rounded-md p-2 mb-4 flex items-center justify-center">
-              <img
-                src={product.imageUrl || '/placeholder.svg'}
-                alt={product.name}
-                loading="lazy"
-                decoding="async"
-                width={320}
-                height={320}
-                className="w-full h-44 object-contain hover:opacity-80 transition-opacity aspect-square"
+            {/* Favorite button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-3 right-3 p-2 h-8 w-8 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(product.id);
+              }}
+              aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart 
+                className={`h-4 w-4 transition-colors ${
+                  isProductFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+                }`} 
+              />
+            </Button>
+            
+            {/* Compare checkbox */}
+            <div className="absolute top-3 left-3 flex gap-2 z-10">
+              <Checkbox
+                checked={selectedForCompare.includes(product.id)}
+                onCheckedChange={() => toggleCompare(product.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100"
               />
             </div>
-          </a>
-          <h3 className="font-medium mb-2 pr-6">{product.name}</h3>
-          <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
-            <span className="text-primary font-bold">
-              ${Math.min(...product.offers.map(o => o.price)).toFixed(2)}
-            </span>
-            {product.rating && (
-              <div className="flex items-center bg-secondary/60 px-2 py-0.5 rounded text-xs">
-                <span className="font-medium mr-1">{product.rating}</span>
-                <span aria-hidden="true">★</span>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col gap-2 mt-3">
-            {getProductQuantity(product.id) > 0 ? (
-              <div className="flex items-center justify-between bg-muted/50 rounded-md p-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateQuantity(product.id, getProductQuantity(product.id) - 1)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="font-medium text-sm px-3">
-                  Qty: {getProductQuantity(product.id)}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addToKit(product, 1)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <Button
-                onClick={() => addToKit(product)}
-                className="w-full"
-              >
-                Add to Kit
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setQuickViewProduct && setQuickViewProduct(product)}
+            
+            <a
+              href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block cursor-pointer"
             >
-              Quick View
-            </Button>
-          </div>
-        </motion.div>
-      ))}
+              <div className="bg-secondary/70 border border-border rounded-lg p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
+                <img
+                  src={product.imageUrl || '/placeholder.svg'}
+                  alt={product.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+                />
+                {hasMultipleOffers && (
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                    {product.offers.length} offers
+                  </div>
+                )}
+              </div>
+            </a>
+            
+            <div className="mb-3">
+              <h3 className="font-semibold mb-1 line-clamp-2 leading-tight">{product.name}</h3>
+              <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
+              
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <span className="text-lg font-bold text-primary">
+                  ${bestPrice.toFixed(2)}
+                </span>
+                
+                {product.rating && product.rating > 0 ? (
+                  <div className="flex items-center bg-secondary/60 px-2 py-1 rounded-full text-xs">
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                    <span className="font-medium">{product.rating.toFixed(1)}</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No ratings</span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2 mt-2">
+              {getProductQuantity(product.id) > 0 ? (
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateQuantity(product.id, getProductQuantity(product.id) - 1);
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="font-medium text-sm px-2">
+                    Qty: {getProductQuantity(product.id)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToKit(product, 1);
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToKit(product);
+                  }}
+                  className="w-full"
+                >
+                  Add to Kit
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuickViewProduct && setQuickViewProduct(product);
+                }}
+              >
+                Quick View
+              </Button>
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 };

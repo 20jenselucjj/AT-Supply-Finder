@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,11 +7,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { User, UserPlus, Trash2, Edit, Shield, Mail, Calendar, UserX } from 'lucide-react';
+import { useRBAC } from '@/hooks/use-rbac';
+import { User, UserPlus, Trash2, Edit, Shield, Mail, Calendar, UserX, Upload, Download, Filter, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface UserData {
   id: string;
@@ -20,6 +23,7 @@ interface UserData {
   last_sign_in_at?: string;
   role?: string;
   email_confirmed_at?: string;
+  is_active?: boolean;
 }
 
 interface UserManagementProps {
@@ -33,6 +37,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [sortBy, setSortBy] = useState<'created_at' | 'last_sign_in_at' | 'email'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
@@ -40,10 +50,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
   const [inviteMode, setInviteMode] = useState<'invite' | 'create'>('invite');
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [editUserRole, setEditUserRole] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const { isAdmin } = useRBAC();
 
-  const usersPerPage = 10;
-
-  const fetchUsers = async (page = 1, search = '') => {
+  const fetchUsers = async (page = 1, search = '', role = 'all', status = 'all') => {
     try {
       setLoading(true);
 
@@ -55,11 +65,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         return;
       }
 
-      // Use the user_profiles view which includes role information
-      const { data: usersData, error: usersError, count: profilesCount } = await supabaseAdmin
+      // Build query with filters
+      let query = supabaseAdmin
         .from('user_profiles')
         .select('*', { count: 'exact' })
         .range((page - 1) * usersPerPage, page * usersPerPage - 1);
+
+      // Apply search filter
+      if (search) {
+        query = query.ilike('email', `%${search}%`);
+      }
+
+      // Apply role filter
+      if (role !== 'all') {
+        query = query.eq('role', role);
+      }
+
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+      const { data: usersData, error: usersError, count: profilesCount } = await query;
 
       if (usersError) {
         console.error('Error fetching user profiles:', usersError);
@@ -73,18 +98,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         email: user.email || 'No email',
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
-        role: user.role || 'user'
+        role: user.role || 'user',
+        email_confirmed_at: user.email_confirmed_at,
+        is_active: user.last_sign_in_at ? 
+          new Date(user.last_sign_in_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
+          false
       })) || [];
       
       setTotalPages(Math.ceil((profilesCount || 0) / usersPerPage));
       onUserCountChange(profilesCount || 0);
 
-      // Filter by search term if provided
-      const filteredUsers = search
-        ? usersWithRoles.filter(user =>
-          user.email.toLowerCase().includes(search.toLowerCase())
-        )
-        : usersWithRoles;
+      // Apply status filter
+      let filteredUsers = usersWithRoles;
+      if (status === 'active') {
+        filteredUsers = usersWithRoles.filter(user => user.is_active);
+      } else if (status === 'inactive') {
+        filteredUsers = usersWithRoles.filter(user => !user.is_active);
+      } else if (status === 'pending') {
+        filteredUsers = usersWithRoles.filter(user => !user.email_confirmed_at);
+      }
 
       setUsers(filteredUsers);
     } catch (error) {
@@ -127,6 +159,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         );
 
         if (inviteError) {
+          await logger.auditLog({
+            action: 'INVITE_USER_FAILED',
+            entity_type: 'USER',
+            details: {
+              email: newUserEmail,
+              role: newUserRole,
+              error: inviteError.message
+            }
+          });
           toast.error(`Failed to send invite: ${inviteError.message}`);
           return;
         }
@@ -142,10 +183,29 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
 
           if (roleError) {
             console.error('Error assigning role:', roleError);
+            await logger.auditLog({
+              action: 'ASSIGN_ROLE_FAILED',
+              entity_type: 'USER',
+              entity_id: inviteData.user.id,
+              details: {
+                email: newUserEmail,
+                role: newUserRole,
+                error: roleError.message
+              }
+            });
             toast.error('Invite sent but role assignment failed');
           }
         }
 
+        await logger.auditLog({
+          action: 'INVITE_USER',
+          entity_type: 'USER',
+          entity_id: inviteData.user?.id,
+          details: {
+            email: newUserEmail,
+            role: newUserRole
+          }
+        });
         toast.success('Invitation sent successfully! User will receive an email to set their password.');
       } else {
         // Create user directly with password
@@ -156,6 +216,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         });
 
         if (createError) {
+          await logger.auditLog({
+            action: 'CREATE_USER_FAILED',
+            entity_type: 'USER',
+            details: {
+              email: newUserEmail,
+              error: createError.message
+            }
+          });
           toast.error(`Failed to create user: ${createError.message}`);
           return;
         }
@@ -167,10 +235,29 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
             .insert({ user_id: newUser.user.id, role: newUserRole });
 
           if (roleError) {
+            await logger.auditLog({
+              action: 'ASSIGN_ROLE_FAILED',
+              entity_type: 'USER',
+              entity_id: newUser.user.id,
+              details: {
+                email: newUserEmail,
+                role: newUserRole,
+                error: roleError.message
+              }
+            });
             console.warn('Failed to assign role, but user was created:', roleError.message);
           }
         }
 
+        await logger.auditLog({
+          action: 'CREATE_USER',
+          entity_type: 'USER',
+          entity_id: newUser.user?.id,
+          details: {
+            email: newUserEmail,
+            role: newUserRole
+          }
+        });
         toast.success('User created successfully');
       }
 
@@ -181,11 +268,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
       console.error('Error creating/inviting user:', error);
+      await logger.auditLog({
+        action: 'CREATE_USER_EXCEPTION',
+        entity_type: 'USER',
+        details: {
+          email: newUserEmail,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      });
       toast.error('Failed to create/invite user');
     }
   };
-
-
 
   const handleUpdateUserRole = async () => {
     if (!editingUser) return;
@@ -200,22 +293,68 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
 
       if (editUserRole === 'user') {
         // Remove from user_roles table
-        await supabaseAdmin
+        const { error: deleteError } = await supabaseAdmin
           .from('user_roles')
           .delete()
           .eq('user_id', editingUser.id);
+
+        if (deleteError) {
+          await logger.auditLog({
+            action: 'REMOVE_ROLE_FAILED',
+            entity_type: 'USER',
+            entity_id: editingUser.id,
+            details: {
+              old_role: editingUser.role,
+              error: deleteError.message
+            }
+          });
+          toast.error(`Failed to remove role: ${deleteError.message}`);
+          return;
+        }
       } else {
         // Insert or update role
-        await supabaseAdmin
+        const { error: upsertError } = await supabaseAdmin
           .from('user_roles')
           .upsert({ user_id: editingUser.id, role: editUserRole });
+
+        if (upsertError) {
+          await logger.auditLog({
+            action: 'UPDATE_ROLE_FAILED',
+            entity_type: 'USER',
+            entity_id: editingUser.id,
+            details: {
+              old_role: editingUser.role,
+              new_role: editUserRole,
+              error: upsertError.message
+            }
+          });
+          toast.error(`Failed to update role: ${upsertError.message}`);
+          return;
+        }
       }
 
+      await logger.auditLog({
+        action: 'UPDATE_ROLE',
+        entity_type: 'USER',
+        entity_id: editingUser.id,
+        details: {
+          old_role: editingUser.role,
+          new_role: editUserRole
+        }
+      });
       toast.success('User role updated successfully');
       setEditingUser(null);
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
       console.error('Error updating user role:', error);
+      await logger.auditLog({
+        action: 'UPDATE_ROLE_EXCEPTION',
+        entity_type: 'USER',
+        entity_id: editingUser?.id,
+        details: {
+          error: error instanceof Error ? error.message : String(error)
+        }
+      });
       toast.error('Failed to update user role');
     }
   };
@@ -230,9 +369,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
       }
 
       // Delete user from auth.users using admin client
+      const { data: userData, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (fetchError) {
+        await logger.auditLog({
+          action: 'FETCH_USER_FOR_DELETE_FAILED',
+          entity_type: 'USER',
+          entity_id: userId,
+          details: {
+            error: fetchError.message
+          }
+        });
+        toast.error(`Failed to fetch user data: ${fetchError.message}`);
+        return;
+      }
+
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
       if (deleteError) {
+        await logger.auditLog({
+          action: 'DELETE_USER_FAILED',
+          entity_type: 'USER',
+          entity_id: userId,
+          details: {
+            email: userData.user?.email,
+            error: deleteError.message
+          }
+        });
         toast.error(`Failed to delete user: ${deleteError.message}`);
         return;
       }
@@ -243,10 +405,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         .delete()
         .eq('user_id', userId);
 
+      await logger.auditLog({
+        action: 'DELETE_USER',
+        entity_type: 'USER',
+        entity_id: userId,
+        details: {
+          email: userData.user?.email
+        }
+      });
       toast.success('User deleted successfully');
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
       console.error('Error deleting user:', error);
+      await logger.auditLog({
+        action: 'DELETE_USER_EXCEPTION',
+        entity_type: 'USER',
+        entity_id: userId,
+        details: {
+          error: error instanceof Error ? error.message : String(error)
+        }
+      });
       toast.error('Failed to delete user');
     }
   };
@@ -260,20 +438,60 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
         return;
       }
 
+      // Get user data before deactivating
+      const { data: userData, error: fetchError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      if (fetchError) {
+        await logger.auditLog({
+          action: 'FETCH_USER_FOR_DEACTIVATE_FAILED',
+          entity_type: 'USER',
+          entity_id: userId,
+          details: {
+            error: fetchError.message
+          }
+        });
+        toast.error(`Failed to fetch user data: ${fetchError.message}`);
+        return;
+      }
+
       // Update user to set email_confirmed_at to null (effectively deactivating)
       const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         email_confirm: false
       });
 
       if (error) {
+        await logger.auditLog({
+          action: 'DEACTIVATE_USER_FAILED',
+          entity_type: 'USER',
+          entity_id: userId,
+          details: {
+            email: userData.user?.email,
+            error: error.message
+          }
+        });
         toast.error(`Failed to deactivate user: ${error.message}`);
         return;
       }
 
+      await logger.auditLog({
+        action: 'DEACTIVATE_USER',
+        entity_type: 'USER',
+        entity_id: userId,
+        details: {
+          email: userData.user?.email
+        }
+      });
       toast.success('User deactivated successfully');
       fetchUsers(currentPage, searchTerm);
     } catch (error) {
       console.error('Error deactivating user:', error);
+      await logger.auditLog({
+        action: 'DEACTIVATE_USER_EXCEPTION',
+        entity_type: 'USER',
+        entity_id: userId,
+        details: {
+          error: error instanceof Error ? error.message : String(error)
+        }
+      });
       toast.error('Failed to deactivate user');
     }
   };
@@ -286,14 +504,170 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
     }
   };
 
-  useEffect(() => {
-    fetchUsers(currentPage, searchTerm);
-  }, [currentPage]);
-
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setCurrentPage(1);
-    fetchUsers(1, searchTerm);
+    fetchUsers(1, searchTerm, selectedRole, selectedStatus);
+  }, [searchTerm, selectedRole, selectedStatus]);
+
+  const handleExportUsers = async () => {
+    try {
+      // Fetch all users for export
+      const { data: allUsers, error } = await supabaseAdmin
+        .from('user_profiles')
+        .select('*');
+
+      if (error) {
+        toast.error('Failed to fetch users for export');
+        return;
+      }
+
+      // Convert to CSV
+      const csvHeaders = ['Email', 'Role', 'Created At', 'Last Sign In', 'Status'];
+      const csvRows = allUsers.map(user => [
+        user.email || '',
+        user.role || 'user',
+        user.created_at ? format(new Date(user.created_at), 'yyyy-MM-dd HH:mm:ss') : '',
+        user.last_sign_in_at ? format(new Date(user.last_sign_in_at), 'yyyy-MM-dd HH:mm:ss') : '',
+        user.last_sign_in_at ? 
+          (new Date(user.last_sign_in_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) ? 'Active' : 'Inactive') : 
+          'Pending'
+      ]);
+
+      const csvContent = [csvHeaders, ...csvRows].map(row => row.join(',')).join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Users exported successfully');
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Failed to export users');
+    }
   };
+
+  const handleImportUsers = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length <= 1) {
+        toast.error('CSV file is empty or invalid');
+        return;
+      }
+
+      // Parse CSV (simple implementation)
+      const headers = lines[0].split(',').map(h => h.trim());
+      const emailIndex = headers.findIndex(h => h.toLowerCase().includes('email'));
+      
+      if (emailIndex === -1) {
+        toast.error('CSV must contain an email column');
+        return;
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const email = values[emailIndex]?.trim();
+        
+        if (email && email.includes('@')) {
+          try {
+            await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+              redirectTo: `${window.location.origin}/set-password`
+            });
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to invite ${email}:`, error);
+            errorCount++;
+          }
+        }
+      }
+
+      toast.success(`Imported ${successCount} users successfully. ${errorCount} failed.`);
+      fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
+    } catch (error) {
+      console.error('Error importing users:', error);
+      toast.error('Failed to import users');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Bulk selection functions
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(new Set(users.map(u => u.id)));
+    } else {
+      setSelectedUsers(new Set());
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    const newSelected = new Set(selectedUsers);
+    if (checked) {
+      newSelected.add(userId);
+    } else {
+      newSelected.delete(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const isAllSelected = users.length > 0 && selectedUsers.size === users.length;
+  const isIndeterminate = selectedUsers.size > 0 && selectedUsers.size < users.length;
+
+  useEffect(() => {
+    fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
+    
+    // Set up real-time subscription for user changes
+    const channel = supabase
+      .channel('user-management-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_profiles' },
+        (payload) => {
+          console.log('New user added:', payload.new);
+          // Refresh the user list when a new user is added
+          fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'user_profiles' },
+        (payload) => {
+          console.log('User updated:', payload.new);
+          // Refresh the user list when a user is updated
+          fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'user_profiles' },
+        (payload) => {
+          console.log('User deleted:', payload.old);
+          // Refresh the user list when a user is deleted
+          fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
+        }
+      )
+      .subscribe();
+
+    // Clean up subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentPage, selectedRole, selectedStatus, sortBy, sortOrder]);
 
   return (
     <div className="space-y-4">
@@ -310,6 +684,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExportUsers}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  id="import-users"
+                  onChange={handleImportUsers}
+                  disabled={isImporting}
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => document.getElementById('import-users')?.click()}
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import
+                    </>
+                  )}
+                </Button>
+              </div>
               <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
                 <DialogTrigger asChild>
                   <Button className="flex items-center gap-1 text-xs px-2 py-1 h-8 xs:gap-2 xs:text-sm xs:px-3 xs:py-1.5 xs:h-9 sm:px-4 sm:py-2 sm:h-10">
@@ -388,17 +793,90 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Search users by email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users by email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
             <Button onClick={handleSearch} variant="outline">
               Search
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
           </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <div className="grid gap-4 mb-4 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="role-filter">Role</Label>
+                <Select 
+                  value={selectedRole} 
+                  onValueChange={setSelectedRole}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="editor">Editor</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="status-filter">Status</Label>
+                <Select 
+                  value={selectedStatus} 
+                  onValueChange={setSelectedStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="sort-filter">Sort By</Label>
+                <Select 
+                  value={`${sortBy}-${sortOrder}`} 
+                  onValueChange={(value) => {
+                    const [field, order] = value.split('-') as [typeof sortBy, typeof sortOrder];
+                    setSortBy(field);
+                    setSortOrder(order);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at-desc">Newest First</SelectItem>
+                    <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                    <SelectItem value="email-asc">Email A-Z</SelectItem>
+                    <SelectItem value="email-desc">Email Z-A</SelectItem>
+                    <SelectItem value="last_sign_in_at-desc">Recently Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )
 
           {loading ? (
             <div className="flex justify-center py-8">
@@ -411,8 +889,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={handleSelectAll}
+                          ref={(el) => {
+                            if (el) el.indeterminate = isIndeterminate;
+                          }}
+                        />
+                      </TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Last Sign In</TableHead>
                       <TableHead>Actions</TableHead>
@@ -421,6 +909,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.has(user.id)}
+                            onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
                           {user.email}
@@ -448,7 +942,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                                 }
 
                                 toast.success('User role updated successfully');
-                                fetchUsers(currentPage, searchTerm);
+                                fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
                               } catch (error) {
                                 console.error('Error updating user role:', error);
                                 toast.error('Failed to update user role');
@@ -464,6 +958,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                               <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          {user.email_confirmed_at ? (
+                            user.is_active ? (
+                              <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-gray-600">
+                                Inactive
+                              </Badge>
+                            )
+                          ) : (
+                            <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                              Pending
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -551,7 +1062,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                         <span className="font-medium text-sm truncate">{user.email}</span>
                       </div>
                       
-                      {/* Role and Dates */}
+                      {/* Role and Status */}
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
                           <Label className="text-xs text-muted-foreground">Role</Label>
@@ -577,7 +1088,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                                 }
 
                                 toast.success('User role updated successfully');
-                                fetchUsers(currentPage, searchTerm);
+                                fetchUsers(currentPage, searchTerm, selectedRole, selectedStatus);
                               } catch (error) {
                                 console.error('Error updating user role:', error);
                                 toast.error('Failed to update user role');
@@ -595,10 +1106,30 @@ export const UserManagement: React.FC<UserManagementProps> = ({ totalUsers, onUs
                           </Select>
                         </div>
                         <div>
-                          <Label className="text-xs text-muted-foreground">Created</Label>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                          <Label className="text-xs text-muted-foreground">Status</Label>
+                          <div className="mt-1">
+                            {user.email_confirmed_at ? (
+                              user.is_active ? (
+                                <Badge variant="default" className="bg-green-100 text-green-800 border-green-300 text-xs">
+                                  Active
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-gray-600 text-xs">
+                                  Inactive
+                                </Badge>
+                              )
+                            ) : (
+                              <Badge variant="outline" className="text-yellow-600 border-yellow-600 text-xs">
+                                Pending
+                              </Badge>
+                            )}
                           </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Created</Label>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(user.created_at), 'MMM dd, yyyy')}
                         </div>
                       </div>
                       

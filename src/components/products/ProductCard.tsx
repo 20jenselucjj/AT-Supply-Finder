@@ -7,18 +7,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useKit } from "@/context/kit-context";
 import { useFavorites } from "@/context/favorites-context";
 import { Product } from "@/lib/types";
-import { Heart } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 
 const currency = (n: number) => `$${n.toFixed(2)}`;
 
 const cardVariants = {
   hover: {
-    scale: 1.05,
-    boxShadow: "0px 10px 20px rgba(0,0,0,0.1)",
-    y: -5,
+    y: -8,
+    boxShadow: "0px 20px 25px -5px rgba(0,0,0,0.1), 0px 10px 10px -5px rgba(0,0,0,0.04)",
   },
   tap: {
-    scale: 0.95,
+    scale: 0.98,
   },
 };
 
@@ -44,11 +43,14 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
     const asin = "B0C6TP64FL";
     return (
       <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 h-full relative">
+        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 h-full relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/10 rounded-full translate-y-24 -translate-x-24"></div>
+          
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-yellow-200/50"
+            className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-yellow-200/50 z-10"
             onClick={handleToggleFavorite}
             aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
           >
@@ -58,7 +60,8 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               }`} 
             />
           </Button>
-          <div className="w-full h-44 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-md">
+          
+          <div className="w-full h-44 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-md relative z-10">
             <img
               src="https://m.media-amazon.com/images/I/81MKOjzOdxL._AC_SX425_PIbundle-4,TopRight,0,0_SH20_.jpg"
               alt="OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards) - Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black"
@@ -70,7 +73,8 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               fetchPriority="low"
             />
           </div>
-          <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
+          
+          <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4 relative z-10">
             <div className="flex-1">
               <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
               <p className="text-sm text-yellow-700 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
@@ -84,13 +88,15 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               </div>
             </div>
           </div>
-          <ul className="text-base text-yellow-800 list-disc pl-5 flex-1">
+          
+          <ul className="text-base text-yellow-800 list-disc pl-5 flex-1 relative z-10">
             <li className="text-left">4 rolls, 120 yards total</li>
             <li className="text-left">Non-adhesive, high quality PU foam</li>
             <li className="text-left">Breathable, stretchable, comfortable</li>
             <li className="text-left">Protects skin, can be used as hair band</li>
           </ul>
-          <div className="flex flex-wrap gap-3 mt-auto">
+          
+          <div className="flex flex-wrap gap-3 mt-auto relative z-10">
             <Button
               asChild
               variant="hero"
@@ -135,7 +141,9 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
   // ...existing code...
   return (
     <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-      <Card className="p-5 flex flex-col gap-4 h-full relative">
+      <Card className="p-5 flex flex-col gap-4 h-full relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
         <Button
           variant="ghost"
           size="sm"
@@ -150,7 +158,8 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             }`} 
           />
         </Button>
-        <div className="w-full h-40 bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center overflow-hidden shadow-sm">
+        
+        <div className="w-full h-40 bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center overflow-hidden shadow-sm relative z-10">
           {loading ? (
             <Skeleton className="h-full w-full" />
           ) : (
@@ -167,7 +176,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           )}
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4 relative z-10">
           <div className="flex-1">
             <h3 className="text-base md:text-lg font-semibold leading-tight text-left">
               {loading ? <Skeleton className="h-5 w-32 mb-1" /> : product.name}
@@ -175,7 +184,28 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             <p className="text-xs text-muted-foreground mt-1 text-left">
               {loading ? <Skeleton className="h-3 w-20" /> : product.category}
             </p>
+            
+            {product.rating && product.rating > 0 && !loading && (
+              <div className="flex items-center mt-2">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(product.rating || 0)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {product.rating.toFixed(1)}
+                </span>
+              </div>
+            )}
           </div>
+          
           <div className="text-right md:min-w-[100px]">
             <div className="text-sm">From</div>
             <div className="text-lg md:text-xl font-bold">
@@ -183,13 +213,13 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             </div>
             <div className="mt-1 flex flex-col items-end gap-1">
               {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
-              {bestIsAmazon && !loading && <Badge className="text-xs">Best on Amazon</Badge>}
+              {bestIsAmazon && !loading && <Badge className="text-xs bg-orange-100 text-orange-800">Best on Amazon</Badge>}
             </div>
           </div>
         </div>
 
         {product.features && product.features.length > 0 && (
-          <ul className="text-sm text-muted-foreground list-disc pl-5 flex-1">
+          <ul className="text-sm text-muted-foreground list-disc pl-5 flex-1 relative z-10">
             {loading
               ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-3 w-24 mb-1" />)
               : product.features.map((f) => (
@@ -198,7 +228,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           </ul>
         )}
 
-        <div className="flex flex-wrap gap-2 mt-auto">
+        <div className="flex flex-wrap gap-2 mt-auto relative z-10">
           <Button
             onClick={() => addToKit(product)}
             variant="secondary"

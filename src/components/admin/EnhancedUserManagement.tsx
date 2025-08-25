@@ -33,7 +33,10 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Upload,
+  FileText
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -88,6 +91,7 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<'user' | 'editor' | 'admin'>('user');
   const [inviteMode, setInviteMode] = useState<'invite' | 'create'>('invite');
+  const [isImportUsersOpen, setIsImportUsersOpen] = useState(false);
 
   const usersPerPage = 10;
 
@@ -279,6 +283,57 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
     }
   };
 
+  const handleImportUsers = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length <= 1) {
+        toast.error('CSV file is empty or invalid');
+        return;
+      }
+
+      // Parse CSV (simple implementation)
+      const headers = lines[0].split(',').map(h => h.trim());
+      const emailIndex = headers.findIndex(h => h.toLowerCase().includes('email'));
+      
+      if (emailIndex === -1) {
+        toast.error('CSV must contain an email column');
+        return;
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const email = values[emailIndex]?.trim();
+        
+        if (email && email.includes('@')) {
+          try {
+            await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+              redirectTo: `${window.location.origin}/set-password`
+            });
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to invite ${email}:`, error);
+            errorCount++;
+          }
+        }
+      }
+
+      toast.success(`Imported ${successCount} users successfully. ${errorCount} failed.`);
+      fetchUsers(currentPage);
+      setIsImportUsersOpen(false);
+    } catch (error) {
+      console.error('Error importing users:', error);
+      toast.error('Failed to import users');
+    }
+  };
+
   const getUserStatusBadge = (user: UserData) => {
     if (!user.email_confirmed_at) {
       return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>;
@@ -333,6 +388,45 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog open={isImportUsersOpen} onOpenChange={setIsImportUsersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import Users
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import Users</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file with user emails to invite multiple users at once
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Upload a CSV file with email addresses
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    First column should be 'Email'
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    className="mt-4"
+                    onChange={handleImportUsers}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsImportUsersOpen(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
           <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
             <DialogTrigger asChild>
               <Button>

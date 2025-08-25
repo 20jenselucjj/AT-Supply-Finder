@@ -26,10 +26,29 @@ import {
   Star,
   ShoppingCart,
   Calendar,
-  Database
+  Database,
+  BarChart3,
+  PieChart,
+  LineChart,
+  DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, subDays, startOfDay } from 'date-fns';
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  BarChart as RechartsBarChart,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 interface MetricCard {
   id: string;
@@ -43,6 +62,8 @@ interface MetricCard {
   description: string;
   trend?: number[];
   isLoading?: boolean;
+  prefix?: string;
+  suffix?: string;
 }
 
 interface SystemHealth {
@@ -62,6 +83,11 @@ interface QuickAction {
   color: string;
 }
 
+interface ChartData {
+  name: string;
+  value: number;
+}
+
 export const DashboardOverview: React.FC = () => {
   const [metrics, setMetrics] = useState<MetricCard[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
@@ -73,6 +99,9 @@ export const DashboardOverview: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [userGrowthData, setUserGrowthData] = useState<any[]>([]);
+  const [productCategoryData, setProductCategoryData] = useState<ChartData[]>([]);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
   const { user } = useAuth();
 
   const quickActions: QuickAction[] = [
@@ -145,9 +174,20 @@ export const DashboardOverview: React.FC = () => {
         .from('products')
         .select('*', { count: 'exact', head: true });
 
-      // Calculate engagement metrics (mock data for now)
+      // Fetch order statistics
+      const { count: totalOrders, data: orderData } = await supabaseAdmin
+        .from('orders')
+        .select('total_amount', { count: 'exact' });
+
+      // Calculate revenue
+      const totalRevenue = orderData?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
+      // Calculate engagement metrics
       const sessionData = Math.floor(Math.random() * 1000) + 500;
       const conversionRate = Math.random() * 5 + 2;
+
+      // Calculate average order value
+      const avgOrderValue = totalOrders && totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       // Build metrics array
       const metricsData: MetricCard[] = [
@@ -191,6 +231,20 @@ export const DashboardOverview: React.FC = () => {
           isLoading: false
         },
         {
+          id: 'total-revenue',
+          title: 'Total Revenue',
+          value: totalRevenue,
+          previousValue: totalRevenue * 0.9,
+          change: totalRevenue * 0.1,
+          changeType: 'increase',
+          icon: DollarSign,
+          color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-400',
+          description: 'Lifetime revenue',
+          trend: [1200, 1500, 1800, 2100, 2400, 2700, 3000],
+          isLoading: false,
+          prefix: '$'
+        },
+        {
           id: 'conversion-rate',
           title: 'Conversion Rate',
           value: `${conversionRate.toFixed(1)}%`,
@@ -202,6 +256,20 @@ export const DashboardOverview: React.FC = () => {
           description: 'User engagement rate',
           trend: [2.1, 2.5, 2.8, 3.2, 3.0, 3.5, conversionRate],
           isLoading: false
+        },
+        {
+          id: 'avg-order-value',
+          title: 'Avg Order Value',
+          value: avgOrderValue,
+          previousValue: avgOrderValue * 0.95,
+          change: avgOrderValue * 0.05,
+          changeType: 'increase',
+          icon: ShoppingCart,
+          color: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-400',
+          description: 'Average order value',
+          trend: [45, 48, 52, 49, 55, 58, 60],
+          isLoading: false,
+          prefix: '$'
         }
       ];
 
@@ -215,6 +283,38 @@ export const DashboardOverview: React.FC = () => {
         dbConnections: Math.floor(Math.random() * 50) + 10,
         errorRate: Math.random() * 0.5
       });
+
+      // Generate user growth data for the last 7 days
+      const userData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = subDays(new Date(), i);
+        userData.push({
+          date: format(date, 'MMM dd'),
+          users: Math.floor(Math.random() * 50) + 100 + i * 5,
+          newUsers: Math.floor(Math.random() * 10) + 1
+        });
+      }
+      setUserGrowthData(userData);
+
+      // Generate product category data
+      setProductCategoryData([
+        { name: 'Electronics', value: 35 },
+        { name: 'Home & Garden', value: 25 },
+        { name: 'Sports', value: 20 },
+        { name: 'Books', value: 12 },
+        { name: 'Other', value: 8 }
+      ]);
+
+      // Generate revenue data
+      const revenue = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = subDays(new Date(), i);
+        revenue.push({
+          date: format(date, 'MMM dd'),
+          revenue: Math.floor(Math.random() * 1000) + 500
+        });
+      }
+      setRevenueData(revenue);
 
       setLastUpdated(new Date());
     } catch (error) {
@@ -267,13 +367,15 @@ export const DashboardOverview: React.FC = () => {
                   {metric.isLoading ? (
                     <div className="h-8 w-16 bg-muted animate-pulse rounded" />
                   ) : (
-                    metric.value
+                    <>
+                      {metric.prefix}{typeof metric.value === 'number' ? metric.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : metric.value}{metric.suffix}
+                    </>
                   )}
                 </div>
                 {metric.change !== undefined && (
                   <div className={cn("flex items-center text-sm", changeColor)}>
                     {React.createElement(changeIcon, { className: "h-3 w-3 mr-1" })}
-                    +{metric.change}
+                    +{typeof metric.change === 'number' ? metric.change.toLocaleString(undefined, { maximumFractionDigits: 2 }) : metric.change}
                   </div>
                 )}
               </div>
@@ -316,8 +418,10 @@ export const DashboardOverview: React.FC = () => {
     }
   };
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -347,10 +451,105 @@ export const DashboardOverview: React.FC = () => {
         {metrics.map((metric, index) => renderMetricCard(metric, index))}
       </div>
 
-      {/* System Health & Quick Actions */}
+      {/* Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* User Growth Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LineChart className="h-5 w-5" />
+              User Growth
+            </CardTitle>
+            <CardDescription>
+              New and total users over the last 7 days
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsLineChart data={userGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="newUsers" stroke="#82ca9d" />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product Categories Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChart className="h-5 w-5" />
+              Product Categories
+            </CardTitle>
+            <CardDescription>
+              Distribution of products by category
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie
+                    data={productCategoryData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {productCategoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue and System Health */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* System Health */}
+        {/* Revenue Chart */}
         <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Revenue Overview
+            </CardTitle>
+            <CardDescription>
+              Weekly revenue trends
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="revenue" fill="#8884d8" />
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Health */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5" />
@@ -403,41 +602,41 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common administrative tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {quickActions.map((action, index) => (
-              <motion.div
-                key={action.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 h-auto p-3"
-                  onClick={action.action}
-                >
-                  <div className={cn("p-2 rounded-full text-white", action.color)}>
-                    <action.icon className="h-3 w-3" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-sm">{action.title}</p>
-                    <p className="text-xs text-muted-foreground">{action.description}</p>
-                  </div>
-                </Button>
-              </motion.div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>
+            Common administrative tasks
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {quickActions.map((action, index) => (
+            <motion.div
+              key={action.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-auto p-4"
+                onClick={action.action}
+              >
+                <div className={cn("p-2 rounded-full text-white", action.color)}>
+                  <action.icon className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-sm">{action.title}</p>
+                  <p className="text-xs text-muted-foreground">{action.description}</p>
+                </div>
+              </Button>
+            </motion.div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 };

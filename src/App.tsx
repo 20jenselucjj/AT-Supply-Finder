@@ -23,6 +23,9 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminKits from "./pages/admin/AdminKits";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminMarketing from "./pages/admin/AdminMarketing";
+import AdminOrders from "./pages/admin/AdminOrders";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
@@ -60,7 +63,10 @@ const App = () => {
                           <Route path="dashboard" element={<AdminDashboard />} />
                           <Route path="users" element={<AdminUsers />} />
                           <Route path="products" element={<AdminProducts />} />
+                          <Route path="orders" element={<AdminOrders />} />
                           <Route path="analytics" element={<AdminAnalytics />} />
+                          <Route path="reports" element={<AdminReports />} />
+                          <Route path="marketing" element={<AdminMarketing />} />
                           <Route path="templates" element={<AdminKits />} />
                           <Route path="system" element={<AdminSettings />} />
                         </Route>

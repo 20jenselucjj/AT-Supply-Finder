@@ -12,8 +12,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash } from 'lucide-react';
+import { useRBAC } from '@/hooks/use-rbac';
+import { logger } from '@/lib/logger';
+import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash, Upload, Download, Filter, Search, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { fuzzySearch, generateSuggestions } from '@/lib/fuzzy-search';
 
 interface ProductData {
   id: string;
@@ -47,18 +50,48 @@ interface ProductManagementProps {
   onProductCountChange: (count: number) => void;
 }
 
+// New interface for advanced filters
+interface AdvancedFilters {
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  maxRating?: number;
+  brand?: string;
+  material?: string;
+  weight?: string;
+}
+
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]); // New state for brands
+  const [materials, setMaterials] = useState<string[]>([]); // New state for materials
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'created_at' | 'name' | 'price'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
+  
+  // Advanced filters state
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    minPrice: undefined,
+    maxPrice: undefined,
+    minRating: undefined,
+    maxRating: undefined,
+    brand: '',
+    material: '',
+    weight: ''
+  });
   
   const [productForm, setProductForm] = useState({
     name: '',
@@ -75,7 +108,14 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     affiliate_link: ''
   });
   
+  // Bulk update state
+  const [bulkUpdateData, setBulkUpdateData] = useState({
+    category: '',
+    brand: ''
+  });
+  
   const [isLoadingProductInfo, setIsLoadingProductInfo] = useState(false);
+  const { isEditorOrAdmin } = useRBAC();
   
   const productsPerPage = 10;
 
@@ -95,15 +135,59 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             last_updated
           )
         `, { count: 'exact' })
-        .order('created_at', { ascending: false })
+        .order(sortBy, { ascending: sortOrder === 'asc' })
         .range((page - 1) * productsPerPage, page * productsPerPage - 1);
 
+      // Apply search term filter
       if (search) {
-        query = query.or(`name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%`);
+        // Enhanced search with multiple matching strategies
+        const searchTerms = search.split(' ').filter(term => term.length > 0);
+        
+        if (searchTerms.length > 0) {
+          // For multiple terms, search each term separately
+          const searchConditions = searchTerms.map(term => 
+            `name.ilike.%${term}%,brand.ilike.%${term}%,category.ilike.%${term}%,material.ilike.%${term}%`
+          ).join(',');
+          
+          query = query.or(searchConditions);
+        } else {
+          // For single term, use broader matching
+          query = query.or(`name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%,material.ilike.%${search}%`);
+        }
       }
 
+      // Apply category filter
       if (category !== 'all') {
         query = query.eq('category', category);
+      }
+
+      // Apply advanced filters
+      if (advancedFilters.minPrice !== undefined) {
+        query = query.gte('price', advancedFilters.minPrice);
+      }
+      
+      if (advancedFilters.maxPrice !== undefined) {
+        query = query.lte('price', advancedFilters.maxPrice);
+      }
+      
+      if (advancedFilters.minRating !== undefined) {
+        query = query.gte('rating', advancedFilters.minRating);
+      }
+      
+      if (advancedFilters.maxRating !== undefined) {
+        query = query.lte('rating', advancedFilters.maxRating);
+      }
+      
+      if (advancedFilters.brand) {
+        query = query.ilike('brand', `%${advancedFilters.brand}%`);
+      }
+      
+      if (advancedFilters.material) {
+        query = query.ilike('material', `%${advancedFilters.material}%`);
+      }
+      
+      if (advancedFilters.weight) {
+        query = query.ilike('weight', `%${advancedFilters.weight}%`);
       }
 
       const { data, error, count } = await query;
@@ -141,6 +225,46 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Fetch brands for filter dropdown
+  const fetchBrands = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('products')
+        .select('brand')
+        .not('brand', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching brands:', error);
+        return;
+      }
+
+      const uniqueBrands = [...new Set(data.map(item => item.brand).filter(Boolean))];
+      setBrands(uniqueBrands);
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+    }
+  };
+
+  // Fetch materials for filter dropdown
+  const fetchMaterials = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('products')
+        .select('material')
+        .not('material', 'is', null);
+      
+      if (error) {
+        console.error('Error fetching materials:', error);
+        return;
+      }
+
+      const uniqueMaterials = [...new Set(data.map(item => item.material).filter(Boolean))];
+      setMaterials(uniqueMaterials);
+    } catch (error) {
+      console.error('Error fetching materials:', error);
     }
   };
 
@@ -190,15 +314,44 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       setIsDeleting(true);
       const productIds = Array.from(selectedProducts);
       
+      // Fetch product names before deletion for audit logging
+      const { data: productData, error: fetchError } = await supabaseAdmin
+        .from('products')
+        .select('id, name, category, brand')
+        .in('id', productIds);
+
       const { error } = await supabaseAdmin
         .from('products')
         .delete()
         .in('id', productIds);
 
       if (error) {
+        await logger.auditLog({
+          action: 'BULK_DELETE_PRODUCTS_FAILED',
+          entity_type: 'PRODUCT',
+          details: {
+            count: productIds.length,
+            error: error.message
+          }
+        });
         toast.error(`Failed to delete products: ${error.message}`);
         return;
       }
+
+      // Log successful bulk deletion
+      await logger.auditLog({
+        action: 'BULK_DELETE_PRODUCTS',
+        entity_type: 'PRODUCT',
+        details: {
+          count: productIds.length,
+          products: productData?.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            brand: p.brand
+          }))
+        }
+      });
 
       toast.success(`Successfully deleted ${productIds.length} product${productIds.length > 1 ? 's' : ''}`);
       setSelectedProducts(new Set());
@@ -211,10 +364,244 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     }
   };
 
+  const handleExportProducts = async () => {
+    try {
+      // Fetch all products for export
+      const { data, error } = await supabaseAdmin
+        .from('products')
+        .select('*');
+      
+      if (error) {
+        await logger.auditLog({
+          action: 'EXPORT_ALL_PRODUCTS_FAILED',
+          entity_type: 'PRODUCT',
+          details: {
+            error: error.message
+          }
+        });
+        toast.error('Failed to fetch products for export');
+        return;
+      }
+
+      // Convert to CSV
+      const csvHeaders = Object.keys(data[0] || {}).join(',');
+      const csvRows = data.map(product => 
+        Object.values(product).map(value => 
+          typeof value === 'object' ? JSON.stringify(value) : value
+        ).join(',')
+      );
+      
+      const csvContent = [csvHeaders, ...csvRows].join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `products-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Log successful export
+      await logger.auditLog({
+        action: 'EXPORT_ALL_PRODUCTS',
+        entity_type: 'PRODUCT',
+        details: {
+          count: data.length
+        }
+      });
+      
+      toast.success('Products exported successfully');
+    } catch (error) {
+      console.error('Error exporting products:', error);
+      toast.error('Failed to export products');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error('No products selected');
+      return;
+    }
+
+    try {
+      // Fetch selected products for export
+      const { data, error } = await supabaseAdmin
+        .from('products')
+        .select('*')
+        .in('id', Array.from(selectedProducts));
+      
+      if (error) {
+        await logger.auditLog({
+          action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
+          entity_type: 'PRODUCT',
+          details: {
+            count: selectedProducts.size,
+            error: error.message
+          }
+        });
+        toast.error('Failed to fetch selected products for export');
+        return;
+      }
+
+      // Convert to CSV
+      const csvHeaders = Object.keys(data[0] || {}).join(',');
+      const csvRows = data.map(product => 
+        Object.values(product).map(value => 
+          typeof value === 'object' ? JSON.stringify(value) : value
+        ).join(',')
+      );
+
+      // Log successful export
+      await logger.auditLog({
+        action: 'EXPORT_SELECTED_PRODUCTS',
+        entity_type: 'PRODUCT',
+        details: {
+          count: data.length
+        }
+      });
+      
+      const csvContent = [csvHeaders, ...csvRows].join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `selected-products-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} exported successfully`);
+    } catch (error) {
+      console.error('Error exporting selected products:', error);
+      toast.error('Failed to export selected products');
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (selectedProducts.size === 0) {
+      toast.error('No products selected');
+      return;
+    }
+
+    if (!bulkUpdateData.category && !bulkUpdateData.brand) {
+      toast.error('Please select at least one field to update');
+      return;
+    }
+
+    try {
+      // Prepare update data
+      const updateData: any = {};
+      if (bulkUpdateData.category) updateData.category = bulkUpdateData.category;
+      if (bulkUpdateData.brand) updateData.brand = bulkUpdateData.brand;
+      updateData.updated_at = new Date().toISOString();
+
+      // Update selected products
+      const { error } = await supabaseAdmin
+        .from('products')
+        .update(updateData)
+        .in('id', Array.from(selectedProducts));
+      
+      if (error) {
+        toast.error('Failed to update products');
+        return;
+      }
+
+      toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} updated successfully`);
+      
+      // Reset bulk update data
+      setBulkUpdateData({ category: '', brand: '' });
+      
+      // Refresh product list
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+    } catch (error) {
+      console.error('Error updating products:', error);
+      toast.error('Failed to update products');
+    }
+  };
+
+  const handleCSVImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length < 2) {
+        toast.error('CSV file is empty or invalid');
+        return;
+      }
+
+      // Parse CSV headers
+      const headers = lines[0].split(',').map(header => header.trim());
+      
+      // Parse data rows
+      const productsToImport = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        if (values.length !== headers.length) continue;
+        
+        const product: any = {};
+        for (let j = 0; j < headers.length; j++) {
+          const header = headers[j];
+          const value = values[j]?.trim() || '';
+          
+          // Convert numeric values
+          if (header === 'price' || header === 'rating') {
+            const numValue = parseFloat(value);
+            product[header] = isNaN(numValue) ? null : numValue;
+          } else if (header === 'features') {
+            product[header] = value ? value.split(';').map(f => f.trim()) : [];
+          } else {
+            product[header] = value || null;
+          }
+        }
+        
+        // Validate required fields
+        if (product.name && product.category && product.brand) {
+          productsToImport.push(product);
+        }
+      }
+
+      if (productsToImport.length === 0) {
+        toast.error('No valid products found in CSV');
+        return;
+      }
+
+      // Insert products
+      const { error } = await supabaseAdmin
+        .from('products')
+        .insert(productsToImport);
+      
+      if (error) {
+        toast.error(`Failed to import products: ${error.message}`);
+        return;
+      }
+
+      toast.success(`Successfully imported ${productsToImport.length} product${productsToImport.length > 1 ? 's' : ''}`);
+      
+      // Refresh product list
+      fetchProducts(currentPage, searchTerm, selectedCategory);
+      fetchCategories();
+      fetchBrands();
+      fetchMaterials();
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast.error('Failed to import products from CSV');
+    }
+  };
+
   const isAllSelected = products.length > 0 && selectedProducts.size === products.length;
   const isIndeterminate = selectedProducts.size > 0 && selectedProducts.size < products.length;
-
-
 
   // Extract ASIN from Amazon affiliate link
   const extractASINFromLink = (url: string): string | null => {
@@ -239,6 +626,43 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       console.error('Error extracting ASIN:', error);
       return null;
     }
+  };
+
+  // Generate search suggestions
+  const generateSearchSuggestions = (query: string) => {
+    if (query.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+    
+    const suggestions = generateSuggestions(
+      products,
+      query,
+      ['name', 'brand', 'category', 'material'],
+      5
+    );
+    
+    setSearchSuggestions(suggestions);
+  };
+
+  // Handle search input with suggestions
+  const handleSearchInput = (value: string) => {
+    setSearchTerm(value);
+    generateSearchSuggestions(value);
+    
+    if (value) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Select a suggestion
+  const selectSuggestion = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    setShowSuggestions(false);
+    setCurrentPage(1);
+    fetchProducts(1, suggestion, selectedCategory);
   };
 
   // Auto-populate product information from affiliate link
@@ -329,14 +753,35 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         affiliate_link: productForm.affiliate_link || null
       };
 
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from('products')
-        .insert(productData);
+        .insert(productData)
+        .select();
 
       if (error) {
+        await logger.auditLog({
+          action: 'CREATE_PRODUCT_FAILED',
+          entity_type: 'PRODUCT',
+          details: {
+            product_name: productForm.name,
+            error: error.message
+          }
+        });
         toast.error(`Failed to create product: ${error.message}`);
         return;
       }
+
+      // Log successful product creation
+      await logger.auditLog({
+        action: 'CREATE_PRODUCT',
+        entity_type: 'PRODUCT',
+        entity_id: data?.[0]?.id,
+        details: {
+          product_name: productForm.name,
+          category: productForm.category,
+          brand: productForm.brand
+        }
+      });
 
       toast.success('Product created successfully');
       setIsAddProductOpen(false);
@@ -375,9 +820,30 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         .eq('id', editingProduct.id);
 
       if (error) {
+        await logger.auditLog({
+          action: 'UPDATE_PRODUCT_FAILED',
+          entity_type: 'PRODUCT',
+          entity_id: editingProduct.id,
+          details: {
+            product_name: productForm.name,
+            error: error.message
+          }
+        });
         toast.error(`Failed to update product: ${error.message}`);
         return;
       }
+
+      // Log successful product update
+      await logger.auditLog({
+        action: 'UPDATE_PRODUCT',
+        entity_type: 'PRODUCT',
+        entity_id: editingProduct.id,
+        details: {
+          product_name: productForm.name,
+          category: productForm.category,
+          brand: productForm.brand
+        }
+      });
 
       toast.success('Product updated successfully');
       setEditingProduct(null);
@@ -392,15 +858,41 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   const handleDeleteProduct = async (productId: string) => {
     try {
+      const { data: productData, error: fetchError } = await supabaseAdmin
+        .from('products')
+        .select('name, category, brand')
+        .eq('id', productId)
+        .single();
+      
       const { error } = await supabaseAdmin
         .from('products')
         .delete()
         .eq('id', productId);
       
       if (error) {
+        await logger.auditLog({
+          action: 'DELETE_PRODUCT_FAILED',
+          entity_type: 'PRODUCT',
+          entity_id: productId,
+          details: {
+            error: error.message
+          }
+        });
         toast.error(`Failed to delete product: ${error.message}`);
         return;
       }
+
+      // Log successful product deletion
+      await logger.auditLog({
+        action: 'DELETE_PRODUCT',
+        entity_type: 'PRODUCT',
+        entity_id: productId,
+        details: {
+          product_name: productData?.name,
+          category: productData?.category,
+          brand: productData?.brand
+        }
+      });
 
       toast.success('Product deleted successfully');
       fetchProducts(currentPage, searchTerm, selectedCategory);
@@ -419,8 +911,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       rating: product.rating?.toString() || '',
       price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
-
-
       weight: product.weight || '',
       material: product.material || '',
       features: product.features?.join('\n') || '',
@@ -437,13 +927,85 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   useEffect(() => {
     fetchProducts(currentPage, searchTerm, selectedCategory);
-  }, [currentPage, selectedCategory]);
+  }, [currentPage, selectedCategory, sortBy, sortOrder, advancedFilters]);
 
   useEffect(() => {
     fetchCategories();
+    fetchBrands();
+    fetchMaterials();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('product-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('New product added:', payload.new);
+          // Refresh the product list when a new product is added
+          fetchProducts(currentPage, searchTerm, selectedCategory);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('Product updated:', payload.new);
+          // Refresh the product list when a product is updated
+          fetchProducts(currentPage, searchTerm, selectedCategory);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('Product deleted:', payload.old);
+          // Refresh the product list when a product is deleted
+          fetchProducts(currentPage, searchTerm, selectedCategory);
+        }
+      )
+      .subscribe();
+
+    // Clean up subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSearch = () => {
+    setCurrentPage(1);
+    fetchProducts(1, searchTerm, selectedCategory);
+  };
+
+  // Check if any advanced filters are active
+  const hasActiveFilters = () => {
+    return (
+      advancedFilters.minPrice !== undefined ||
+      advancedFilters.maxPrice !== undefined ||
+      advancedFilters.minRating !== undefined ||
+      advancedFilters.maxRating !== undefined ||
+      !!advancedFilters.brand ||
+      !!advancedFilters.material ||
+      !!advancedFilters.weight
+    );
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setAdvancedFilters({
+      minPrice: undefined,
+      maxPrice: undefined,
+      minRating: undefined,
+      maxRating: undefined,
+      brand: '',
+      material: '',
+      weight: ''
+    });
+    setCurrentPage(1);
+  };
+
+  // Apply filters (trigger refetch)
+  const applyFilters = () => {
     setCurrentPage(1);
     fetchProducts(1, searchTerm, selectedCategory);
   };
@@ -462,173 +1024,237 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                 Manage your product catalog. Total products: {totalProducts}
               </CardDescription>
             </div>
-            <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Product
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
-                  <DialogDescription>
-                    Create a new product manually.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="affiliate_link"
-                        value={productForm.affiliate_link}
-                        onChange={(e) => handleAffiliateLinkChange(e.target.value)}
-                        placeholder="Paste Amazon affiliate link to auto-populate product info"
-                        disabled={isLoadingProductInfo}
-                      />
-                      {isLoadingProductInfo && (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        </div>
-                      )}
+            <div className="flex gap-2">
+              <Dialog open={isImportProductsOpen} onOpenChange={setIsImportProductsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Import Products</DialogTitle>
+                    <DialogDescription>
+                      Upload a CSV file to import multiple products at once
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Upload a CSV file with product data
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Required columns: name, category, brand
+                      </p>
+                      <Button className="mt-4" variant="outline">
+                        Choose File
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Paste an Amazon product link to automatically extract the ASIN and help populate product details
-                    </p>
                   </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="name">Product Name *</Label>
-                    <Input
-                      id="name"
-                      value={productForm.name}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter product name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-                    <Input
-                      id="category"
-                      value={productForm.category}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                      placeholder="e.g., Athletic Tape"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="brand">Brand *</Label>
-                    <Input
-                      id="brand"
-                      value={productForm.brand}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
-                      placeholder="e.g., Mueller"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="rating">Rating (0-5)</Label>
-                    <Input
-                      id="rating"
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={productForm.rating}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
-                      placeholder="4.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={productForm.price}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-                      placeholder="29.99"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dimensions">Dimensions</Label>
-                    <Input
-                      id="dimensions"
-                      value={productForm.dimensions}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
-                      placeholder="e.g., 1.5in x 15yd"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="weight">Weight</Label>
-                    <Input
-                      id="weight"
-                      value={productForm.weight}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
-                      placeholder="e.g., 3.2 lbs"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="material">Material</Label>
-                    <Input
-                      id="material"
-                      value={productForm.material}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
-                      placeholder="e.g., Cotton blend"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="features">Features (one per line)</Label>
-                    <Textarea
-                      id="features"
-                      value={productForm.features}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
-                      placeholder="High tensile strength\nHypoallergenic adhesive\nEasy tear"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="image_url">Image URL</Label>
-                    <Input
-                      id="image_url"
-                      value={productForm.image_url}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="asin">ASIN</Label>
-                    <Input
-                      id="asin"
-                      value={productForm.asin}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
-                      placeholder="Amazon ASIN"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => {
-                    setIsAddProductOpen(false);
-                    resetForm();
-                  }}>
-                    Cancel
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsImportProductsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button>Import Products</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
+              <Button variant="outline" onClick={handleExportProducts}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              
+              <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Product
                   </Button>
-                  <Button onClick={handleAddProduct}>
-                    Create Product
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add New Product</DialogTitle>
+                    <DialogDescription>
+                      Create a new product manually.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="affiliate_link"
+                          value={productForm.affiliate_link}
+                          onChange={(e) => handleAffiliateLinkChange(e.target.value)}
+                          placeholder="Paste Amazon affiliate link to auto-populate product info"
+                          disabled={isLoadingProductInfo}
+                        />
+                        {isLoadingProductInfo && (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Paste an Amazon product link to automatically extract the ASIN and help populate product details
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="name">Product Name *</Label>
+                      <Input
+                        id="name"
+                        value={productForm.name}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter product name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Category *</Label>
+                      <Input
+                        id="category"
+                        value={productForm.category}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
+                        placeholder="e.g., Athletic Tape"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="brand">Brand *</Label>
+                      <Input
+                        id="brand"
+                        value={productForm.brand}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
+                        placeholder="e.g., Mueller"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rating">Rating (0-5)</Label>
+                      <Input
+                        id="rating"
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        value={productForm.rating}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
+                        placeholder="4.5"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="price">Price ($)</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={productForm.price}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
+                        placeholder="29.99"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dimensions">Dimensions</Label>
+                      <Input
+                        id="dimensions"
+                        value={productForm.dimensions}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
+                        placeholder="e.g., 1.5in x 15yd"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="weight">Weight</Label>
+                      <Input
+                        id="weight"
+                        value={productForm.weight}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
+                        placeholder="e.g., 3.2 lbs"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="material">Material</Label>
+                      <Input
+                        id="material"
+                        value={productForm.material}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
+                        placeholder="e.g., Cotton blend"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="features">Features (one per line)</Label>
+                      <Textarea
+                        id="features"
+                        value={productForm.features}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
+                        placeholder="High tensile strength
+Hypoallergenic adhesive
+Easy tear"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="image_url">Image URL</Label>
+                      <Input
+                        id="image_url"
+                        value={productForm.image_url}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="asin">ASIN</Label>
+                      <Input
+                        id="asin"
+                        value={productForm.asin}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
+                        placeholder="Amazon ASIN"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setIsAddProductOpen(false);
+                      resetForm();
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddProduct}>
+                      Create Product
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onFocus={() => searchTerm && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="pl-9"
+              />
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-10">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 hover:bg-muted cursor-pointer text-sm"
+                      onMouseDown={() => selectSuggestion(suggestion)}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="All Categories" />
@@ -645,31 +1271,304 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             <Button onClick={handleSearch} variant="outline">
               Search
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {hasActiveFilters() && (
+                <span className="ml-2 h-2 w-2 rounded-full bg-primary"></span>
+              )}
+            </Button>
+            <Select 
+              value={`${sortBy}-${sortOrder}`} 
+              onValueChange={(value) => {
+                const [field, order] = value.split('-') as [typeof sortBy, typeof sortOrder];
+                setSortBy(field);
+                setSortOrder(order as 'asc' | 'desc');
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at-desc">Newest First</SelectItem>
+                <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                <SelectItem value="name-asc">Name A-Z</SelectItem>
+                <SelectItem value="name-desc">Name Z-A</SelectItem>
+                <SelectItem value="price-asc">Price Low-High</SelectItem>
+                <SelectItem value="price-desc">Price High-Low</SelectItem>
+              </SelectContent>
+            </Select>
             {selectedProducts.size > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting}>
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete Selected ({selectedProducts.size})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Products</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting}>
-                      {isDeleting ? 'Deleting...' : 'Delete'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <div className="flex flex-wrap gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting}>
+                      <Trash className="h-4 w-4 mr-2" />
+                      Delete Selected ({selectedProducts.size})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Products</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting}>
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                
+                <Button variant="outline" onClick={handleBulkExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Selected
+                </Button>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Bulk Update
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Bulk Update Products</DialogTitle>
+                      <DialogDescription>
+                        Update properties for {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div>
+                        <Label htmlFor="bulk-category">Category</Label>
+                        <Select onValueChange={(value) => setBulkUpdateData(prev => ({ ...prev, category: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map(category => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="bulk-brand">Brand</Label>
+                        <Select onValueChange={(value) => setBulkUpdateData(prev => ({ ...prev, brand: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brands.map(brand => (
+                              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => console.log('Cancel bulk update')}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleBulkUpdate}>
+                        Apply Updates
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import CSV
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Import Products from CSV</DialogTitle>
+                      <DialogDescription>
+                        Upload a CSV file to import multiple products at once
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <div 
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => document.getElementById('csv-upload')?.click()}
+                      >
+                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          CSV file with product data
+                        </p>
+                        <input
+                          id="csv-upload"
+                          type="file"
+                          accept=".csv"
+                          className="hidden"
+                          onChange={handleCSVImport}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => console.log('Cancel CSV import')}>
+                        Cancel
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             )}
           </div>
+
+          {/* Advanced Filters Panel */}
+          {showFilters && (
+            <Card className="mb-4 p-4 bg-muted/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Price Range */}
+                <div>
+                  <Label htmlFor="min-price">Min Price</Label>
+                  <Input
+                    id="min-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={advancedFilters.minPrice ?? ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      minPrice: e.target.value ? parseFloat(e.target.value) : undefined
+                    }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max-price">Max Price</Label>
+                  <Input
+                    id="max-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="1000.00"
+                    value={advancedFilters.maxPrice ?? ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      maxPrice: e.target.value ? parseFloat(e.target.value) : undefined
+                    }))}
+                  />
+                </div>
+                
+                {/* Rating Range */}
+                <div>
+                  <Label htmlFor="min-rating">Min Rating</Label>
+                  <Input
+                    id="min-rating"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    placeholder="0.0"
+                    value={advancedFilters.minRating ?? ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      minRating: e.target.value ? parseFloat(e.target.value) : undefined
+                    }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max-rating">Max Rating</Label>
+                  <Input
+                    id="max-rating"
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    placeholder="5.0"
+                    value={advancedFilters.maxRating ?? ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      maxRating: e.target.value ? parseFloat(e.target.value) : undefined
+                    }))}
+                  />
+                </div>
+                
+                {/* Brand Filter */}
+                <div>
+                  <Label htmlFor="brand-filter">Brand</Label>
+                  <Select 
+                    value={advancedFilters.brand || ''} 
+                    onValueChange={(value) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      brand: value === 'all' ? '' : value
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Brands" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Brands</SelectItem>
+                      {brands.map(brand => (
+                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Material Filter */}
+                <div>
+                  <Label htmlFor="material-filter">Material</Label>
+                  <Input
+                    id="material-filter"
+                    placeholder="e.g., Cotton, Neoprene"
+                    value={advancedFilters.material || ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      material: e.target.value
+                    }))}
+                  />
+                </div>
+                
+                {/* Weight Filter */}
+                <div>
+                  <Label htmlFor="weight-filter">Weight</Label>
+                  <Input
+                    id="weight-filter"
+                    placeholder="e.g., 2 lbs, 500g"
+                    value={advancedFilters.weight || ''}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      weight: e.target.value
+                    }))}
+                  />
+                </div>
+                
+                {/* Filter Actions */}
+                <div className="flex items-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={resetFilters}
+                    className="w-full"
+                  >
+                    Reset
+                  </Button>
+                  <Button 
+                    onClick={applyFilters}
+                    className="w-full"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-8">
@@ -687,15 +1586,14 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                           checked={isAllSelected}
                           onCheckedChange={handleSelectAll}
                           ref={(el) => {
-                            if (el) el.indeterminate = isIndeterminate;
+                            if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
                           }}
                         />
                       </TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Brand</TableHead>
                       <TableHead>Rating</TableHead>
                       <TableHead>Price</TableHead>
+                      <TableHead className="hidden lg:table-cell">Material</TableHead>
+                      <TableHead className="hidden xl:table-cell">Weight</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -744,6 +1642,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                             {product.vendor_offers && product.vendor_offers.length > 0
                               ? `$${product.vendor_offers.reduce((min, p) => p.price < min ? p.price : min, product.vendor_offers[0].price).toFixed(2)}`
                               : product.price ? `$${product.price.toFixed(2)}` : 'N/A'}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {product.material || 'N/A'}
+                          </TableCell>
+                          <TableCell className="hidden xl:table-cell">
+                            {product.weight || 'N/A'}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -939,7 +1843,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
                     ref={(el) => {
-                      if (el) el.indeterminate = isIndeterminate;
+                      if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
                     }}
                   />
                   <Label className="text-sm font-medium">Select All</Label>
@@ -1002,14 +1906,24 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                             )}
                           </div>
                         </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Material</Label>
+                          <div className="font-medium">
+                            {product.material || 'N/A'}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Weight</Label>
+                          <div className="font-medium">
+                            {product.weight || 'N/A'}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Dimensions and weight */}
-                      {(product.dimensions || product.weight) && (
+                      {/* Dimensions */}
+                      {product.dimensions && (
                         <div className="text-xs text-muted-foreground">
-                          {product.dimensions && `${product.dimensions}`}
-                          {product.dimensions && product.weight && ' • '}
-                          {product.weight}
+                          Dimensions: {product.dimensions}
                         </div>
                       )}
 
@@ -1154,3 +2068,5 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     </div>
   );
 };
+
+export default ProductManagement;
