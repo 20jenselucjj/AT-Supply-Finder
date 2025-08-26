@@ -1,0 +1,72 @@
+export interface StarterKitTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  estimated_cost?: number;
+}
+
+export interface ProductOption {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  image_url?: string;
+  price?: number;
+}
+
+export interface TemplateForm {
+  name: string;
+  description: string;
+  category: string;
+  is_active: boolean;
+  estimated_cost: number;
+}
+
+export interface TemplateListProps {
+  templates: StarterKitTemplate[];
+  loading: boolean;
+  onViewModeChange: (mode: 'grid' | 'list') => void;
+  viewMode: 'grid' | 'list';
+  onEditTemplate: (template: StarterKitTemplate) => void;
+  onDeleteTemplate: (template: StarterKitTemplate) => void;
+  onDuplicateTemplate: (template: StarterKitTemplate) => void;
+}
+
+export interface TemplateFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
+  templateForm: TemplateForm;
+  setTemplateForm: React.Dispatch<React.SetStateAction<TemplateForm>>;
+  isEditing: boolean;
+}
+
+export interface TemplateFiltersProps {
+  searchTerm: string;
+  setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
+  selectedCategory: string;
+  setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
+  categories: string[];
+  onSearch: () => void;
+  onResetFilters: () => void;
+}
+
+export interface TemplateTableProps {
+  templates: StarterKitTemplate[];
+  onEditTemplate: (template: StarterKitTemplate) => void;
+  onDeleteTemplate: (template: StarterKitTemplate) => void;
+  onDuplicateTemplate: (template: StarterKitTemplate) => void;
+  loading: boolean;
+}
+
+export interface TemplateGridProps {
+  templates: StarterKitTemplate[];
+  onEditTemplate: (template: StarterKitTemplate) => void;
+  onDeleteTemplate: (template: StarterKitTemplate) => void;
+  onDuplicateTemplate: (template: StarterKitTemplate) => void;
+  loading: boolean;
+}
