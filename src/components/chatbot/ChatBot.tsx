@@ -370,7 +370,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                 </motion.div>
               </Button>
               
-              {/* Notification Badge */}
+              {/* Notification Badge - Keeping this as it's part of the design */}
               {chatState.unreadCount > 0 && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -381,21 +381,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                 </motion.div>
               )}
               
-              {/* Connection Status Indicator */}
-              <div className="absolute -bottom-1 -right-1">
-                {chatState.connectionStatus === 'online' && (
-                  <div className="h-4 w-4 bg-green-500 rounded-full border-2 border-white shadow-sm" 
-                       title="Online" />
-                )}
-                {chatState.connectionStatus === 'offline' && (
-                  <div className="h-4 w-4 bg-red-500 rounded-full border-2 border-white shadow-sm" 
-                       title="Offline" />
-                )}
-                {chatState.connectionStatus === 'connecting' && (
-                  <div className="h-4 w-4 bg-yellow-500 rounded-full border-2 border-white shadow-sm animate-pulse" 
-                       title="Connecting" />
-                )}
-              </div>
+              {/* Removing the connection status indicator that was showing the green circle/WiFi symbol */}
             </div>
           </motion.div>
         )}
@@ -424,18 +410,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                       <Bot className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  {/* Status indicator */}
-                  <div className="absolute -bottom-0.5 -right-0.5">
-                    {chatState.connectionStatus === 'online' && (
-                      <Wifi className="h-3 w-3 text-green-500" />
-                    )}
-                    {chatState.connectionStatus === 'offline' && (
-                      <WifiOff className="h-3 w-3 text-red-500" />
-                    )}
-                    {chatState.connectionStatus === 'connecting' && (
-                      <Loader2 className="h-3 w-3 text-yellow-500 animate-spin" />
-                    )}
-                  </div>
+                  {/* Removing the status indicator with WiFi symbol next to the avatar */}
                 </div>
                 <div className="flex flex-col items-start min-w-0">
                   <span className="truncate text-sm font-semibold">Kit Assistant</span>

@@ -115,21 +115,7 @@ const sidebarItems: SidebarItem[] = [
     label: 'Marketing',
     icon: Mail,
     href: '/admin/marketing',
-    requiredRole: 'editor',
-    children: [
-      {
-        id: 'email-campaigns',
-        label: 'Email Campaigns',
-        icon: Mail,
-        href: '/admin/marketing/email-campaigns'
-      },
-      {
-        id: 'coupons',
-        label: 'Coupons',
-        icon: Tag,
-        href: '/admin/marketing/coupons'
-      }
-    ]
+    requiredRole: 'editor'
   },
   {
     id: 'system',
@@ -242,7 +228,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             variant="ghost"
             size={collapsed && level === 0 ? "icon" : "sm"}
             className={cn(
-              "flex-1 justify-start gap-3 h-10 font-medium",
+              "flex-1 justify-start gap-3 h-10 font-medium dark:text-white",
               isActive && "bg-transparent hover:bg-primary/5",
               collapsed && level === 0 && "px-2"
             )}
@@ -257,10 +243,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               }
             }}
           >
-            <item.icon className={cn("h-4 w-4 flex-shrink-0", isActive && "text-primary")} />
+            <item.icon className={cn("h-4 w-4 flex-shrink-0 dark:text-white", isActive && "text-primary")} />
             {(!collapsed || level > 0) && (
               <>
-                <span className="flex-1 text-left">{item.label}</span>
+                <span className="flex-1 text-left text-foreground dark:text-white">{item.label}</span>
                 {item.badge && (
                   <Badge variant={item.badgeVariant || "secondary"} className="text-xs">
                     {item.badge}
@@ -284,7 +270,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             >
               <ChevronDown
                 className={cn(
-                  "h-3 w-3 transition-transform duration-200",
+                  "h-3 w-3 transition-transform duration-200 text-foreground dark:text-white",
                   isExpanded && "rotate-180"
                 )}
               />
@@ -326,7 +312,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-card text-card-foreground">
       {/* Header */}
       <div className={cn("p-4 border-b border-border", collapsed && "px-2")}>
         <div className="flex items-center gap-3">
@@ -335,7 +321,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
           {!collapsed && (
             <div>
-              <h2 className="font-semibold text-sm">AT Supply Finder</h2>
+              <h2 className="font-semibold text-sm text-foreground">AT Supply Finder</h2>
               <p className="text-xs text-muted-foreground">Admin Panel</p>
             </div>
           )}
@@ -356,35 +342,41 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </ScrollArea>
       )}
       
-      {/* Quick Actions */}
-      {!collapsed && (
-        <div className="px-3 pb-4">
-          <Separator className="mb-3" />
-          <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-              <Upload className="h-4 w-4" />
-              <span>Import Data</span>
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-              <Download className="h-4 w-4" />
-              <span>Export Data</span>
-            </Button>
-          </div>
+      {/* Quick Actions - Improved for all sizes and themes */}
+      <div className="px-3 pb-4">
+        <Separator className="mb-3" />
+        <div className="space-y-2">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
+            size="sm"
+          >
+            <Upload className="h-4 w-4" />
+            <span className={collapsed ? "hidden" : "inline"}>Import Data</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
+            size="sm"
+          >
+            <Download className="h-4 w-4" />
+            <span className={collapsed ? "hidden" : "inline"}>Export Data</span>
+          </Button>
         </div>
-      )}
+      </div>
 
       {/* Footer */}
       <div className={cn("p-4 border-t border-border", collapsed && "px-2")}>
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/placeholder.svg" />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-xs text-foreground">
               {user?.email?.charAt(0).toUpperCase() || 'A'}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.email}</p>
+              <p className="text-sm font-medium truncate text-foreground">{user?.email}</p>
               <p className="text-xs text-muted-foreground">Administrator</p>
             </div>
           )}
@@ -392,7 +384,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1">
+            <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1 text-foreground">
               {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
               <span className="ml-2">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </Button>
@@ -416,7 +408,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                   console.error('Sign out error:', error);
                 }
               }} 
-              className="flex-1"
+              className="flex-1 text-foreground"
             >
               <LogOut className="h-3 w-3" />
               <span className="ml-2">Sign Out</span>
@@ -429,19 +421,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Improved responsive classes */}
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? '64px' : '280px' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden lg:flex flex-col border-r border-border bg-card"
+        className="hidden lg:flex flex-col border-r border-border bg-card text-card-foreground"
       >
         <SidebarContent />
       </motion.aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-80 p-0">
+        <SheetContent side="left" className="w-80 p-0 bg-card text-card-foreground">
           <SidebarContent />
         </SheetContent>
       </Sheet>
@@ -459,7 +451,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
+                <SheetContent side="left" className="w-80 p-0 bg-card text-card-foreground">
                   <SidebarContent />
                 </SheetContent>
               </Sheet>
@@ -474,7 +466,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
 
-              {/* Breadcrumbs */}
+              {/* Breadcrumbs - Improved responsive behavior */}
               <Breadcrumb className="hidden md:flex">
                 <BreadcrumbList>
                   {generateBreadcrumbs().map((crumb, index, array) => (

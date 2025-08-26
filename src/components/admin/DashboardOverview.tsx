@@ -175,10 +175,9 @@ export const DashboardOverview: React.FC = () => {
         .select('*', { count: 'exact', head: true });
 
       // Fetch order statistics
-      const { count: totalOrders, data: orderData } = await supabaseAdmin
-        .from('orders')
-        .select('total_amount', { count: 'exact' });
-
+      // Since the orders table doesn't exist, we'll use mock data
+      const totalOrders = 0;
+      const orderData = [];
       // Calculate revenue
       const totalRevenue = orderData?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
 

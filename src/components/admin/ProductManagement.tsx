@@ -1016,13 +1016,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Product Management
-              </CardTitle>
-              <CardDescription>
-                Manage your product catalog. Total products: {totalProducts}
-              </CardDescription>
+
             </div>
             <div className="flex gap-2">
               <Dialog open={isImportProductsOpen} onOpenChange={setIsImportProductsOpen}>
@@ -1053,14 +1047,10 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                       </Button>
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsImportProductsOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button>Import Products</Button>
-                  </DialogFooter>
                 </DialogContent>
               </Dialog>
+              
+
               
               <Button variant="outline" onClick={handleExportProducts}>
                 <Download className="h-4 w-4 mr-2" />

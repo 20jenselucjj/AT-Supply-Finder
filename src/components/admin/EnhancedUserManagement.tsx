@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { UserDetailView } from '@/components/admin/UserDetailView';
 
 interface UserData {
   id: string;
@@ -92,6 +93,9 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
   const [newUserRole, setNewUserRole] = useState<'user' | 'editor' | 'admin'>('user');
   const [inviteMode, setInviteMode] = useState<'invite' | 'create'>('invite');
   const [isImportUsersOpen, setIsImportUsersOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [isUserDetailViewOpen, setIsUserDetailViewOpen] = useState(false);
+  const [newUserPassword, setNewUserPassword] = useState('');
 
   const usersPerPage = 10;
 
@@ -151,7 +155,7 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
       onUserCountChange(count || 0);
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to fetch users');
+      toast.error('Failed to fetch users. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -228,7 +232,7 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
       fetchUsers(currentPage);
     } catch (error) {
       console.error('Error performing bulk operation:', error);
-      toast.error('Failed to perform bulk operation');
+      toast.error('Failed to perform bulk operation. Please try again.');
     }
   };
 
@@ -236,6 +240,19 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
     try {
       if (!newUserEmail) {
         toast.error('Email is required');
+        return;
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newUserEmail)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+
+      // Password required for direct creation
+      if (inviteMode === 'create' && !newUserPassword) {
+        toast.error('Password is required for direct user creation');
         return;
       }
 
@@ -267,19 +284,48 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
           if (roleError) {
             console.error('Error assigning role:', roleError);
             toast.error('Invite sent but role assignment failed');
+            return;
           }
         }
 
-        toast.success('Invitation sent successfully!');
+        toast.success(`Invitation sent successfully to ${newUserEmail}!`);
+      } else {
+        // Create user directly with password
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: newUserEmail,
+          password: newUserPassword,
+          email_confirm: true
+        });
+
+        if (createError) {
+          toast.error(`Failed to create user: ${createError.message}`);
+          return;
+        }
+
+        // Assign role to the new user if not 'user' (default)
+        if (newUserRole !== 'user' && newUser.user) {
+          const { error: roleError } = await supabaseAdmin
+            .from('user_roles')
+            .insert({ user_id: newUser.user.id, role: newUserRole });
+
+          if (roleError) {
+            console.warn('Failed to assign role, but user was created:', roleError.message);
+            toast.error('User created but role assignment failed');
+            return;
+          }
+        }
+
+        toast.success(`User ${newUserEmail} created successfully!`);
       }
 
       setIsCreateUserOpen(false);
       setNewUserEmail('');
+      setNewUserPassword('');
       setNewUserRole('user');
       fetchUsers(currentPage);
     } catch (error) {
       console.error('Error creating/inviting user:', error);
-      toast.error('Failed to create/invite user');
+      toast.error('Failed to create/invite user. Please try again.');
     }
   };
 
@@ -359,8 +405,8 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
   };
 
   const handleViewUser = (user: UserData) => {
-    toast.info(`Viewing user details for ${user.email}`);
-    // TODO: Implement user detail view
+    setSelectedUser(user);
+    setIsUserDetailViewOpen(true);
   };
 
   const handleEditUser = (user: UserData) => {
@@ -379,105 +425,6 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
-          <p className="text-muted-foreground">
-            Manage user accounts, roles, and permissions
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Dialog open={isImportUsersOpen} onOpenChange={setIsImportUsersOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Import Users
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Import Users</DialogTitle>
-                <DialogDescription>
-                  Upload a CSV file with user emails to invite multiple users at once
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Upload a CSV file with email addresses
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    First column should be 'Email'
-                  </p>
-                  <Input
-                    type="file"
-                    accept=".csv"
-                    className="mt-4"
-                    onChange={handleImportUsers}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsImportUsersOpen(false)}>
-                  Cancel
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite User
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Invite New User</DialogTitle>
-                <DialogDescription>
-                  Send an invitation to a new user to join the platform
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={newUserRole} onValueChange={(value: any) => setNewUserRole(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="editor">Editor</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateUser}>
-                  Send Invitation
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -549,6 +496,14 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
                   className="pl-9 w-64"
                 />
               </div>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsCreateUserOpen(true)}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -789,7 +744,7 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1">
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -850,6 +805,91 @@ export const EnhancedUserManagement: React.FC<EnhancedUserManagementProps> = ({
           </div>
         </div>
       )}
+      
+      <UserDetailView 
+        user={selectedUser}
+        open={isUserDetailViewOpen}
+        onOpenChange={setIsUserDetailViewOpen}
+        onUserUpdated={() => fetchUsers(currentPage)}
+      />
+      
+      {/* Create User Dialog */}
+      <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create/Invite User</DialogTitle>
+            <DialogDescription>
+              Add a new user to the system. You can either invite them via email or create an account directly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                className="col-span-3"
+                placeholder="user@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                Role
+              </Label>
+              <Select value={newUserRole} onValueChange={(value) => setNewUserRole(value as any)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="mode" className="text-right">
+                Mode
+              </Label>
+              <Select value={inviteMode} onValueChange={(value) => setInviteMode(value as any)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="invite">Send Invite</SelectItem>
+                  <SelectItem value="create">Create Directly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {inviteMode === 'create' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" onClick={handleCreateUser}>
+              {inviteMode === 'invite' ? 'Send Invite' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
