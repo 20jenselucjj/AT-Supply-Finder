@@ -232,6 +232,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               isActive && "bg-transparent hover:bg-primary/5",
               collapsed && level === 0 && "px-2"
             )}
+            title={collapsed && level === 0 ? item.label : undefined}
             onClick={() => {
               if (item.href) {
                 console.log('Navigating to:', item.href);
@@ -350,16 +351,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             variant="outline" 
             className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
             size="sm"
+            title={collapsed ? "Import Data" : undefined}
           >
-            <Upload className="h-4 w-4" />
+            <Upload className="h-4 w-4 dark:text-white" />
             <span className={collapsed ? "hidden" : "inline"}>Import Data</span>
           </Button>
           <Button 
             variant="outline" 
             className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
             size="sm"
+            title={collapsed ? "Export Data" : undefined}
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 dark:text-white" />
             <span className={collapsed ? "hidden" : "inline"}>Export Data</span>
           </Button>
         </div>

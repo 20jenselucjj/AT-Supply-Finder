@@ -28,11 +28,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     <>
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
+          <Label htmlFor="affiliateLink">Amazon Affiliate Link</Label>
           <div className="flex gap-2">
             <Input
-              id="affiliate_link"
-              value={productForm.affiliate_link}
+              id="affiliateLink"
+              value={productForm.affiliateLink}
               onChange={(e) => handleAffiliateLinkChange(e.target.value)}
               placeholder="Paste Amazon affiliate link to auto-populate product info"
               disabled={isLoadingProductInfo}
@@ -139,11 +139,11 @@ Easy tear"
           />
         </div>
         <div>
-          <Label htmlFor="image_url">Image URL</Label>
+          <Label htmlFor="imageUrl">Image URL</Label>
           <Input
-            id="image_url"
-            value={productForm.image_url}
-            onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
+            id="imageUrl"
+            value={productForm.imageUrl}
+            onChange={(e) => setProductForm(prev => ({ ...prev, imageUrl: e.target.value }))}
             placeholder="https://example.com/image.jpg"
           />
         </div>

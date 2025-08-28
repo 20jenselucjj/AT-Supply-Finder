@@ -1,11 +1,11 @@
 export interface UserData {
   id: string;
   email: string;
-  created_at: string;
-  last_sign_in_at?: string;
+  createdAt: string;
+  lastSignInAt?: string;
   role?: string;
-  email_confirmed_at?: string;
-  is_active?: boolean;
+  emailConfirmedAt?: string;
+  isActive?: boolean;
 }
 
 export interface UserManagementProps {

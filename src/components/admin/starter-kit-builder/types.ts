@@ -3,10 +3,10 @@ export interface StarterKitTemplate {
   name: string;
   description?: string;
   category: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  estimated_cost?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  estimatedCost?: number;
 }
 
 export interface ProductOption {
@@ -14,7 +14,7 @@ export interface ProductOption {
   name: string;
   brand: string;
   category: string;
-  image_url?: string;
+  imageUrl?: string;
   price?: number;
 }
 

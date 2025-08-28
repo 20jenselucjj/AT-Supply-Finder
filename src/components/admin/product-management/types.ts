@@ -1,9 +1,9 @@
 export interface VendorOffer {
   id: string;
-  vendor_name: string;
+  vendorName: string;
   url: string;
   price: number;
-  last_updated: string;
+  lastUpdated: string;
 }
 
 export interface ProductData {
@@ -17,11 +17,11 @@ export interface ProductData {
   weight?: string;
   material?: string;
   features?: string[];
-  image_url?: string;
+  imageUrl?: string;
   asin?: string;
-  affiliate_link?: string;
-  created_at: string;
-  updated_at: string;
+  affiliateLink?: string;
+  createdAt: string;
+  updatedAt: string;
   vendor_offers?: VendorOffer[];
 }
 

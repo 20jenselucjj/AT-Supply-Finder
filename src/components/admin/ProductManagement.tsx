@@ -18,49 +18,44 @@ import { logger } from '@/lib/logger';
 import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash, Upload, Download, Filter, Search, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { fuzzySearch, generateSuggestions } from '@/lib/fuzzy-search';
+import { ProductData, VendorOffer, ProductManagementProps, AdvancedFilters } from './product-management/types';
+import { ProductForm } from './product-management/ProductForm';
 
-interface ProductData {
-  id: string;
-  name: string;
-  category: string;
-  brand: string;
-  rating?: number;
-  price?: number;
-  dimensions?: string;
-  weight?: string;
-  material?: string;
-  features?: string[];
-  image_url?: string;
-  asin?: string;
-  affiliate_link?: string;
-  $createdAt: string;
-  $updatedAt: string;
-  vendor_offers?: VendorOffer[];
-}
+// Helper function to map Appwrite product data to frontend format
+const mapAppwriteProductToFrontend = (product: any): ProductData => ({
+  id: product.$id,
+  name: product.name || 'No name',
+  category: product.category || 'Uncategorized',
+  brand: product.brand || 'Unknown',
+  rating: product.rating,
+  price: product.price,
+  dimensions: product.dimensions,
+  weight: product.weight,
+  material: product.material,
+  features: product.features ? product.features.split(',') : [],
+  imageUrl: product.imageUrl,
+  asin: product.asin,
+  affiliateLink: product.affiliateLink,
+  createdAt: product.$createdAt,
+  updatedAt: product.$updatedAt,
+  vendor_offers: product.vendor_offers || []
+});
 
-interface VendorOffer {
-  id: string;
-  vendor_name: string;
-  url: string;
-  price: number;
-  last_updated: string;
-}
-
-interface ProductManagementProps {
-  totalProducts: number;
-  onProductCountChange: (count: number) => void;
-}
-
-// New interface for advanced filters
-interface AdvancedFilters {
-  minPrice?: number;
-  maxPrice?: number;
-  minRating?: number;
-  maxRating?: number;
-  brand?: string;
-  material?: string;
-  weight?: string;
-}
+// Helper function to map frontend product data to Appwrite format
+const mapFrontendProductToAppwrite = (product: any) => ({
+  name: product.name,
+  category: product.category,
+  brand: product.brand,
+  rating: product.rating ? parseFloat(product.rating) : null,
+  price: product.price ? parseFloat(product.price) : null,
+  dimensions: product.dimensions || null,
+  weight: product.weight || null,
+  material: product.material || null,
+  features: product.features ? product.features.split('\n').filter((f: string) => f.trim()) : null,
+  imageUrl: product.imageUrl || null,
+  asin: product.asin || null,
+  affiliateLink: product.affiliateLink || null
+});
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -104,9 +99,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     weight: '',
     material: '',
     features: '',
-    image_url: '',
+    imageUrl: '',
     asin: '',
-    affiliate_link: ''
+    affiliateLink: ''
   });
   
   // Bulk update state
@@ -199,24 +194,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       );
 
       // Transform the data to match our ProductData interface
-      const transformedProducts = response.documents?.map((product: any) => ({
-        id: product.$id,
-        name: product.name || 'No name',
-        category: product.category || 'Uncategorized',
-        brand: product.brand || 'Unknown',
-        rating: product.rating,
-        price: product.price,
-        dimensions: product.dimensions,
-        weight: product.weight,
-        material: product.material,
-        features: product.features ? product.features.split(',') : [],
-        image_url: product.imageUrl,
-        asin: product.asin,
-        affiliate_link: product.affiliateLink,
-        $createdAt: product.$createdAt,
-        $updatedAt: product.$updatedAt,
-        vendor_offers: product.vendor_offers || []
-      })) || [];
+      const transformedProducts = response.documents?.map(mapAppwriteProductToFrontend) || [];
 
       setProducts(transformedProducts);
       setTotalPages(Math.ceil((response.total || 0) / productsPerPage));
@@ -302,9 +280,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       weight: '',
       material: '',
       features: '',
-      image_url: '',
+      imageUrl: '',
       asin: '',
-      affiliate_link: ''
+      affiliateLink: ''
     });
   };
 
@@ -518,7 +496,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const updateData: any = {};
       if (bulkUpdateData.category) updateData.category = bulkUpdateData.category;
       if (bulkUpdateData.brand) updateData.brand = bulkUpdateData.brand;
-      updateData.updated_at = new Date().toISOString();
 
       // Update selected products
       let error = null;
@@ -706,7 +683,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   // Auto-populate product information from affiliate link
   const handleAffiliateLinkChange = async (url: string) => {
-    setProductForm(prev => ({ ...prev, affiliate_link: url }));
+    setProductForm(prev => ({ ...prev, affiliateLink: url }));
     
     if (!url.trim()) return;
     
@@ -743,7 +720,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           name: productData.name || prev.name,
           brand: productData.brand || prev.brand,
           category: productData.category || prev.category,
-          image_url: productData.image_url || prev.image_url,
+          imageUrl: productData.image_url || prev.imageUrl,
           asin: productData.asin || prev.asin,
           rating: productData.rating ? productData.rating.toString() : prev.rating,
           price: productData.price ? productData.price.toString() : prev.price,
@@ -777,20 +754,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         return;
       }
 
-      const productData = {
-        name: productForm.name,
-        category: productForm.category,
-        brand: productForm.brand,
-        rating: productForm.rating ? parseFloat(productForm.rating) : null,
-        price: productForm.price ? parseFloat(productForm.price) : null,
-        dimensions: productForm.dimensions || null,
-        weight: productForm.weight || null,
-        material: productForm.material || null,
-        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
-        image_url: productForm.image_url || null,
-        asin: productForm.asin || null,
-        affiliate_link: productForm.affiliate_link || null
-      };
+      const productData = mapFrontendProductToAppwrite(productForm);
 
       let data = null;
       let error = null;
@@ -847,21 +811,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     if (!editingProduct) return;
 
     try {
-      const productData = {
-        name: productForm.name,
-        category: productForm.category,
-        brand: productForm.brand,
-        rating: productForm.rating ? parseFloat(productForm.rating) : null,
-        price: productForm.price ? parseFloat(productForm.price) : null,
-        dimensions: productForm.dimensions || null,
-        weight: productForm.weight || null,
-        material: productForm.material || null,
-        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
-        image_url: productForm.image_url || null,
-        asin: productForm.asin || null,
-        affiliate_link: productForm.affiliate_link || null,
-        updated_at: new Date().toISOString()
-      };
+      const productData = mapFrontendProductToAppwrite(productForm);
 
       let error = null;
       try {
@@ -983,9 +933,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       weight: product.weight || '',
       material: product.material || '',
       features: product.features?.join('\n') || '',
-      image_url: product.image_url || '',
+      imageUrl: product.imageUrl || '',
       asin: product.asin || '',
-      affiliate_link: product.affiliate_link || ''
+      affiliateLink: product.affiliateLink || ''
     });
   };
 
@@ -1086,8 +1036,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                 </DialogContent>
               </Dialog>
               
-
-              
               <Button variant="outline" onClick={handleExportProducts}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -1108,148 +1056,17 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                     </DialogDescription>
                   </DialogHeader>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <Label htmlFor="affiliate_link">Amazon Affiliate Link</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="affiliate_link"
-                          value={productForm.affiliate_link}
-                          onChange={(e) => handleAffiliateLinkChange(e.target.value)}
-                          placeholder="Paste Amazon affiliate link to auto-populate product info"
-                          disabled={isLoadingProductInfo}
-                        />
-                        {isLoadingProductInfo && (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Paste an Amazon product link to automatically extract the ASIN and help populate product details
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="name">Product Name *</Label>
-                      <Input
-                        id="name"
-                        value={productForm.name}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter product name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="category">Category *</Label>
-                      <Input
-                        id="category"
-                        value={productForm.category}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                        placeholder="e.g., Athletic Tape"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="brand">Brand *</Label>
-                      <Input
-                        id="brand"
-                        value={productForm.brand}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
-                        placeholder="e.g., Mueller"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="rating">Rating (0-5)</Label>
-                      <Input
-                        id="rating"
-                        type="number"
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        value={productForm.rating}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
-                        placeholder="4.5"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="price">Price ($)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={productForm.price}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-                        placeholder="29.99"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dimensions">Dimensions</Label>
-                      <Input
-                        id="dimensions"
-                        value={productForm.dimensions}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
-                        placeholder="e.g., 1.5in x 15yd"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="weight">Weight</Label>
-                      <Input
-                        id="weight"
-                        value={productForm.weight}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
-                        placeholder="e.g., 3.2 lbs"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="material">Material</Label>
-                      <Input
-                        id="material"
-                        value={productForm.material}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
-                        placeholder="e.g., Cotton blend"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="features">Features (one per line)</Label>
-                      <Textarea
-                        id="features"
-                        value={productForm.features}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
-                        placeholder="High tensile strength
-Hypoallergenic adhesive
-Easy tear"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="image_url">Image URL</Label>
-                      <Input
-                        id="image_url"
-                        value={productForm.image_url}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
-                        placeholder="https://example.com/image.jpg"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="asin">ASIN</Label>
-                      <Input
-                        id="asin"
-                        value={productForm.asin}
-                        onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
-                        placeholder="Amazon ASIN"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => {
+                  <ProductForm
+                    productForm={productForm}
+                    setProductForm={setProductForm}
+                    handleAffiliateLinkChange={handleAffiliateLinkChange}
+                    isLoadingProductInfo={isLoadingProductInfo}
+                    handleSubmit={handleAddProduct}
+                    onCancel={() => {
                       setIsAddProductOpen(false);
                       resetForm();
-                    }}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddProduct}>
-                      Create Product
-                    </Button>
-                  </DialogFooter>
+                    }}
+                  />
                 </DialogContent>
               </Dialog>
             </div>
@@ -1636,9 +1453,9 @@ Easy tear"
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              {product.image_url && (
+                              {product.imageUrl && (
                                 <img
-                                  src={product.image_url}
+                                  src={product.imageUrl}
                                   alt={product.name}
                                   className="w-12 h-12 object-cover rounded"
                                 />
@@ -1694,136 +1511,18 @@ Easy tear"
                                     Update product information.
                                   </DialogDescription>
                                 </DialogHeader>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="col-span-2">
-                                    <Label htmlFor="edit-affiliate_link">Amazon Affiliate Link</Label>
-                                    <div className="flex gap-2">
-                                      <Input
-                                        id="edit-affiliate_link"
-                                        value={productForm.affiliate_link}
-                                        onChange={(e) => handleAffiliateLinkChange(e.target.value)}
-                                        placeholder="Paste Amazon affiliate link to auto-populate product info"
-                                        disabled={isLoadingProductInfo}
-                                      />
-                                      {isLoadingProductInfo && (
-                                        <div className="flex items-center">
-                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      Paste an Amazon product link to automatically extract the ASIN and help populate product details
-                                    </p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <Label htmlFor="edit-name">Product Name *</Label>
-                                    <Input
-                                      id="edit-name"
-                                      value={productForm.name}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-category">Category *</Label>
-                                    <Input
-                                      id="edit-category"
-                                      value={productForm.category}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-brand">Brand *</Label>
-                                    <Input
-                                      id="edit-brand"
-                                      value={productForm.brand}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-rating">Rating (0-5)</Label>
-                                    <Input
-                                      id="edit-rating"
-                                      type="number"
-                                      min="0"
-                                      max="5"
-                                      step="0.1"
-                                      value={productForm.rating}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-price">Price ($)</Label>
-                                    <Input
-                                      id="edit-price"
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      value={productForm.price}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-                                      placeholder="29.99"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-dimensions">Dimensions</Label>
-                                    <Input
-                                      id="edit-dimensions"
-                                      value={productForm.dimensions}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, dimensions: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-weight">Weight</Label>
-                                    <Input
-                                      id="edit-weight"
-                                      value={productForm.weight}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-material">Material</Label>
-                                    <Input
-                                      id="edit-material"
-                                      value={productForm.material}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, material: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div className="col-span-2">
-                                    <Label htmlFor="edit-features">Features (one per line)</Label>
-                                    <Textarea
-                                      id="edit-features"
-                                      value={productForm.features}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, features: e.target.value }))}
-                                      rows={3}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-image_url">Image URL</Label>
-                                    <Input
-                                      id="edit-image_url"
-                                      value={productForm.image_url}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, image_url: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-asin">ASIN</Label>
-                                    <Input
-                                      id="edit-asin"
-                                      value={productForm.asin}
-                                      onChange={(e) => setProductForm(prev => ({ ...prev, asin: e.target.value }))}
-                                    />
-                                  </div>
-                                </div>
-                                <DialogFooter>
-                                  <Button variant="outline" onClick={() => {
+                                <ProductForm
+                                  productForm={productForm}
+                                  setProductForm={setProductForm}
+                                  handleAffiliateLinkChange={handleAffiliateLinkChange}
+                                  isLoadingProductInfo={isLoadingProductInfo}
+                                  handleSubmit={handleUpdateProduct}
+                                  onCancel={() => {
                                     setEditingProduct(null);
                                     resetForm();
-                                  }}>
-                                    Cancel
-                                  </Button>
-                                  <Button onClick={handleUpdateProduct}>
-                                    Update Product
-                                  </Button>
-                                </DialogFooter>
+                                  }}
+                                  isEditing={true}
+                                />
                               </DialogContent>
                             </Dialog>
                             
@@ -1893,9 +1592,9 @@ Easy tear"
                           onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                           className="mt-1 flex-shrink-0"
                         />
-                        {product.image_url && (
+                        {product.imageUrl && (
                           <img
-                            src={product.image_url}
+                            src={product.imageUrl}
                             alt={product.name}
                             className="w-16 h-16 object-cover rounded flex-shrink-0"
                           />
@@ -1974,60 +1673,15 @@ Easy tear"
                                 Update product information.
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="col-span-full">
-                                <Label htmlFor="mobile-edit-affiliate_link">Amazon Affiliate Link</Label>
-                                <div className="flex gap-2">
-                                  <Input
-                                    id="mobile-edit-affiliate_link"
-                                    value={productForm.affiliate_link}
-                                    onChange={(e) => handleAffiliateLinkChange(e.target.value)}
-                                    placeholder="Paste Amazon affiliate link to auto-populate product info"
-                                    disabled={isLoadingProductInfo}
-                                  />
-                                  {isLoadingProductInfo && (
-                                    <div className="flex items-center">
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Paste an Amazon product link to automatically extract the ASIN and help populate product details
-                                </p>
-                              </div>
-                              <div className="col-span-full">
-                                <Label htmlFor="mobile-edit-name">Product Name *</Label>
-                                <Input
-                                  id="mobile-edit-name"
-                                  value={productForm.name}
-                                  onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="mobile-edit-category">Category *</Label>
-                                <Input
-                                  id="mobile-edit-category"
-                                  value={productForm.category}
-                                  onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="mobile-edit-brand">Brand *</Label>
-                                <Input
-                                  id="mobile-edit-brand"
-                                  value={productForm.brand}
-                                  onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setEditingProduct(null)}>
-                                Cancel
-                              </Button>
-                              <Button onClick={handleUpdateProduct}>
-                                Update Product
-                              </Button>
-                            </DialogFooter>
+                            <ProductForm
+                              productForm={productForm}
+                              setProductForm={setProductForm}
+                              handleAffiliateLinkChange={handleAffiliateLinkChange}
+                              isLoadingProductInfo={isLoadingProductInfo}
+                              handleSubmit={handleUpdateProduct}
+                              onCancel={() => setEditingProduct(null)}
+                              isEditing={true}
+                            />
                           </DialogContent>
                         </Dialog>
 
