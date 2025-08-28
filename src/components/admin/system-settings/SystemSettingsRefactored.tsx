@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTheme } from '@/context/theme-context';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';
 import { Save, Download, Upload, RefreshCw } from 'lucide-react';

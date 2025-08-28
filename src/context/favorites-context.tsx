@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './auth-context';
-import { supabase } from '@/lib/supabase';
+import { databases } from '@/lib/appwrite';
+import { Query } from 'appwrite';
 
 interface FavoritesContextType {
   favorites: string[]; // Array of product IDs
@@ -58,14 +59,14 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('user_favorites')
-        .select('product_id')
-        .eq('user_id', user.id);
+      // Query user_favorites collection in Appwrite
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userFavorites', // Make sure this collection exists in Appwrite
+        [Query.equal('userId', user.$id)]
+      );
 
-      if (error) throw error;
-
-      const favoriteIds = data?.map(item => item.product_id) || [];
+      const favoriteIds = response.documents?.map((item: any) => item.productId) || [];
       setFavorites(favoriteIds);
     } catch (error) {
       console.error('Error loading favorites:', error);
@@ -86,18 +87,42 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
     }
 
     try {
-      const { data, error } = await supabase.rpc('toggle_favorite', {
-        product_uuid: productId
-      });
-
-      if (error) throw error;
-
-      // Update local state based on the result
-      setFavorites(prev => 
-        data // true means added, false means removed
-          ? [...prev.filter(id => id !== productId), productId]
-          : prev.filter(id => id !== productId)
+      // Check if the favorite already exists
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userFavorites',
+        [
+          Query.equal('userId', user.$id),
+          Query.equal('productId', productId)
+        ]
       );
+
+      if (response.documents && response.documents.length > 0) {
+        // Favorite exists, remove it
+        const favoriteId = response.documents[0].$id;
+        await databases.deleteDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'userFavorites',
+          favoriteId
+        );
+        
+        // Update local state
+        setFavorites(prev => prev.filter(id => id !== productId));
+      } else {
+        // Favorite doesn't exist, add it
+        await databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'userFavorites',
+          'unique()',
+          {
+            userId: user.$id,
+            productId: productId
+          }
+        );
+        
+        // Update local state
+        setFavorites(prev => [...prev, productId]);
+      }
     } catch (error) {
       console.error('Error toggling favorite:', error);
       throw error;

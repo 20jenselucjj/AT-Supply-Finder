@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';

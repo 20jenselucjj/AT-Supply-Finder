@@ -1,5 +1,5 @@
 import React from 'react';
-import { supabase } from './supabase';
+import { account, databases } from './appwrite';
 
 export type UserRole = 'user' | 'editor' | 'admin';
 
@@ -69,26 +69,29 @@ const rolePermissions: Record<UserRole, RolePermissions> = {
  */
 export const getUserRole = async (userId: string): Promise<UserRole> => {
   try {
-    // First try using the is_admin function
-    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
-    
-    if (!adminError && isAdmin) {
-      return 'admin';
+    // Check if userId is valid
+    if (!userId) {
+      console.warn('No userId provided for role check, defaulting to user');
+      return 'user';
+    }
+
+    // Check the user_roles collection in Appwrite
+    try {
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userRoles',
+        [JSON.stringify({ method: 'equal', attribute: 'userId', values: [userId] })]
+      );
+      
+      if (response && response.documents && response.documents.length > 0) {
+        const roleData = response.documents[0];
+        return (roleData.role as UserRole) || 'user';
+      }
+    } catch (error) {
+      console.error('Error fetching user role from Appwrite:', error);
     }
     
-    // If not admin, check the user_roles table
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return 'user'; // Default to user role if error
-    }
-    
-    return (data?.role as UserRole) || 'user';
+    return 'user'; // Default to user role if error or no role found
   } catch (error) {
     console.error('Error determining user role:', error);
     return 'user'; // Default to user role if error
@@ -143,14 +146,15 @@ export const withRoleAccess = (allowedRoles: UserRole[]) =>
  */
 export const isCurrentUserAdmin = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc('is_admin');
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    return data === true;
+    // Get current user
+    const user = await account.get();
+    if (!user) return false;
+    
+    // Check if user has admin role
+    const userRole = await getUserRole(user.$id);
+    return userRole === 'admin';
   } catch (error) {
-    console.error('Error in isCurrentUserAdmin:', error);
+    console.error('Error checking admin status:', error);
     return false;
   }
 };
@@ -160,26 +164,13 @@ export const isCurrentUserAdmin = async (): Promise<boolean> => {
  */
 export const isCurrentUserEditorOrAdmin = async (): Promise<boolean> => {
   try {
-    // First check if user is admin
-    const isAdmin = await isCurrentUserAdmin();
-    if (isAdmin) return true;
-    
-    // If not admin, check if user has editor role
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get current user
+    const user = await account.get();
     if (!user) return false;
     
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error checking editor status:', error);
-      return false;
-    }
-    
-    return data?.role === 'editor';
+    // Check if user has editor or admin role
+    const userRole = await getUserRole(user.$id);
+    return userRole === 'editor' || userRole === 'admin';
   } catch (error) {
     console.error('Error in isCurrentUserEditorOrAdmin:', error);
     return false;

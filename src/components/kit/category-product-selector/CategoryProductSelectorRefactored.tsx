@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Package } from "lucide-react";
+import { ChevronUp, ChevronDown, Package, ArrowLeft } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { databases } from '@/lib/appwrite';
 import { AT_SUPPLY_CATEGORIES, type ATSupplyCategory } from "../ATSupplyCategories";
 import ProductDetail from "../ProductDetail";
 import { CategoryProductSelectorProps } from "./types";
@@ -14,6 +14,7 @@ import { SearchBar } from "./SearchBar";
 import { ProductFilters } from "./ProductFilters";
 import { ProductGridView } from "./ProductGridView";
 import { ProductTableView } from "./ProductTableView";
+import { Query } from "appwrite";
 
 export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: CategoryProductSelectorProps) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,30 +69,42 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
         return;
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('category', productCategory);
+      // Build queries for Appwrite
+      let queries: any[] = [
+        Query.equal('category', productCategory)
+      ];
 
-      if (error) {
-        console.error('Error fetching products:', error);
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        queries
+      );
+
+      if (!response || !response.documents) {
+        console.error('Error fetching products: No response or documents');
         setProducts([]);
-      } else {
-        const transformedProducts: Product[] = (data || []).map(product => ({
-          id: product.id,
-          name: product.name,
-          brand: product.brand || 'Unknown',
-          category: product.category,
-          subcategory: product.subcategory,
-          description: product.description || '',
-          features: product.features || [],
-          imageUrl: product.image_url,
-          rating: product.rating || 0,
-          offers: product.offers || [],
-          lastUpdated: product.updated_at || new Date().toISOString()
-        }));
-        setProducts(transformedProducts);
+        return;
       }
+
+      const transformedProducts: Product[] = response.documents.map(product => ({
+        id: product.$id,
+        name: product.name,
+        brand: product.brand || 'Unknown',
+        category: product.category,
+        subcategory: product.subcategory,
+        description: product.description || '',
+        features: Array.isArray(product.features) 
+          ? product.features 
+          : (typeof product.features === 'string' && product.features.trim() !== '' 
+            ? product.features.split(',').map(f => f.trim()) 
+            : []),
+        imageUrl: product.imageUrl,
+        rating: product.rating || 0,
+        offers: product.offers || [],
+        lastUpdated: product.$updatedAt || new Date().toISOString()
+      }));
+      
+      setProducts(transformedProducts);
     } catch (error) {
       console.error('Error in fetchCategoryProducts:', error);
       setProducts([]);
@@ -309,7 +322,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
             <ProductTableView
               products={filteredAndSortedProducts}
               isProductInKit={isProductInKit}
-              getProductQuantity={getProductQuantity}
+              getProductQuantity={(product: Product) => getProductQuantity(product.id)}
               handleProductToggle={handleProductToggle}
               handleQuantityChange={handleQuantityChange}
               formatCurrency={formatCurrency}

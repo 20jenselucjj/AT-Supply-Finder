@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { account } from '@/lib/appwrite';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -19,12 +19,11 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
-      // Use Supabase's reset password email functionality
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) throw error;
+      // Use Appwrite's password recovery functionality
+      await account.createRecovery(
+        email,
+        `${window.location.origin}/reset-password`
+      );
       
       setSubmitted(true);
       toast.success('Password reset email sent! Please check your inbox.');

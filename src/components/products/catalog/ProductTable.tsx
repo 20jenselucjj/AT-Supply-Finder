@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/table';
 import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import { useKit } from '@/context/kit-context';
+import { useFavorites } from '@/context/favorites-context';
 
 interface ProductTableProps {
   products: Product[];
@@ -32,6 +33,7 @@ const tableVariants = {
 
 export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductSelect }) => {
   const { addToKit } = useKit();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   // Get the best price from offers
   const getBestPrice = (product: Product) => {
@@ -55,6 +57,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductS
         <TableBody variants={tableVariants} initial="hidden" animate="visible">
           {products.map((product) => {
             const bestPrice = getBestPrice(product);
+            const isProductFavorite = isFavorite(product.id);
             return (
             <TableRow key={product.id}>
               <TableCell>
@@ -110,9 +113,27 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductS
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-2">
-                  <Button size="sm" onClick={() => addToKit(product)}>
-                    Add to Kit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="p-2 h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(product.id);
+                      }}
+                      aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Heart 
+                        className={`h-4 w-4 transition-colors ${
+                          isProductFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+                        }`} 
+                      />
+                    </Button>
+                    <Button size="sm" onClick={() => addToKit(product)}>
+                      Add to Kit
+                    </Button>
+                  </div>
                   <Button size="sm" variant="outline" onClick={() => onProductSelect(product)}>
                     View
                   </Button>

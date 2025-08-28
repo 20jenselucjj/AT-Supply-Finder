@@ -10,7 +10,7 @@ export const useRBAC = () => {
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (!user) {
+      if (!user || !user.$id) {
         setUserRole(null);
         setLoading(false);
         return;
@@ -18,7 +18,7 @@ export const useRBAC = () => {
 
       try {
         setLoading(true);
-        const role = await getUserRole(user.id);
+        const role = await getUserRole(user.$id);
         setUserRole(role);
       } catch (err) {
         setError('Failed to fetch user role');
@@ -32,22 +32,22 @@ export const useRBAC = () => {
   }, [user]);
 
   const checkRole = async (role: UserRole): Promise<boolean> => {
-    if (!user) return false;
-    return hasRole(user.id, role);
+    if (!user || !user.$id) return false;
+    return hasRole(user.$id, role);
   };
 
   const checkPermission = async (permission: keyof RolePermissions): Promise<boolean> => {
-    if (!user) return false;
-    return hasPermission(user.id, permission);
+    if (!user || !user.$id) return false;
+    return hasPermission(user.$id, permission);
   };
 
   const isAdmin = async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || !user.$id) return false;
     return isCurrentUserAdmin();
   };
 
   const isEditorOrAdmin = async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || !user.$id) return false;
     return isCurrentUserEditorOrAdmin();
   };
 

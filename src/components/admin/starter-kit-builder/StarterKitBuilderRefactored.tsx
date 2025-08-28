@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { supabase } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';

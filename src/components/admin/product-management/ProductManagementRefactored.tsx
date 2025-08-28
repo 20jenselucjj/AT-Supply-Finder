@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';

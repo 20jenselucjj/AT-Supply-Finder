@@ -32,7 +32,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { GeminiService, type GeneratedKit } from '@/lib/gemini-service';
-import { supabase } from '@/lib/supabase';
+import { databases } from '@/lib/appwrite';
 import type { Product } from '@/lib/types';
 
 interface Message {
@@ -210,15 +210,31 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          vendor_offers (*)
-        `);
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products'
+      );
       
-      if (error) throw error;
-      setProducts(data || []);
+      const appwriteProducts = response.documents || [];
+      // Transform Appwrite documents to Product interface
+      const transformedProducts = appwriteProducts.map((doc: any) => ({
+        id: doc.$id,
+        name: doc.name,
+        category: doc.category,
+        brand: doc.brand,
+        rating: doc.rating,
+        price: doc.price,
+        features: doc.features || [],
+        offers: [], // Appwrite doesn't have direct relationships like Supabase
+        imageUrl: doc.imageUrl,
+        asin: doc.asin,
+        affiliateLink: doc.affiliateLink,
+        dimensions: doc.dimensions,
+        weight: doc.weight,
+        material: doc.material
+      }));
+      
+      setProducts(transformedProducts);
     } catch (error) {
       console.error('Error loading products:', error);
     }

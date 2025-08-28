@@ -1,5 +1,5 @@
 import { Product, VendorOffer } from './types';
-import { supabase } from './supabase';
+import { databases } from './appwrite';
 
 interface ProductCache {
   products: Product[];
@@ -66,30 +66,21 @@ class AmazonProductService {
     }
   }
 
-  // Get product by ASIN/ID
+  // Get product by ID
   async getProductById(id: string): Promise<Product | null> {
     try {
-      // Get from database by ID or ASIN
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          vendor_offers (
-            id,
-            vendor_name,
-            url,
-            price,
-            last_updated
-          )
-        `)
-        .or(`id.eq.${id},asin.eq.${id}`)
-        .single();
+      // Get from database by ID
+      const response = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        id
+      );
 
-      if (error || !data) {
+      if (!response) {
         return null;
       }
 
-      return this.transformDatabaseProduct(data);
+      return this.transformDatabaseProduct(response);
     } catch (error) {
       console.error('Error getting product by ID:', error);
       return null;
@@ -99,20 +90,20 @@ class AmazonProductService {
   // Get popular athletic training categories
   async getPopularCategories(): Promise<string[]> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('category')
-        .not('category', 'is', null);
-      
-      if (error) {
-        console.error('Error fetching categories:', error);
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products'
+      );
+
+      if (!response) {
+        console.error('No response from database');
         return [];
       }
 
-      const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+      const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
       return uniqueCategories;
     } catch (error) {
-      console.error('Error getting categories from database:', error);
+      console.error('Error fetching categories:', error);
       return [];
     }
   }
@@ -120,35 +111,31 @@ class AmazonProductService {
   // Get products from database
   private async getProductsFromDatabase(searchTerm?: string, category?: string, maxResults: number = 50): Promise<Product[]> {
     try {
-      let query = supabase
-        .from('products')
-        .select(`
-          *,
-          vendor_offers (
-            id,
-            vendor_name,
-            url,
-            price,
-            last_updated
-          )
-        `);
+      let queries: string[] = [];
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,brand.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`);
+        queries.push(`search("name", "${searchTerm}")`);
       }
 
       if (category && category !== 'all') {
-        query = query.eq('category', category);
+        queries.push(`equal("category", "${category}")`);
       }
 
-      const { data, error } = await query.limit(maxResults);
+      // Add limit
+      queries.push(`limit(${maxResults})`);
 
-      if (error) {
-        console.error('Error fetching products from database:', error);
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        queries
+      );
+
+      if (!response) {
+        console.error('No response from database');
         return [];
       }
 
-      return (data || []).map(this.transformDatabaseProduct);
+      return (response.documents || []).map(this.transformDatabaseProduct);
     } catch (error) {
       console.error('Error getting products from database:', error);
       return [];
@@ -157,25 +144,27 @@ class AmazonProductService {
 
   // Transform database product to our Product interface
   private transformDatabaseProduct(dbProduct: any): Product {
-    const offers: VendorOffer[] = (dbProduct.vendor_offers || []).map((offer: any) => ({
-      name: offer.vendor_name,
-      url: offer.url,
-      price: offer.price,
-      lastUpdated: offer.last_updated
-    }));
+    // Parse features if it's a string
+    let features: string[] = [];
+    if (typeof dbProduct.features === 'string') {
+      // If features is a comma-separated string, split it
+      features = dbProduct.features.split(',').map((f: string) => f.trim()).filter(Boolean);
+    } else if (Array.isArray(dbProduct.features)) {
+      features = dbProduct.features;
+    }
 
     return {
-      id: dbProduct.id,
+      id: dbProduct.$id,
       name: dbProduct.name,
       category: dbProduct.category,
       brand: dbProduct.brand,
       rating: dbProduct.rating,
       price: dbProduct.price,
-      features: dbProduct.features || [],
-      offers: offers,
-      imageUrl: dbProduct.image_url,
+      features: features,
+      offers: [], // Appwrite doesn't have direct relationships like Supabase, so we'll need to fetch offers separately if needed
+      imageUrl: dbProduct.imageUrl,
       asin: dbProduct.asin,
-      affiliateLink: dbProduct.affiliate_link,
+      affiliateLink: dbProduct.affiliateLink,
       dimensions: dbProduct.dimensions,
       weight: dbProduct.weight,
       material: dbProduct.material

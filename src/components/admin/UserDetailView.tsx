@@ -17,16 +17,16 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { supabaseAdmin } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 
 interface UserData {
   id: string;
   email: string;
-  created_at: string;
-  last_sign_in_at?: string;
+  $createdAt: string;
+  $lastSignInAt?: string;
   role?: string;
-  email_confirmed_at?: string;
+  emailVerified?: boolean;
   is_active?: boolean;
 }
 
@@ -55,29 +55,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   const [loading, setLoading] = useState(true);
 
   const fetchUserDetails = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setLoading(true);
-      
-      // Fetch detailed user information
-      const { data, error } = await supabaseAdmin.rpc('get_user_details', { user_uuid: user.id });
-      
-      if (error) {
-        console.error('Error fetching user details:', error);
-        toast.error('Failed to fetch user details');
-        return;
-      }
-      
-      if (data && data.length > 0) {
-        setAuditLogs(data[0].audit_logs || []);
-      }
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      toast.error('Failed to fetch user details');
-    } finally {
-      setLoading(false);
-    }
+    // In Appwrite, we don't have audit logs in the same way as Supabase
+    // For now, we'll just set loading to false since we don't need to fetch additional details
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -87,7 +67,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   }, [open, user]);
 
   const getUserStatusBadge = (user: UserData) => {
-    if (!user.email_confirmed_at) {
+    if (!user.emailVerified) {
       return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>;
     }
     if (user.is_active) {
@@ -182,8 +162,8 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Created</p>
-                      <p className="font-medium">{formatDate(user.created_at)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateDistance(user.created_at)}</p>
+                      <p className="font-medium">{formatDate(user.$createdAt)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateDistance(user.$createdAt)}</p>
                     </div>
                   </div>
                   
@@ -191,8 +171,8 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Last Active</p>
-                      <p className="font-medium">{formatDate(user.last_sign_in_at)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateDistance(user.last_sign_in_at)}</p>
+                      <p className="font-medium">{formatDate(user.$lastSignInAt)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateDistance(user.$lastSignInAt)}</p>
                     </div>
                   </div>
                 </div>

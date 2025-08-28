@@ -1,10 +1,10 @@
 export interface UserData {
   id: string;
   email: string;
-  created_at: string;
-  last_sign_in_at?: string;
+  $createdAt: string;
+  $lastSignInAt?: string;
   role?: string;
-  email_confirmed_at?: string;
+  emailVerified?: boolean;
   raw_user_meta_data?: any;
   is_active?: boolean;
 }
@@ -35,9 +35,9 @@ export interface UserGridProps {
   onEditUser: (user: UserData) => void;
   onDeleteUser: (user: UserData) => void;
   loading: boolean;
-  sortBy: 'created_at' | 'last_sign_in_at' | 'email';
+  sortBy: '$createdAt' | '$lastSignInAt' | 'email';
   sortOrder: 'asc' | 'desc';
-  onSort: (field: 'created_at' | 'last_sign_in_at' | 'email') => void;
+  onSort: (field: '$createdAt' | '$lastSignInAt' | 'email') => void;
 }
 
 export interface UserFiltersProps {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, VendorOffer } from '@/lib/types';
 import { useAuth } from './auth-context';
-import { supabase } from '@/lib/supabase';
+import { databases } from '@/lib/appwrite';
 
 export interface KitItem {
   id: string;
@@ -195,24 +195,35 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_kits')
-        .insert({
-          user_id: user.id,
-          name,
-          description,
-          kit_data: kit,
-          is_public: isPublic
-        })
-        .select()
-        .single();
+      const kitData = {
+        userId: user.$id,
+        name,
+        description,
+        kit_data: kit,
+        is_public: isPublic
+      };
 
-      if (error) throw error;
+      // Add permissions using the correct Appwrite format
+      const permissions = [
+        `read("user:${user.$id}")`,  // Grant read permission to the current user
+        `update("user:${user.$id}")`, // Grant update permission to the current user
+        `delete("user:${user.$id}")`  // Grant delete permission to the current user
+      ];
+      
+      if (isPublic) {
+        permissions.push('read("any")'); // If the kit is public, allow anyone to read it
+      }
+
+      await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userKits', // Make sure this collection exists in Appwrite
+        'unique()',
+        kitData,
+        permissions // Add permissions parameter
+      );
       
       // Refresh saved kits list
       await getUserKits();
-      
-      return data;
     } catch (error) {
       console.error('Error saving kit:', error);
       throw error;
@@ -226,19 +237,26 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_kits')
-        .select('*')
-        .eq('id', kitId)
-        .single();
-
-      if (error) throw error;
+      const kitData = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userKits',
+        kitId
+      );
       
-      if (data) {
-        setKit(data.kit_data);
+      // Verify that the kit belongs to the current user or is public
+      if (kitData.userId !== user.$id && !kitData.is_public) {
+        throw new Error('You do not have permission to access this kit');
       }
-    } catch (error) {
+      
+      if (kitData) {
+        setKit(kitData.kit_data);
+      }
+    } catch (error: any) {
       console.error('Error loading kit:', error);
+      // Provide more specific error message for permission issues
+      if (error.code === 401) {
+        throw new Error('You do not have permission to access this kit');
+      }
       throw error;
     }
   };
@@ -250,18 +268,36 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_kits')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      // Use Appwrite SDK with proper query formatting
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userKits',
+        [
+          JSON.stringify({
+            method: 'equal',
+            attribute: 'userId',
+            values: [user.$id]
+          })
+        ]
+      );
       
-      setSavedKits(data || []);
-      return data || [];
-    } catch (error) {
+      const kits = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.name,
+        description: doc.description,
+        kit_data: doc.kit_data,
+        is_public: doc.is_public,
+        created_at: doc.$createdAt,
+        updated_at: doc.$updatedAt
+      })) || [];
+      setSavedKits(kits);
+      return kits;
+    } catch (error: any) {
       console.error('Error fetching user kits:', error);
+      // Add more specific error handling
+      if (error.code === 401) {
+        console.error('Permission denied: User lacks access to the userKits collection');
+      }
       return [];
     }
   };
@@ -273,18 +309,32 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
     }
 
     try {
-      const { error } = await supabase
-        .from('user_kits')
-        .delete()
-        .eq('id', kitId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      // First, check if the user has permission to delete this kit
+      const kitData = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userKits',
+        kitId
+      );
+      
+      // Verify ownership - only the creator can delete a kit
+      if (kitData.userId !== user.$id) {
+        throw new Error('You do not have permission to delete this kit');
+      }
+      
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'userKits',
+        kitId
+      );
       
       // Refresh saved kits list
       await getUserKits();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting kit:', error);
+      // Provide more specific error message for permission issues
+      if (error.code === 401) {
+        throw new Error('You do not have permission to delete this kit');
+      }
       throw error;
     }
   };

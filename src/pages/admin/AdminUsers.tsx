@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import EnhancedUserManagement from '@/components/admin/EnhancedUserManagement';
-import { supabaseAdmin } from '@/lib/supabase';
+import { databases } from '@/lib/appwrite';
 
 const AdminUsers = () => {
   const [userCount, setUserCount] = useState(0);
@@ -10,10 +10,13 @@ const AdminUsers = () => {
     // Fetch initial user count
     const fetchUserCount = async () => {
       try {
-        const { count } = await supabaseAdmin
-          .from('user_profiles')
-          .select('*', { count: 'exact', head: true });
-        setUserCount(count || 0);
+        // Use Appwrite instead of Supabase
+        const response = await databases.listDocuments(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'users',
+          [JSON.stringify({ method: 'limit', values: [1000] })]
+        );
+        setUserCount(response.total || 0);
       } catch (error) {
         console.error('Error fetching user count:', error);
       }

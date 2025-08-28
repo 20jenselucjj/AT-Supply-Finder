@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth-context';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import {
   Users,
@@ -143,36 +143,50 @@ export const DashboardOverview: React.FC = () => {
     try {
       setLoading(true);
 
-      // Check admin permissions
-      const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin');
-      if (adminError || !isAdminResult) {
-        toast.error('You must be an admin to view dashboard.');
+      // Check admin permissions using Appwrite
+      const isAdmin = await account.get();
+      if (!isAdmin) {
+        toast.error('You must be logged in to view dashboard.');
         return;
       }
 
-      // Fetch user statistics
-      const { count: totalUsers } = await supabaseAdmin
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true });
+      // Fetch user statistics from Appwrite
+      // Using 'users' collection instead of 'userProfiles' which doesn't exist
+      const usersResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'users',
+        [JSON.stringify({ method: 'limit', values: [1000] })]
+      );
+      const totalUsers = usersResponse.total;
 
       // Fetch active users (users who signed in within last 30 days)
+      // Note: Appwrite doesn't have a direct way to filter by date, so we'll need to filter client-side
+      const allUsersResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'users',
+        []
+      );
+      
       const thirtyDaysAgo = subDays(new Date(), 30);
-      const { count: activeUsers } = await supabaseAdmin
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_sign_in_at', thirtyDaysAgo.toISOString());
+      const activeUsers = allUsersResponse.documents.filter((user: any) => {
+        const lastSignIn = user.lastSignInAt ? new Date(user.lastSignInAt) : new Date(user.$createdAt);
+        return lastSignIn >= thirtyDaysAgo;
+      }).length;
 
       // Fetch new users today
       const today = startOfDay(new Date());
-      const { count: newUsersToday } = await supabaseAdmin
-        .from('user_profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today.toISOString());
+      const newUsersToday = allUsersResponse.documents.filter((user: any) => {
+        const createdAt = new Date(user.$createdAt);
+        return createdAt >= today;
+      }).length;
 
       // Fetch product statistics
-      const { count: totalProducts } = await supabaseAdmin
-        .from('products')
-        .select('*', { count: 'exact', head: true });
+      const productsResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        [JSON.stringify({ method: 'limit', values: [1000] })]
+      );
+      const totalProducts = productsResponse.total;
 
       // Fetch order statistics
       // Since the orders table doesn't exist, we'll use mock data

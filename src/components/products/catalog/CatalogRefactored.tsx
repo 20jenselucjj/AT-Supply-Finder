@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Product } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { databases } from '@/lib/appwrite';
 import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -29,6 +29,7 @@ import { ProductTable } from './ProductTable';
 import { ProductListMobile } from './ProductListMobile';
 import { ProductQuickView } from './ProductQuickView';
 import { ProductComparison } from './ProductComparison';
+import { Query } from "appwrite";
 
 // Storage key for product cache
 const PRODUCTS_CACHE_KEY = 'wrap_wizard_products_cache';
@@ -92,97 +93,84 @@ export const CatalogRefactored = () => {
     
     try {
       console.log('Starting to load products...', isRetry ? '(retry)' : '');
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
       
-      // Test basic connection first
-      const { data: testData, error: testError } = await supabase
-        .from('products')
-        .select('count')
-        .limit(1);
+      // Build queries for Appwrite
+      let queries: any[] = [];
+
+      // Apply search filter
+      if (q) {
+        queries.push(Query.search('name', q));
+      }
+
+      // Apply category filter
+      if (cat !== 'all') {
+        queries.push(Query.equal('category', cat));
+      }
+
+      // Order by creation date
+      queries.push(Query.orderDesc('$createdAt'));
+
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        queries
+      );
       
-      console.log('Connection test:', { testData, testError });
+      console.log('Appwrite query result:', response);
       
-      if (testError) {
-        throw new Error(`Connection test failed: ${testError.message}`);
+      if (!response) {
+        throw new Error('No response from database');
       }
       
-      // First, let's try a simple query without joins
-      let query = supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setError(null); // Clear any previous errors
 
-        // Apply search filter
-        if (q) {
-          query = query.or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`);
-        }
-
-        // Apply category filter
-        if (cat !== 'all') {
-          query = query.eq('category', cat);
-        }
-
-        const { data, error } = await query;
-        
-        console.log('Supabase query result:', { data, error });
-        
-        if (error) {
-          console.error('Error loading products:', error);
-          setError(`Database error: ${error.message}`);
-          setProducts([]);
-          return;
-        }
-        
-        setError(null); // Clear any previous errors
-
-        // Transform database products to match Product interface
-        const transformedProducts: Product[] = (data || []).map(product => ({
-          id: product.id,
-          name: product.name,
-          category: product.category,
-          brand: product.brand,
-          rating: product.rating || 0,
-          imageUrl: product.image_url || '',
-          asin: product.asin || '',
-          dimensions: product.dimensions || '',
-          weight: product.weight || '',
-          material: product.material || '',
-          features: product.features || [],
+      // Transform database products to match Product interface
+      const transformedProducts: Product[] = (response.documents || []).map(product => ({
+        id: product.$id,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        rating: product.rating || 0,
+        imageUrl: product.imageUrl || '',
+        asin: product.asin || '',
+        dimensions: product.dimensions || '',
+        weight: product.weight || '',
+        material: product.material || '',
+        features: Array.isArray(product.features) ? product.features : (typeof product.features === 'string' && product.features.trim() !== '' ? product.features.split(',').map(f => f.trim()) : []),
+        price: product.price,
+        affiliateLink: product.affiliateLink,
+        offers: product.price ? [{
+          name: 'Direct',
           price: product.price,
-          affiliateLink: product.affiliate_link,
-          offers: product.price ? [{
-            name: 'Direct',
-            price: product.price,
-            url: product.affiliate_link || '#',
-            lastUpdated: product.updated_at || new Date().toISOString()
-          }] : []
-        }));
-        
-        console.log('Loaded products from database:', transformedProducts.length);
-        console.log('Sample product:', transformedProducts[0]);
-        setProducts(transformedProducts);
-        
-        // Cache the products data
-        cacheProducts(transformedProducts);
-        
-        // Reset retry count on success
-        setRetryCount(0);
-        setError(null);
-      } catch (error) {
-        console.error('Error loading products:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        setError(`Failed to load products: ${errorMessage}`);
-        
-        // Only clear products if this is not a retry and we don't have cached data
-        if (!isRetry) {
-          setProducts([]);
-        }
-      } finally {
-        setLoading(false);
-        setIsRetrying(false);
+          url: product.affiliateLink || '#',
+          lastUpdated: product.$updatedAt || new Date().toISOString()
+        }] : []
+      }));
+      
+      console.log('Loaded products from database:', transformedProducts.length);
+      console.log('Sample product:', transformedProducts[0]);
+      setProducts(transformedProducts);
+      
+      // Cache the products data
+      cacheProducts(transformedProducts);
+      
+      // Reset retry count on success
+      setRetryCount(0);
+      setError(null);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to load products: ${errorMessage}`);
+      
+      // Only clear products if this is not a retry and we don't have cached data
+      if (!isRetry) {
+        setProducts([]);
       }
-    }, [q, cat, cacheProducts]);
+    } finally {
+      setLoading(false);
+      setIsRetrying(false);
+    }
+  }, [q, cat, cacheProducts]);
 
   // Retry function
   const retryLoadProducts = useCallback(() => {
@@ -201,17 +189,18 @@ export const CatalogRefactored = () => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('category')
-          .not('category', 'is', null);
+        const response = await databases.listDocuments(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          [Query.limit(1000)]
+        );
         
-        if (error) {
-          console.error('Error loading categories:', error);
+        if (!response) {
+          console.error('Error loading categories: No response');
           return;
         }
 
-        const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+        const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
         setCategories(uniqueCategories);
       } catch (error) {
         console.error('Error loading categories:', error);

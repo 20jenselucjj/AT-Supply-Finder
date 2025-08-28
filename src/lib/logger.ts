@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { databases } from './appwrite';
 import { toast } from 'sonner';
 
 export interface AuditLogEntry {
@@ -78,7 +78,7 @@ class Logger {
     try {
       const clientInfo = await this.captureClientInfo();
       
-      const auditEntry: AuditLogEntry = {
+      const auditEntry: any = {
         ...entry,
         user_id: this.userId || undefined,
         timestamp: new Date().toISOString(),
@@ -86,12 +86,15 @@ class Logger {
         user_agent: clientInfo.user_agent
       };
 
-      // Insert audit log entry into database
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert(auditEntry);
-
-      if (error) {
+      // Insert audit log entry into Appwrite database
+      try {
+        await databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'audit_logs', // Make sure this collection exists in Appwrite
+          'unique()',
+          auditEntry
+        );
+      } catch (error) {
         console.error('Failed to insert audit log:', error);
         // Don't throw error as this shouldn't break the main functionality
       }

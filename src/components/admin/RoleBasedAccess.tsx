@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { getUserRole, UserRole } from '@/lib/rbac';
-import { supabase } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
 
@@ -31,7 +31,7 @@ export const RoleBasedAccess: React.FC<RoleBasedAccessProps> = ({
 
       try {
         setLoading(true);
-        const role = await getUserRole(user.id);
+        const role = await getUserRole(user.$id);
         setUserRole(role);
       } catch (err) {
         setError('Failed to fetch user role');

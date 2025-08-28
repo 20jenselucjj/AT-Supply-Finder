@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Search, Package, Star, Plus, Minus, Filter, Grid, List, ChevronUp, ChevronDown, Check } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { databases } from "@/lib/appwrite";
 import { AT_SUPPLY_CATEGORIES, type ATSupplyCategory } from "./ATSupplyCategories";
 import ProductSpecifications from "./ProductSpecifications";
 import VendorComparison from "./VendorComparison";
@@ -73,29 +73,40 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         return;
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('category', productCategory);
+      // Query products from Appwrite database
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        [JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] })]
+      );
 
-      if (error) {
-        console.error('Error fetching products:', error);
-        setProducts([]);
-      } else {
-        const transformedProducts: Product[] = (data || []).map(product => ({
-          id: product.id,
-          name: product.name,
-          brand: product.brand || 'Unknown',
-          category: product.category,
-          subcategory: product.subcategory,
-          description: product.description || '',
-          features: product.features || [],
-          imageUrl: product.image_url,
-          rating: product.rating || 0,
-          offers: product.offers || [],
-          lastUpdated: product.updated_at || new Date().toISOString()
-        }));
+      if (response) {
+        const transformedProducts: Product[] = (response.documents || []).map((product: any) => {
+          // Convert features string to array if needed
+          let features: string[] = [];
+          if (typeof product.features === 'string' && product.features.trim() !== '') {
+            features = product.features.split(',').map((f: string) => f.trim());
+          } else if (Array.isArray(product.features)) {
+            features = product.features;
+          }
+
+          return {
+            id: product.$id,
+            name: product.name,
+            brand: product.brand || 'Unknown',
+            category: product.category,
+            subcategory: product.subcategory,
+            description: product.description || '',
+            features: features,
+            imageUrl: product.imageUrl,
+            rating: product.rating || 0,
+            offers: product.offers || [],
+            lastUpdated: product.updatedAt || new Date().toISOString()
+          };
+        });
         setProducts(transformedProducts);
+      } else {
+        setProducts([]);
       }
     } catch (error) {
       console.error('Error in fetchCategoryProducts:', error);
@@ -110,9 +121,9 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
       const matchesSearch = !searchTerm || 
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.features.some(feature => 
+        (product.features && product.features.some(feature => 
           feature.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        ));
       
       const matchesBrand = !brandFilter || brandFilter === "all" || product.brand === brandFilter;
       

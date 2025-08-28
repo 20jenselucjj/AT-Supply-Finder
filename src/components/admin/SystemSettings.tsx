@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from '@/context/theme-context';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';
 import {
@@ -235,23 +235,10 @@ export const SystemSettings: React.FC = () => {
   const { theme, setTheme, contrastMode, setContrastMode, colorScheme, setColorScheme } = useTheme();
 
   useEffect(() => {
-    // Set up real-time subscription for system settings changes
-    const channel = supabase
-      .channel('system-settings-changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'system_config' },
-        (payload) => {
-          console.log('System settings updated:', payload.new);
-          // In a real implementation, we would update the local state with the new settings
-          // For now, we'll just log the change
-        }
-      )
-      .subscribe();
-
-    // Clean up subscription on unmount
+    // In Appwrite, we don't have the same realtime subscription capabilities as Supabase
+    // We'll just clean up any potential subscriptions on unmount
     return () => {
-      supabase.removeChannel(channel);
+      // Cleanup function if needed
     };
   }, []);
 

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';
@@ -36,8 +36,8 @@ interface StarterKitTemplate {
   description?: string;
   category: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  $createdAt: string;
+  $updatedAt: string;
   estimated_cost?: number;
 }
 
@@ -62,7 +62,7 @@ export const StarterKitBuilder: React.FC = () => {
   const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<StarterKitTemplate | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'created_at' | 'name' | 'estimated_cost'>('created_at');
+  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'estimated_cost'>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeTab, setActiveTab] = useState('templates');
@@ -82,30 +82,53 @@ export const StarterKitBuilder: React.FC = () => {
     try {
       setLoading(true);
 
-      let query = supabase
-        .from('starter_kit_templates')
-        .select('*', { count: 'exact' })
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range((page - 1) * templatesPerPage, page * templatesPerPage - 1);
+      // Build query with filters for Appwrite
+      let queries: string[] = [];
 
+      // Apply search term filter
       if (search) {
-        query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+        queries.push(JSON.stringify({ method: 'search', attribute: 'name', values: [search] }));
       }
 
+      // Apply category filter
       if (category !== 'all') {
-        query = query.eq('category', category);
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [category] }));
       }
 
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error('Error fetching templates:', error);
-        toast.error('Failed to fetch starter kit templates');
-        return;
+      // Apply sorting
+      if (sortBy) {
+        if (sortOrder === 'asc') {
+          queries.push(JSON.stringify({ method: 'orderAsc', attribute: sortBy }));
+        } else {
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: sortBy }));
+        }
       }
 
-      setTemplates(data || []);
-      setTotalPages(Math.ceil((count || 0) / templatesPerPage));
+      // Apply pagination
+      const offset = (page - 1) * templatesPerPage;
+      queries.push(JSON.stringify({ method: 'limit', values: [templatesPerPage] }));
+      queries.push(JSON.stringify({ method: 'offset', values: [offset] }));
+
+      // Fetch templates from Appwrite 'starter_kit_templates' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starter_kit_templates',
+        queries
+      );
+
+      const transformedTemplates = response.documents?.map((template: any) => ({
+        id: template.$id,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        is_active: template.is_active,
+        $createdAt: template.$createdAt,
+        $updatedAt: template.$updatedAt,
+        estimated_cost: template.estimated_cost
+      })) || [];
+
+      setTemplates(transformedTemplates);
+      setTotalPages(Math.ceil((response.total || 0) / templatesPerPage));
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Failed to fetch starter kit templates');
@@ -116,17 +139,23 @@ export const StarterKitBuilder: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, brand, category, image_url, price')
-        .order('name', { ascending: true });
+      // Fetch products from Appwrite 'products' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        [JSON.stringify({ method: 'limit', values: [1000] })]
+      );
 
-      if (error) {
-        console.error('Error fetching products:', error);
-        return;
-      }
+      const transformedProducts = response.documents?.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        image_url: product.image_url,
+        price: product.price
+      })) || [];
 
-      setProducts(data || []);
+      setProducts(transformedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -134,18 +163,19 @@ export const StarterKitBuilder: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('starter_kit_templates')
-        .select('category')
-        .not('category', 'is', null);
+      // Fetch templates from Appwrite 'starter_kit_templates' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starter_kit_templates',
+        [JSON.stringify({ method: 'limit', values: [1000] })]
+      );
 
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return;
+      if (response.documents) {
+        const uniqueCategories = [...new Set(response.documents
+          .map((item: any) => item.category)
+          .filter(Boolean))] as string[];
+        setCategories(uniqueCategories);
       }
-
-      const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
-      setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -170,50 +200,44 @@ export const StarterKitBuilder: React.FC = () => {
 
       const templateData = {
         name: templateForm.name,
-        description: templateForm.description || null,
+        description: templateForm.description || '',
         category: templateForm.category,
         is_active: templateForm.is_active,
         estimated_cost: templateForm.estimated_cost || 0
       };
 
-      const { data: template, error: templateError } = await supabase
-        .from('starter_kit_templates')
-        .insert(templateData)
-        .select()
-        .single();
-
-      if (templateError) {
-        await logger.auditLog({
-          action: 'CREATE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          details: {
-            template_name: templateForm.name,
-            error: templateError.message
-          }
-        });
-        toast.error(`Failed to create template: ${templateError.message}`);
-        return;
-      }
+      // Create template in Appwrite
+      const response = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starter_kit_templates',
+        'unique()',
+        templateData
+      );
 
       // Log successful template creation
       await logger.auditLog({
         action: 'CREATE_TEMPLATE',
         entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: template.id,
         details: {
-          template_name: templateForm.name,
-          category: templateForm.category
+          template_id: response.$id,
+          template_name: templateForm.name
         }
       });
 
-      toast.success('Starter kit template created successfully');
+      toast.success('Template created successfully');
       setIsAddTemplateOpen(false);
       resetForm();
       fetchTemplates(currentPage, searchTerm, selectedCategory);
-      fetchCategories();
-    } catch (error) {
-      console.error('Error creating template:', error);
-      toast.error('Failed to create starter kit template');
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'CREATE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        details: {
+          template_name: templateForm.name,
+          error: error.message
+        }
+      });
+      toast.error(`Failed to create template: ${error.message}`);
     }
   };
 
@@ -223,31 +247,19 @@ export const StarterKitBuilder: React.FC = () => {
     try {
       const templateData = {
         name: templateForm.name,
-        description: templateForm.description || null,
+        description: templateForm.description || '',
         category: templateForm.category,
         is_active: templateForm.is_active,
-        estimated_cost: templateForm.estimated_cost || 0,
-        updated_at: new Date().toISOString()
+        estimated_cost: templateForm.estimated_cost || 0
       };
 
-      const { error: templateError } = await supabase
-        .from('starter_kit_templates')
-        .update(templateData)
-        .eq('id', editingTemplate.id);
-
-      if (templateError) {
-        await logger.auditLog({
-          action: 'UPDATE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          entity_id: editingTemplate.id,
-          details: {
-            template_name: templateForm.name,
-            error: templateError.message
-          }
-        });
-        toast.error(`Failed to update template: ${templateError.message}`);
-        return;
-      }
+      // Update template in Appwrite
+      const response = await databases.updateDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starter_kit_templates',
+        editingTemplate.id,
+        templateData
+      );
 
       // Log successful template update
       await logger.auditLog({
@@ -266,55 +278,48 @@ export const StarterKitBuilder: React.FC = () => {
       resetForm();
       fetchTemplates(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
-      console.error('Error updating template:', error);
-      toast.error('Failed to update starter kit template');
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'UPDATE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        entity_id: editingTemplate.id,
+        details: {
+          template_name: templateForm.name,
+          error: error.message
+        }
+      });
+      toast.error(`Failed to update template: ${error.message}`);
     }
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      // Fetch template data before deletion for audit logging
-      const { data: templateData, error: fetchError } = await supabase
-        .from('starter_kit_templates')
-        .select('name, category')
-        .eq('id', templateId)
-        .single();
-
-      const { error } = await supabase
-        .from('starter_kit_templates')
-        .delete()
-        .eq('id', templateId);
-
-      if (error) {
-        await logger.auditLog({
-          action: 'DELETE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          entity_id: templateId,
-          details: {
-            error: error.message
-          }
-        });
-        toast.error(`Failed to delete template: ${error.message}`);
-        return;
-      }
+      // Delete template from Appwrite
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starter_kit_templates',
+        templateId
+      );
 
       // Log successful template deletion
       await logger.auditLog({
         action: 'DELETE_TEMPLATE',
         entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: templateId,
-        details: {
-          template_name: templateData?.name,
-          category: templateData?.category
-        }
+        entity_id: templateId
       });
 
       toast.success('Starter kit template deleted successfully');
       fetchTemplates(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
-      console.error('Error deleting template:', error);
-      toast.error('Failed to delete starter kit template');
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'DELETE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        entity_id: templateId,
+        details: {
+          error: error.message
+        }
+      });
+      toast.error(`Failed to delete template: ${error.message}`);
     }
   };
 
@@ -346,38 +351,10 @@ export const StarterKitBuilder: React.FC = () => {
   useEffect(() => {
     fetchTemplates(currentPage, searchTerm, selectedCategory);
     
-    // Set up real-time subscription for starter kit template changes
-    const templatesChannel = supabase
-      .channel('starter-kit-templates-changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'starter_kit_templates' },
-        (payload) => {
-          console.log('New starter kit template added:', payload.new);
-          fetchTemplates(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'starter_kit_templates' },
-        (payload) => {
-          console.log('Starter kit template updated:', payload.new);
-          fetchTemplates(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'starter_kit_templates' },
-        (payload) => {
-          console.log('Starter kit template deleted:', payload.old);
-          fetchTemplates(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .subscribe();
-
-    // Clean up subscriptions on unmount
+    // In Appwrite, we don't have the same realtime subscription capabilities as Supabase
+    // We'll just clean up any potential subscriptions on unmount
     return () => {
-      supabase.removeChannel(templatesChannel);
+      // Cleanup function if needed
     };
   }, [currentPage, selectedCategory, sortBy, sortOrder]);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ProductManagement } from '@/components/admin/ProductManagement';
-import { supabaseAdmin } from '@/lib/supabase';
+import { databases, account } from '@/lib/appwrite';
 
 const AdminProducts = () => {
   const [productCount, setProductCount] = useState(0);
@@ -10,10 +10,13 @@ const AdminProducts = () => {
     // Fetch initial product count
     const fetchProductCount = async () => {
       try {
-        const { count } = await supabaseAdmin
-          .from('products')
-          .select('*', { count: 'exact', head: true });
-        setProductCount(count || 0);
+        // Use Appwrite instead of Supabase
+        const response = await databases.listDocuments(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          [JSON.stringify({ method: 'limit', values: [1000] })]
+        );
+        setProductCount(response.total || 0);
       } catch (error) {
         console.error('Error fetching product count:', error);
       }

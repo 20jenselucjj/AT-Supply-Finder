@@ -1,0 +1,19 @@
+{
+  "name": "at-supply-finder-migration",
+  "version": "1.0.0",
+  "description": "Migration scripts from Supabase to Appwrite for AT Supply Finder",
+  "main": "index.js",
+  "scripts": {
+    "export": "node supabase-export.js",
+    "import": "node appwrite-import.js",
+    "migrate": "node supabase-export.js && node appwrite-import.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-appwrite": "^8.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["migration", "supabase", "appwrite"],
+  "author": "AT Supply Finder Team",
+  "license": "MIT"
+}

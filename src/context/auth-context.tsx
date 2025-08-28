@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
+import { account, databases } from '@/lib/appwrite';
+import { Models } from 'appwrite';
+import { Query } from 'appwrite';
 
 // Storage keys for persistence
 const AUTH_STORAGE_KEY = 'wrap_wizard_auth';
 const ADMIN_STORAGE_KEY = 'wrap_wizard_admin';
 
 interface AuthContextType {
-  user: User | null;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  user: Models.User<Models.Preferences> | null;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   loading: boolean;
@@ -32,7 +33,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(() => {
     // Initialize from localStorage if available
@@ -57,43 +58,60 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Use provided userId or get current user
           let authUser;
           if (userId) {
-            authUser = { id: userId };
+            authUser = { $id: userId };
           } else {
-            const { data: { user: currentUser } } = await supabase.auth.getUser();
-            authUser = currentUser;
+            try {
+              authUser = await account.get();
+            } catch (error) {
+              console.log('No authenticated user found');
+              setIsAdmin(false);
+              setHasCheckedAdmin(true);
+              return;
+            }
           }
           
-          if (!authUser) {
-            console.log('No authenticated user found');
+          if (!authUser || !authUser.$id) {
+            console.log('No valid user found');
             setIsAdmin(false);
             setHasCheckedAdmin(true);
             return;
           }
 
-          console.log('Checking admin status for user:', authUser.id);
+          console.log('Checking admin status for user:', authUser.$id);
 
-      // Try using the is_admin() function first (more reliable)
-      try {
-        const { data, error } = await supabase
-          .rpc('is_admin');
-        
-        if (error) {
-          console.warn('is_admin() function not available, error:', error.message);
-          console.warn('Falling back to table query');
-          
-          // Fallback to direct table query
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', authUser.id)
-            .maybeSingle();
-          
-          if (roleError) {
-            console.error('User roles table query failed:', roleError.message);
-            console.error('Full error:', roleError);
+          // Query the user_roles collection in Appwrite using the SDK
+          try {
+            console.log('Checking admin status for user ID:', authUser.$id);
+            const response = await databases.listDocuments(
+              import.meta.env.VITE_APPWRITE_DATABASE_ID,
+              'userRoles',
+              [Query.equal('userId', authUser.$id)]
+            );
+            
+            if (response && response.documents && response.documents.length > 0) {
+              const roleData = response.documents[0];
+              console.log('Role data from collection query:', roleData);
+              const isAdminUser = roleData.role === 'admin';
+              console.log('Is admin user:', isAdminUser);
+              setIsAdmin(isAdminUser);
+              // Persist admin status
+              localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(isAdminUser));
+            } else {
+              console.log('No role data found, setting admin status to false');
+              setIsAdmin(false);
+              // Persist admin status
+              localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(false));
+            }
+          } catch (error: any) {
+            console.error('User roles collection query failed:', error);
+            console.error('Error details:', {
+              message: error.message,
+              code: error.code,
+              response: error.response
+            });
             
             // Retry once if it's a network/connection error and we haven't retried yet
-            if (retryCount === 0 && (roleError.message.includes('network') || roleError.message.includes('connection'))) {
+            if (retryCount === 0 && (error.message.includes('network') || error.message.includes('connection'))) {
               console.log('Retrying admin status check due to network error...');
               setTimeout(() => checkAdminStatus(userId, 1), 1000);
               return;
@@ -101,27 +119,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             console.log('Setting admin status to false due to error');
             setIsAdmin(false);
-            setHasCheckedAdmin(true);
-          } else {
-          console.log('Role data from table query:', roleData);
-          const isAdminUser = roleData?.role === 'admin';
-          console.log('Is admin user:', isAdminUser);
-          setIsAdmin(isAdminUser);
-          // Persist admin status
-          localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(isAdminUser));
-        }
-        } else {
-          console.log('is_admin() function result:', data);
-          const adminStatus = data === true;
-          setIsAdmin(adminStatus);
-          // Persist admin status
-          localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminStatus));
-        }
-      } catch (rpcError) {
-        console.error('RPC call failed with exception:', rpcError);
-        setIsAdmin(false);
-      }
-      
+          }
+          
           setHasCheckedAdmin(true);
         })(),
         timeoutPromise
@@ -142,22 +141,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = async () => {
       try {
         // Check active sessions and sets the user
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          if (mounted) {
-            setLoading(false);
-          }
-          return;
+        let currentUser = null;
+        try {
+          currentUser = await account.get();
+        } catch (error) {
+          // No active session
+          console.log('No active session found');
         }
         
         if (mounted) {
-          setUser(session?.user ?? null);
+          setUser(currentUser ?? null);
           
-          if (session?.user) {
+          if (currentUser) {
             // User is authenticated, check admin status
-            await checkAdminStatus(session.user.id);
+            await checkAdminStatus(currentUser.$id);
           } else {
             // No session, clear admin status
             setIsAdmin(false);
@@ -177,27 +174,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     initializeAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!mounted) return;
-      
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-         await checkAdminStatus(session.user.id);
-       } else {
-        setIsAdmin(false);
-        setHasCheckedAdmin(false);
-        localStorage.removeItem(ADMIN_STORAGE_KEY);
-      }
-      
-      setLoading(false);
-    });
-
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, [checkAdminStatus]);
   
@@ -209,31 +187,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   }, [isAdmin]);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      // Create a new user ID
+      const userId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // Create the user
+      await account.create(userId, email, password, name);
+      
+      // Create session
+      await account.createEmailPasswordSession(email, password);
+      
+      // Get the newly created user
+      const newUser = await account.get();
+      setUser(newUser);
+      
+      // Check admin status for the new user
+      await checkAdminStatus(newUser.$id);
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    // If sign in successful, check admin status immediately
-    if (!error && data.user) {
-      await checkAdminStatus(data.user.id);
+    try {
+      // Create session
+      await account.createEmailPasswordSession(email, password);
+      
+      // Get the user
+      const authenticatedUser = await account.get();
+      setUser(authenticatedUser);
+      
+      // Check admin status
+      await checkAdminStatus(authenticatedUser.$id);
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      return { error };
     }
-    
-    return { error };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
+    try {
+      await account.deleteSession('current');
+      setUser(null);
       setIsAdmin(false);
       setHasCheckedAdmin(false);
-      // Clear persisted admin status
       localStorage.removeItem(ADMIN_STORAGE_KEY);
+      return { error: null };
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      return { error };
     }
-    return { error };
   };
 
   const value = {
