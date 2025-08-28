@@ -146,9 +146,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
-        setCollapsed(true);
+        setCollapsed(false); // Changed from true to false to never collapse on mobile
       } else {
-        setCollapsed(false);
+        setCollapsed(false); // Changed from dynamic to always show full sidebar
       }
     };
 
@@ -221,7 +221,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             isActive 
               ? "bg-primary/10 text-primary border-r-2 border-r-primary" 
               : "hover:bg-accent hover:text-accent-foreground",
-            collapsed && level === 0 ? "justify-center" : "justify-between"
+            "justify-between"
           )}
         >
           <Button
@@ -233,6 +233,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               collapsed && level === 0 && "px-2"
             )}
             title={collapsed && level === 0 ? item.label : undefined}
+data-tooltip={collapsed && level === 0 ? item.label : undefined}
+data-tooltip-position="right"
             onClick={() => {
               if (item.href) {
                 console.log('Navigating to:', item.href);
@@ -245,15 +247,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             }}
           >
             <item.icon className={cn("h-4 w-4 flex-shrink-0 dark:text-white", isActive && "text-primary")} />
-            {(!collapsed || level > 0) && (
-              <>
-                <span className="flex-1 text-left text-foreground dark:text-white">{item.label}</span>
-                {item.badge && (
-                  <Badge variant={item.badgeVariant || "secondary"} className="text-xs">
-                    {item.badge}
-                  </Badge>
-                )}
-              </>
+            <span className="flex-1 text-left text-foreground dark:text-white">{item.label}</span>
+            {item.badge && (
+              <Badge variant={item.badgeVariant || "secondary"} className="text-xs">
+                {item.badge}
+              </Badge>
             )}
           </Button>
           
@@ -351,19 +349,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             variant="outline" 
             className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
             size="sm"
-            title={collapsed ? "Import Data" : undefined}
           >
             <Upload className="h-4 w-4 dark:text-white" />
-            <span className={collapsed ? "hidden" : "inline"}>Import Data</span>
+            <span>Import Data</span>
           </Button>
+          
           <Button 
             variant="outline" 
             className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
             size="sm"
-            title={collapsed ? "Export Data" : undefined}
           >
             <Download className="h-4 w-4 dark:text-white" />
-            <span className={collapsed ? "hidden" : "inline"}>Export Data</span>
+            <span>Export Data</span>
           </Button>
         </div>
       </div>
@@ -377,57 +374,107 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               {user?.email?.charAt(0).toUpperCase() || 'A'}
             </AvatarFallback>
           </Avatar>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-foreground">{user?.email}</p>
-              <p className="text-xs text-muted-foreground">Administrator</p>
-            </div>
-          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate text-foreground dark:text-white">{user?.email}</p>
+            <p className="text-xs text-muted-foreground">Administrator</p>
+          </div>
         </div>
         
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1 text-foreground">
-              {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-              <span className="ml-2">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={async () => {
-                try {
-                  // Log the sign out action
-                  await logger.auditLog({
-                    action: 'ADMIN_SIGN_OUT',
-                    entity_type: 'USER',
-                    details: {
-                      email: user?.email
-                    }
-                  });
-                  
-                  await signOut();
-                  navigate('/'); // Redirect to home after sign out
-                } catch (error) {
-                  console.error('Sign out error:', error);
-                }
-              }} 
-              className="flex-1 text-foreground"
-            >
-              <LogOut className="h-3 w-3" />
-              <span className="ml-2">Sign Out</span>
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1 text-foreground">
+            {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+            <span className="ml-2">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                // Log the sign out action
+                await logger.auditLog({
+                  action: 'ADMIN_SIGN_OUT',
+                  entity_type: 'USER',
+                  details: {
+                    email: user?.email
+                  }
+                });
+                
+                await signOut();
+                navigate('/'); // Redirect to home after sign out
+              } catch (error) {
+                console.error('Sign out error:', error);
+              }
+            }} 
+            className="flex-1 text-foreground"
+          >
+            <LogOut className="h-3 w-3" />
+            <span className="ml-2">Sign Out</span>
+          </Button>
+        </div>
       </div>
     </div>
   );
 
   return (
     <div className="flex h-screen bg-background">
+      <style>{`
+        /* Enhanced tooltip styles for better visibility */
+        .tooltip-wrapper {
+          position: relative;
+        }
+        .tooltip {
+          position: absolute;
+          left: 100%;
+          top: 50%;
+          transform: translateY(-50%);
+          background-color: hsl(var(--card));
+          color: hsl(var(--card-foreground));
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          white-space: nowrap;
+          z-index: 50;
+          border: 1px solid hsl(var(--border));
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease, visibility 0.2s ease;
+          margin-left: 12px;
+          pointer-events: none;
+        }
+        .tooltip-wrapper:hover .tooltip {
+          opacity: 1;
+          visibility: visible;
+        }
+        /* Dark mode specific styling */
+        :root[class~="dark"] .tooltip {
+          background-color: hsl(var(--accent));
+          color: white;
+          border-color: hsl(var(--accent));
+        }
+        /* Media queries for different screen sizes */
+        @media (max-width: 640px) {
+          .tooltip {
+            padding: 8px 12px;
+            font-size: 16px; /* Larger font on small screens */
+            margin-left: 16px; /* More space on small screens */
+            max-width: 200px; /* Prevent tooltips from extending too far */
+            white-space: normal; /* Allow wrapping on small screens */
+          }
+        }
+        /* Force tooltip display for touch devices */
+        @media (hover: none) {
+          .tooltip-wrapper .tooltip {
+            opacity: 1;
+            visibility: visible;
+          }
+        }
+      `}</style>
       {/* Desktop Sidebar - Improved responsive classes */}
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? '64px' : '280px' }}
+        animate={{ width: '280px' }} /* Always use full width */
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="hidden lg:flex flex-col border-r border-border bg-card text-card-foreground"
       >
@@ -460,14 +507,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </Sheet>
 
               {/* Desktop Collapse Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="hidden lg:flex"
-                onClick={() => setCollapsed(!collapsed)}
-              >
-                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </Button>
+              {/* Desktop Collapse Button Removed */}
 
               {/* Breadcrumbs - Improved responsive behavior */}
               <Breadcrumb className="hidden md:flex">
@@ -512,9 +552,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <HelpCircle className="h-4 w-4" />
               </Button>
               <NotificationsPanel />
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setCollapsed(!collapsed)}>
-                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </Button>
+              {/* Mobile Toggle Button Removed */}
             </div>
           </div>
         </header>
