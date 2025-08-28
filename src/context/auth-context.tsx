@@ -79,6 +79,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           console.log('Checking admin status for user:', authUser.$id);
 
+          // Check if required environment variables are present
+          if (!import.meta.env.VITE_APPWRITE_DATABASE_ID) {
+            console.error('VITE_APPWRITE_DATABASE_ID is not set in environment variables');
+            setIsAdmin(false);
+            setHasCheckedAdmin(true);
+            return;
+          }
+
           // Query the user_roles collection in Appwrite using the SDK
           try {
             console.log('Checking admin status for user ID:', authUser.$id);
