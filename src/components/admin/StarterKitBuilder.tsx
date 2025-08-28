@@ -109,10 +109,10 @@ export const StarterKitBuilder: React.FC = () => {
       queries.push(JSON.stringify({ method: 'limit', values: [templatesPerPage] }));
       queries.push(JSON.stringify({ method: 'offset', values: [offset] }));
 
-      // Fetch templates from Appwrite 'starter_kit_templates' collection
+      // Fetch templates from Appwrite 'starterKitTemplates' collection
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'starter_kit_templates',
+        'starterKitTemplates',
         queries
       );
 
@@ -163,10 +163,10 @@ export const StarterKitBuilder: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      // Fetch templates from Appwrite 'starter_kit_templates' collection
+      // Fetch templates from Appwrite 'starterKitTemplates' collection
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'starter_kit_templates',
+        'starterKitTemplates',
         [JSON.stringify({ method: 'limit', values: [1000] })]
       );
 
@@ -209,7 +209,7 @@ export const StarterKitBuilder: React.FC = () => {
       // Create template in Appwrite
       const response = await databases.createDocument(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'starter_kit_templates',
+        'starterKitTemplates',
         'unique()',
         templateData
       );
@@ -256,7 +256,7 @@ export const StarterKitBuilder: React.FC = () => {
       // Update template in Appwrite
       const response = await databases.updateDocument(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'starter_kit_templates',
+        'starterKitTemplates',
         editingTemplate.id,
         templateData
       );
@@ -297,7 +297,7 @@ export const StarterKitBuilder: React.FC = () => {
       // Delete template from Appwrite
       await databases.deleteDocument(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'starter_kit_templates',
+        'starterKitTemplates',
         templateId
       );
 

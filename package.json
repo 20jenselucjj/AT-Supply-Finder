@@ -10,7 +10,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "analyze": "node scripts/analyze-bundle.js"
   },
   "dependencies": {
     "appwrite": "^16.0.2",

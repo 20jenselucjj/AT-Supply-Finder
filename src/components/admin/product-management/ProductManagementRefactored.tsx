@@ -80,20 +80,8 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
     try {
       setLoading(true);
       
-      let query = supabaseAdmin
-        .from('products')
-        .select(`
-          *,
-          vendor_offers (
-            id,
-            vendor_name,
-            url,
-            price,
-            last_updated
-          )
-        `, { count: 'exact' })
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range((page - 1) * productsPerPage, page * productsPerPage - 1);
+      // Build query with filters for Appwrite
+      let queries: string[] = [];
 
       // Apply search term filter
       if (search) {
@@ -101,63 +89,102 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         const searchTerms = search.split(' ').filter(term => term.length > 0);
         
         if (searchTerms.length > 0) {
-          // For multiple terms, search each term separately
+          // For multiple terms, create search conditions
           const searchConditions = searchTerms.map(term => 
-            `name.ilike.%${term}%,brand.ilike.%${term}%,category.ilike.%${term}%,material.ilike.%${term}%`
-          ).join(',');
+            `name LIKE '%${term}%' OR brand LIKE '%${term}%' OR category LIKE '%${term}%' OR material LIKE '%${term}%'`
+          ).join(' OR ');
           
-          query = query.or(searchConditions);
+          queries.push(JSON.stringify({ method: 'search', values: [searchConditions] }));
         } else {
           // For single term, use broader matching
-          query = query.or(`name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%,material.ilike.%${search}%`);
+          const searchCondition = `name LIKE '%${search}%' OR brand LIKE '%${search}%' OR category LIKE '%${search}%' OR material LIKE '%${search}%'`;
+          queries.push(JSON.stringify({ method: 'search', values: [searchCondition] }));
         }
       }
 
       // Apply category filter
       if (category !== 'all') {
-        query = query.eq('category', category);
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [category] }));
       }
 
       // Apply advanced filters
       if (advancedFilters.minPrice !== undefined) {
-        query = query.gte('price', advancedFilters.minPrice);
+        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'price', values: [advancedFilters.minPrice] }));
       }
       
       if (advancedFilters.maxPrice !== undefined) {
-        query = query.lte('price', advancedFilters.maxPrice);
+        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'price', values: [advancedFilters.maxPrice] }));
       }
       
       if (advancedFilters.minRating !== undefined) {
-        query = query.gte('rating', advancedFilters.minRating);
+        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'rating', values: [advancedFilters.minRating] }));
       }
       
       if (advancedFilters.maxRating !== undefined) {
-        query = query.lte('rating', advancedFilters.maxRating);
+        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'rating', values: [advancedFilters.maxRating] }));
       }
       
       if (advancedFilters.brand) {
-        query = query.ilike('brand', `%${advancedFilters.brand}%`);
+        queries.push(JSON.stringify({ method: 'search', attribute: 'brand', values: [`%${advancedFilters.brand}%`] }));
       }
       
       if (advancedFilters.material) {
-        query = query.ilike('material', `%${advancedFilters.material}%`);
+        queries.push(JSON.stringify({ method: 'search', attribute: 'material', values: [`%${advancedFilters.material}%`] }));
       }
       
       if (advancedFilters.weight) {
-        query = query.ilike('weight', `%${advancedFilters.weight}%`);
+        queries.push(JSON.stringify({ method: 'search', attribute: 'weight', values: [`%${advancedFilters.weight}%`] }));
       }
 
-      const { data, error, count } = await query;
-      
-      if (error) {
-        console.error('Error fetching products:', error);
-        toast.error('Failed to fetch products');
-        return;
+      // Apply sorting
+      if (sortBy) {
+        if (sortOrder === 'asc') {
+          queries.push(JSON.stringify({ method: 'orderAsc', attribute: sortBy }));
+        } else {
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: sortBy }));
+        }
       }
 
-      setProducts(data || []);
-      setTotalPages(Math.ceil((count || 0) / productsPerPage));
-      onProductCountChange(count || 0);
+      // Apply pagination
+      const offset = (page - 1) * productsPerPage;
+      queries.push(JSON.stringify({ method: 'limit', values: [productsPerPage] }));
+      queries.push(JSON.stringify({ method: 'offset', values: [offset] }));
+
+      // Fetch products from Appwrite 'products' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        queries
+      );
+
+      // Also get total count for pagination
+      const countResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
+
+      const transformedProducts = response.documents?.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        rating: product.rating,
+        price: product.price,
+        dimensions: product.dimensions,
+        weight: product.weight,
+        material: product.material,
+        features: product.features,
+        image_url: product.imageUrl,
+        asin: product.asin,
+        affiliate_link: product.affiliateLink,
+        created_at: product.$createdAt,
+        updated_at: product.$updatedAt
+      })) || [];
+
+      setProducts(transformedProducts);
+      setTotalPages(Math.ceil((countResponse.total || 0) / productsPerPage));
+      onProductCountChange(countResponse.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to fetch products');
@@ -168,17 +195,14 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('category')
-        .not('category', 'is', null);
+      // Fetch all products and extract unique categories
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
       
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return;
-      }
-
-      const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+      const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
       setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -188,17 +212,14 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
   // Fetch brands for filter dropdown
   const fetchBrands = async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('brand')
-        .not('brand', 'is', null);
+      // Fetch all products and extract unique brands
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
       
-      if (error) {
-        console.error('Error fetching brands:', error);
-        return;
-      }
-
-      const uniqueBrands = [...new Set(data.map(item => item.brand).filter(Boolean))];
+      const uniqueBrands = [...new Set(response.documents.map((item: any) => item.brand).filter(Boolean))];
       setBrands(uniqueBrands);
     } catch (error) {
       console.error('Error fetching brands:', error);
@@ -208,17 +229,14 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
   // Fetch materials for filter dropdown
   const fetchMaterials = async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('material')
-        .not('material', 'is', null);
+      // Fetch all products and extract unique materials
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
       
-      if (error) {
-        console.error('Error fetching materials:', error);
-        return;
-      }
-
-      const uniqueMaterials = [...new Set(data.map(item => item.material).filter(Boolean))];
+      const uniqueMaterials = [...new Set(response.documents.map((item: any) => item.material).filter(Boolean))];
       setMaterials(uniqueMaterials);
     } catch (error) {
       console.error('Error fetching materials:', error);
@@ -272,28 +290,35 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       const productIds = Array.from(selectedProducts);
       
       // Fetch product names before deletion for audit logging
-      const { data: productData, error: fetchError } = await supabaseAdmin
-        .from('products')
-        .select('id, name, category, brand')
-        .in('id', productIds);
-
-      const { error } = await supabaseAdmin
-        .from('products')
-        .delete()
-        .in('id', productIds);
-
-      if (error) {
-        await logger.auditLog({
-          action: 'BULK_DELETE_PRODUCTS_FAILED',
-          entity_type: 'PRODUCT',
-          details: {
-            count: productIds.length,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to delete products: ${error.message}`);
-        return;
+      const productData = [];
+      for (const productId of productIds) {
+        try {
+          const product = await databases.getDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            productId
+          );
+          productData.push({
+            id: product.$id,
+            name: product.name,
+            category: product.category,
+            brand: product.brand
+          });
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
       }
+
+      // Delete products
+      const deletePromises = productIds.map(productId =>
+        databases.deleteDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          productId
+        )
+      );
+      
+      await Promise.all(deletePromises);
 
       // Log successful bulk deletion
       await logger.auditLog({
@@ -301,21 +326,24 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         entity_type: 'PRODUCT',
         details: {
           count: productIds.length,
-          products: productData?.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            brand: p.brand
-          }))
+          products: productData
         }
       });
 
       toast.success(`Successfully deleted ${productIds.length} product${productIds.length > 1 ? 's' : ''}`);
       setSelectedProducts(new Set());
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'BULK_DELETE_PRODUCTS_FAILED',
+        entity_type: 'PRODUCT',
+        details: {
+          count: productIds.length,
+          error: error.message
+        }
+      });
       console.error('Error deleting products:', error);
-      toast.error('Failed to delete products');
+      toast.error(`Failed to delete products: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -324,19 +352,39 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
   const handleExportProducts = async () => {
     try {
       // Fetch all products for export
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*');
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
       
-      if (error) {
+      const data = response.documents.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        rating: product.rating,
+        price: product.price,
+        dimensions: product.dimensions,
+        weight: product.weight,
+        material: product.material,
+        features: product.features,
+        image_url: product.imageUrl,
+        asin: product.asin,
+        affiliate_link: product.affiliateLink,
+        created_at: product.$createdAt,
+        updated_at: product.$updatedAt
+      }));
+
+      if (data.length === 0) {
         await logger.auditLog({
           action: 'EXPORT_ALL_PRODUCTS_FAILED',
           entity_type: 'PRODUCT',
           details: {
-            error: error.message
+            error: 'No products found'
           }
         });
-        toast.error('Failed to fetch products for export');
+        toast.error('No products found for export');
         return;
       }
 
@@ -371,9 +419,16 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       });
       
       toast.success('Products exported successfully');
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'EXPORT_ALL_PRODUCTS_FAILED',
+        entity_type: 'PRODUCT',
+        details: {
+          error: error.message
+        }
+      });
       console.error('Error exporting products:', error);
-      toast.error('Failed to export products');
+      toast.error(`Failed to export products: ${error.message}`);
     }
   };
 
@@ -385,21 +440,49 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
 
     try {
       // Fetch selected products for export
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .in('id', Array.from(selectedProducts));
+      const productIds = Array.from(selectedProducts);
+      const data = [];
       
-      if (error) {
+      for (const productId of productIds) {
+        try {
+          const product = await databases.getDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            productId
+          );
+          
+          data.push({
+            id: product.$id,
+            name: product.name,
+            category: product.category,
+            brand: product.brand,
+            rating: product.rating,
+            price: product.price,
+            dimensions: product.dimensions,
+            weight: product.weight,
+            material: product.material,
+            features: product.features,
+            image_url: product.imageUrl,
+            asin: product.asin,
+            affiliate_link: product.affiliateLink,
+            created_at: product.$createdAt,
+            updated_at: product.$updatedAt
+          });
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
+      }
+      
+      if (data.length === 0) {
         await logger.auditLog({
           action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
           entity_type: 'PRODUCT',
           details: {
             count: selectedProducts.size,
-            error: error.message
+            error: 'No products found'
           }
         });
-        toast.error('Failed to fetch selected products for export');
+        toast.error('No products found for export');
         return;
       }
 
@@ -434,9 +517,17 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       URL.revokeObjectURL(url);
       
       toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} exported successfully`);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
+        entity_type: 'PRODUCT',
+        details: {
+          count: selectedProducts.size,
+          error: error.message
+        }
+      });
       console.error('Error exporting selected products:', error);
-      toast.error('Failed to export selected products');
+      toast.error(`Failed to export selected products: ${error.message}`);
     }
   };
 
@@ -456,18 +547,20 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       const updateData: any = {};
       if (bulkUpdateData.category) updateData.category = bulkUpdateData.category;
       if (bulkUpdateData.brand) updateData.brand = bulkUpdateData.brand;
-      updateData.updated_at = new Date().toISOString();
+      updateData.updatedAt = new Date().toISOString();
 
       // Update selected products
-      const { error } = await supabaseAdmin
-        .from('products')
-        .update(updateData)
-        .in('id', Array.from(selectedProducts));
+      const productIds = Array.from(selectedProducts);
+      const updatePromises = productIds.map(productId =>
+        databases.updateDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          productId,
+          updateData
+        )
+      );
       
-      if (error) {
-        toast.error('Failed to update products');
-        return;
-      }
+      await Promise.all(updatePromises);
 
       toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} updated successfully`);
       
@@ -476,9 +569,9 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       
       // Refresh product list
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating products:', error);
-      toast.error('Failed to update products');
+      toast.error(`Failed to update products: ${error.message}`);
     }
   };
 
@@ -532,14 +625,29 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       }
 
       // Insert products
-      const { error } = await supabaseAdmin
-        .from('products')
-        .insert(productsToImport);
+      const insertPromises = productsToImport.map(product =>
+        databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          'unique()',
+          {
+            name: product.name,
+            category: product.category,
+            brand: product.brand,
+            rating: product.rating,
+            price: product.price,
+            dimensions: product.dimensions,
+            weight: product.weight,
+            material: product.material,
+            features: product.features,
+            imageUrl: product.image_url,
+            asin: product.asin,
+            affiliateLink: product.affiliate_link
+          }
+        )
+      );
       
-      if (error) {
-        toast.error(`Failed to import products: ${error.message}`);
-        return;
-      }
+      await Promise.all(insertPromises);
 
       toast.success(`Successfully imported ${productsToImport.length} product${productsToImport.length > 1 ? 's' : ''}`);
       
@@ -551,9 +659,9 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       
       // Reset file input
       event.target.value = '';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing CSV:', error);
-      toast.error('Failed to import products from CSV');
+      toast.error(`Failed to import products from CSV: ${error.message}`);
     }
   };
 
@@ -705,34 +813,23 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         weight: productForm.weight || null,
         material: productForm.material || null,
         features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
-        image_url: productForm.image_url || null,
+        imageUrl: productForm.image_url || null,
         asin: productForm.asin || null,
-        affiliate_link: productForm.affiliate_link || null
+        affiliateLink: productForm.affiliate_link || null
       };
 
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .insert(productData)
-        .select();
-
-      if (error) {
-        await logger.auditLog({
-          action: 'CREATE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          details: {
-            product_name: productForm.name,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to create product: ${error.message}`);
-        return;
-      }
+      const response = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        'unique()',
+        productData
+      );
 
       // Log successful product creation
       await logger.auditLog({
         action: 'CREATE_PRODUCT',
         entity_type: 'PRODUCT',
-        entity_id: data?.[0]?.id,
+        entity_id: response.$id,
         details: {
           product_name: productForm.name,
           category: productForm.category,
@@ -745,9 +842,17 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'CREATE_PRODUCT_FAILED',
+        entity_type: 'PRODUCT',
+        details: {
+          product_name: productForm.name,
+          error: error.message
+        }
+      });
       console.error('Error creating product:', error);
-      toast.error('Failed to create product');
+      toast.error(`Failed to create product: ${error.message}`);
     }
   };
 
@@ -765,30 +870,18 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         weight: productForm.weight || null,
         material: productForm.material || null,
         features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
-        image_url: productForm.image_url || null,
+        imageUrl: productForm.image_url || null,
         asin: productForm.asin || null,
-        affiliate_link: productForm.affiliate_link || null,
-        updated_at: new Date().toISOString()
+        affiliateLink: productForm.affiliate_link || null,
+        updatedAt: new Date().toISOString()
       };
 
-      const { error } = await supabaseAdmin
-        .from('products')
-        .update(productData)
-        .eq('id', editingProduct.id);
-
-      if (error) {
-        await logger.auditLog({
-          action: 'UPDATE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          entity_id: editingProduct.id,
-          details: {
-            product_name: productForm.name,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to update product: ${error.message}`);
-        return;
-      }
+      await databases.updateDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        editingProduct.id,
+        productData
+      );
 
       // Log successful product update
       await logger.auditLog({
@@ -807,37 +900,41 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'UPDATE_PRODUCT_FAILED',
+        entity_type: 'PRODUCT',
+        entity_id: editingProduct.id,
+        details: {
+          product_name: productForm.name,
+          error: error.message
+        }
+      });
       console.error('Error updating product:', error);
-      toast.error('Failed to update product');
+      toast.error(`Failed to update product: ${error.message}`);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      const { data: productData, error: fetchError } = await supabaseAdmin
-        .from('products')
-        .select('name, category, brand')
-        .eq('id', productId)
-        .single();
+      // Fetch product data before deletion for audit logging
+      const product = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        productId
+      );
       
-      const { error } = await supabaseAdmin
-        .from('products')
-        .delete()
-        .eq('id', productId);
+      const productData = {
+        name: product.name,
+        category: product.category,
+        brand: product.brand
+      };
       
-      if (error) {
-        await logger.auditLog({
-          action: 'DELETE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          entity_id: productId,
-          details: {
-            error: error.message
-          }
-        });
-        toast.error(`Failed to delete product: ${error.message}`);
-        return;
-      }
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        productId
+      );
 
       // Log successful product deletion
       await logger.auditLog({
@@ -845,17 +942,25 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         entity_type: 'PRODUCT',
         entity_id: productId,
         details: {
-          product_name: productData?.name,
-          category: productData?.category,
-          brand: productData?.brand
+          product_name: productData.name,
+          category: productData.category,
+          brand: productData.brand
         }
       });
 
       toast.success('Product deleted successfully');
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'DELETE_PRODUCT_FAILED',
+        entity_type: 'PRODUCT',
+        entity_id: productId,
+        details: {
+          error: error.message
+        }
+      });
       console.error('Error deleting product:', error);
-      toast.error('Failed to delete product');
+      toast.error(`Failed to delete product: ${error.message}`);
     }
   };
 
@@ -890,43 +995,6 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
     fetchCategories();
     fetchBrands();
     fetchMaterials();
-    
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('product-changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('New product added:', payload.new);
-          // Refresh the product list when a new product is added
-          fetchProducts(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('Product updated:', payload.new);
-          // Refresh the product list when a product is updated
-          fetchProducts(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'products' },
-        (payload) => {
-          console.log('Product deleted:', payload.old);
-          // Refresh the product list when a product is deleted
-          fetchProducts(currentPage, searchTerm, selectedCategory);
-        }
-      )
-      .subscribe();
-
-    // Clean up subscription on unmount
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const handleSearch = () => {

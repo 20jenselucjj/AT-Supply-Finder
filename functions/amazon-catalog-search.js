@@ -1,58 +1,7 @@
 import 'dotenv/config';
 import axios from 'axios';
-import CryptoJS from 'crypto-js';
-
-// AWS Signature Version 4 signing process
-function createSignature(method, uri, queryString, headers, payload, accessKey, secretKey, region, service) {
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const date = new Date().toISOString().replace(/[:\-]|\..\d{3}/g, '');
-    const dateStamp = date.substr(0, 8);
-    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-    
-    // Create canonical request
-    const canonicalHeaders = Object.keys(headers)
-        .sort()
-        .map(key => `${key.toLowerCase()}:${headers[key]}\n`)
-        .join('');
-    
-    const signedHeaders = Object.keys(headers)
-        .sort()
-        .map(key => key.toLowerCase())
-        .join(';');
-    
-    const payloadHash = CryptoJS.SHA256(payload).toString();
-    
-    const canonicalRequest = [
-        method,
-        uri,
-        queryString,
-        canonicalHeaders,
-        signedHeaders,
-        payloadHash
-    ].join('\n');
-    
-    // Create string to sign
-    const stringToSign = [
-        algorithm,
-        date,
-        credentialScope,
-        CryptoJS.SHA256(canonicalRequest).toString()
-    ].join('\n');
-    
-    // Calculate signature
-    const kDate = CryptoJS.HmacSHA256(dateStamp, `AWS4${secretKey}`);
-    const kRegion = CryptoJS.HmacSHA256(region, kDate);
-    const kService = CryptoJS.HmacSHA256(service, kRegion);
-    const kSigning = CryptoJS.HmacSHA256('aws4_request', kService);
-    const signature = CryptoJS.HmacSHA256(stringToSign, kSigning).toString();
-    
-    return {
-        signature,
-        date,
-        credentialScope,
-        signedHeaders
-    };
-}
+import { createSignature } from './utils/aws-signature.js';
+import { mockAthleticProducts, transformMockItems } from './utils/mock-products.js';
 
 const getAccessToken = async () => {
     const { AMZN_CLIENT_ID, AMZN_CLIENT_SECRET, AMZN_SANDBOX_REFRESH_TOKEN } = process.env;
@@ -102,83 +51,11 @@ export default async (req, res) => {
         
         console.log('Returning mock athletic training products for search:', keywords);
         
-        const mockItems = [
-            {
-                asin: 'B07MOCK001',
-                title: 'Mueller Athletic Tape - White Zinc Oxide Tape for Sports Injuries',
-                brand: 'Mueller',
-                category: 'Athletic Training',
-                imageUrl: 'https://via.placeholder.com/300x300?text=Athletic+Tape',
-                features: ['Zinc oxide adhesive', 'Strong support', 'Easy tear', 'Water resistant'],
-                dimensions: '1.5" x 15 yards',
-                weight: '0.5 lbs',
-                material: 'Cotton blend with zinc oxide adhesive'
-            },
-            {
-                asin: 'B07MOCK002', 
-                title: 'Kinesiology Tape - Elastic Sports Tape for Muscle Support',
-                brand: 'KT Tape',
-                category: 'Athletic Training',
-                imageUrl: 'https://via.placeholder.com/300x300?text=Kinesiology+Tape',
-                features: ['Elastic support', 'Water resistant', 'Latex free', '24/7 wear'],
-                dimensions: '2" x 16.4 feet',
-                weight: '0.3 lbs',
-                material: '97% cotton, 3% spandex'
-            },
-            {
-                asin: 'B07MOCK003',
-                title: 'Pre-Wrap Athletic Tape Underwrap - Foam Padding',
-                brand: 'Cramer',
-                category: 'Athletic Training', 
-                imageUrl: 'https://via.placeholder.com/300x300?text=Pre-Wrap',
-                features: ['Soft foam padding', 'Protects skin', 'Easy application', 'Lightweight'],
-                dimensions: '2.75" x 30 yards',
-                weight: '0.2 lbs',
-                material: 'Polyurethane foam'
-            },
-            {
-                asin: 'B07MOCK004',
-                title: 'Elastic Bandage Wrap - Compression Support for Injuries',
-                brand: 'ACE',
-                category: 'Athletic Training',
-                imageUrl: 'https://via.placeholder.com/300x300?text=Elastic+Bandage',
-                features: ['Adjustable compression', 'Reusable', 'Breathable', 'Easy application'],
-                dimensions: '4" x 5 yards',
-                weight: '0.4 lbs', 
-                material: 'Cotton and elastic blend'
-            },
-            {
-                asin: 'B07MOCK005',
-                title: 'Cohesive Bandage - Self-Adhesive Athletic Wrap',
-                brand: 'Coban',
-                category: 'Athletic Training',
-                imageUrl: 'https://via.placeholder.com/300x300?text=Cohesive+Bandage',
-                features: ['Self-adhesive', 'No clips needed', 'Flexible', 'Sweat resistant'],
-                dimensions: '2" x 5 yards',
-                weight: '0.3 lbs',
-                material: 'Non-woven fabric with cohesive adhesive'
-            }
-        ];
-
-        const transformedItems = mockItems.slice(0, maxResults).map(item => ({
-            asin: item.asin,
-            title: item.title,
-            brand: item.brand,
-            category: item.category,
-            imageUrl: item.imageUrl,
-            features: item.features,
-            dimensions: item.dimensions,
-            weight: item.weight,
-            material: item.material,
-            manufacturer: item.brand,
-            modelNumber: `${item.brand}-${item.asin.slice(-3)}`,
-            colorName: 'White',
-            sizeName: 'Standard'
-        }));
+        const transformedItems = transformMockItems(mockAthleticProducts, maxResults);
 
         return res.status(200).json({
             items: transformedItems,
-            pagination: { totalResults: mockItems.length }
+            pagination: { totalResults: mockAthleticProducts.length }
         });
     }
 
@@ -317,23 +194,11 @@ export default async (req, res) => {
         }
 
         // Fallback 2: If everything fails, return the same mock athletic products as a last resort
-        const mockItems = [
-            {
-                asin: 'B07MOCK001',
-                title: 'Mueller Athletic Tape - White Zinc Oxide Tape for Sports Injuries',
-                brand: 'Mueller',
-                category: 'Athletic Training',
-                imageUrl: 'https://via.placeholder.com/300x300?text=Athletic+Tape',
-                features: ['Zinc oxide adhesive', 'Strong support', 'Easy tear', 'Water resistant'],
-                dimensions: '1.5" x 15 yards',
-                weight: '0.5 lbs',
-                material: 'Cotton blend with zinc oxide adhesive'
-            }
-        ];
+        const transformedItems = transformMockItems(mockAthleticProducts, maxResults);
 
         return res.status(200).json({
-            items: mockItems,
-            pagination: { totalResults: mockItems.length },
+            items: transformedItems,
+            pagination: { totalResults: mockAthleticProducts.length },
             note: 'Returned mock athletic products due to sandbox/search failure'
         });
     }

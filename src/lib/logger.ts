@@ -90,7 +90,7 @@ class Logger {
       try {
         await databases.createDocument(
           import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          'audit_logs', // Make sure this collection exists in Appwrite
+          'auditLogs', // Make sure this collection exists in Appwrite
           'unique()',
           auditEntry
         );

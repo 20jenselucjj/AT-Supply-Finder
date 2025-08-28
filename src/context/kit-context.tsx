@@ -199,8 +199,8 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         userId: user.$id,
         name,
         description,
-        kit_data: kit,
-        is_public: isPublic
+        kitData: JSON.stringify(kit),
+        isPublic: isPublic
       };
 
       // Add permissions using the correct Appwrite format
@@ -249,7 +249,7 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
       }
       
       if (kitData) {
-        setKit(kitData.kit_data);
+        setKit(kitData.kitData ? JSON.parse(kitData.kitData) : []);
       }
     } catch (error: any) {
       console.error('Error loading kit:', error);
@@ -285,8 +285,8 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         id: doc.$id,
         name: doc.name,
         description: doc.description,
-        kit_data: doc.kit_data,
-        is_public: doc.is_public,
+        kit_data: doc.kitData ? JSON.parse(doc.kitData) : [],
+        is_public: doc.isPublic,
         created_at: doc.$createdAt,
         updated_at: doc.$updatedAt
       })) || [];

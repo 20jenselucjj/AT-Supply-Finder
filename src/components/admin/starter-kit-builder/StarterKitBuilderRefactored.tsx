@@ -61,30 +61,61 @@ export const StarterKitBuilderRefactored: React.FC = () => {
     try {
       setLoading(true);
 
-      let query = supabase
-        .from('starter_kit_templates')
-        .select('*', { count: 'exact' })
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range((page - 1) * templatesPerPage, page * templatesPerPage - 1);
+      // Build query with filters for Appwrite
+      let queries: string[] = [];
 
+      // Apply search filter
       if (search) {
-        query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+        const searchCondition = `name LIKE '%${search}%' OR description LIKE '%${search}%' OR category LIKE '%${search}%'`;
+        queries.push(JSON.stringify({ method: 'search', values: [searchCondition] }));
       }
 
+      // Apply category filter
       if (category !== 'all') {
-        query = query.eq('category', category);
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [category] }));
       }
 
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error('Error fetching templates:', error);
-        toast.error('Failed to fetch starter kit templates');
-        return;
+      // Apply sorting
+      if (sortBy) {
+        if (sortOrder === 'asc') {
+          queries.push(JSON.stringify({ method: 'orderAsc', attribute: sortBy }));
+        } else {
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: sortBy }));
+        }
       }
 
-      setTemplates(data || []);
-      setTotalPages(Math.ceil((count || 0) / templatesPerPage));
+      // Apply pagination
+      const offset = (page - 1) * templatesPerPage;
+      queries.push(JSON.stringify({ method: 'limit', values: [templatesPerPage] }));
+      queries.push(JSON.stringify({ method: 'offset', values: [offset] }));
+
+      // Fetch templates from Appwrite 'starterKitTemplates' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        queries
+      );
+
+      // Also get total count for pagination
+      const countResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        []
+      );
+
+      const transformedTemplates = response.documents?.map((template: any) => ({
+        id: template.$id,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        is_active: template.isActive,
+        estimated_cost: template.estimatedCost,
+        created_at: template.$createdAt,
+        updated_at: template.$updatedAt
+      })) || [];
+
+      setTemplates(transformedTemplates);
+      setTotalPages(Math.ceil((countResponse.total || 0) / templatesPerPage));
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Failed to fetch starter kit templates');
@@ -95,17 +126,23 @@ export const StarterKitBuilderRefactored: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, brand, category, image_url, price')
-        .order('name', { ascending: true });
+      // Fetch products from Appwrite 'products' collection
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        [JSON.stringify({ method: 'orderAsc', attribute: 'name' })]
+      );
 
-      if (error) {
-        console.error('Error fetching products:', error);
-        return;
-      }
+      const transformedProducts = response.documents?.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        image_url: product.imageUrl,
+        price: product.price
+      })) || [];
 
-      setProducts(data || []);
+      setProducts(transformedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     }
@@ -113,17 +150,14 @@ export const StarterKitBuilderRefactored: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('starter_kit_templates')
-        .select('category')
-        .not('category', 'is', null);
+      // Fetch all templates and extract unique categories
+      const response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        []
+      );
 
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return;
-      }
-
-      const uniqueCategories = [...new Set(data.map(item => item.category).filter(Boolean))];
+      const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
       setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -151,34 +185,22 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        is_active: templateForm.is_active,
-        estimated_cost: templateForm.estimated_cost || 0
+        isActive: templateForm.is_active,
+        estimatedCost: templateForm.estimated_cost || 0
       };
 
-      const { data: template, error: templateError } = await supabase
-        .from('starter_kit_templates')
-        .insert(templateData)
-        .select()
-        .single();
-
-      if (templateError) {
-        await logger.auditLog({
-          action: 'CREATE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          details: {
-            template_name: templateForm.name,
-            error: templateError.message
-          }
-        });
-        toast.error(`Failed to create template: ${templateError.message}`);
-        return;
-      }
+      const response = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        'unique()',
+        templateData
+      );
 
       // Log successful template creation
       await logger.auditLog({
         action: 'CREATE_TEMPLATE',
         entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: template.id,
+        entity_id: response.$id,
         details: {
           template_name: templateForm.name,
           category: templateForm.category
@@ -190,9 +212,17 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       resetForm();
       fetchTemplates(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'CREATE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        details: {
+          template_name: templateForm.name,
+          error: error.message
+        }
+      });
       console.error('Error creating template:', error);
-      toast.error('Failed to create template');
+      toast.error(`Failed to create template: ${error.message}`);
     }
   };
 
@@ -204,29 +234,17 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        is_active: templateForm.is_active,
-        estimated_cost: templateForm.estimated_cost || 0,
-        updated_at: new Date().toISOString()
+        isActive: templateForm.is_active,
+        estimatedCost: templateForm.estimated_cost || 0,
+        updatedAt: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('starter_kit_templates')
-        .update(templateData)
-        .eq('id', editingTemplate.id);
-
-      if (error) {
-        await logger.auditLog({
-          action: 'UPDATE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          entity_id: editingTemplate.id,
-          details: {
-            template_name: templateForm.name,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to update template: ${error.message}`);
-        return;
-      }
+      await databases.updateDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        editingTemplate.id,
+        templateData
+      );
 
       // Log successful template update
       await logger.auditLog({
@@ -244,37 +262,40 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       setEditingTemplate(null);
       resetForm();
       fetchTemplates(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'UPDATE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        entity_id: editingTemplate.id,
+        details: {
+          template_name: templateForm.name,
+          error: error.message
+        }
+      });
       console.error('Error updating template:', error);
-      toast.error('Failed to update template');
+      toast.error(`Failed to update template: ${error.message}`);
     }
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      const { data: templateData, error: fetchError } = await supabase
-        .from('starter_kit_templates')
-        .select('name, category')
-        .eq('id', templateId)
-        .single();
+      // Fetch template data before deletion for audit logging
+      const template = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        templateId
+      );
 
-      const { error } = await supabase
-        .from('starter_kit_templates')
-        .delete()
-        .eq('id', templateId);
+      const templateData = {
+        name: template.name,
+        category: template.category
+      };
 
-      if (error) {
-        await logger.auditLog({
-          action: 'DELETE_TEMPLATE_FAILED',
-          entity_type: 'STARTER_KIT_TEMPLATE',
-          entity_id: templateId,
-          details: {
-            error: error.message
-          }
-        });
-        toast.error(`Failed to delete template: ${error.message}`);
-        return;
-      }
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        templateId
+      );
 
       // Log successful template deletion
       await logger.auditLog({
@@ -282,16 +303,24 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         entity_type: 'STARTER_KIT_TEMPLATE',
         entity_id: templateId,
         details: {
-          template_name: templateData?.name,
-          category: templateData?.category
+          template_name: templateData.name,
+          category: templateData.category
         }
       });
 
       toast.success('Template deleted successfully');
       fetchTemplates(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'DELETE_TEMPLATE_FAILED',
+        entity_type: 'STARTER_KIT_TEMPLATE',
+        entity_id: templateId,
+        details: {
+          error: error.message
+        }
+      });
       console.error('Error deleting template:', error);
-      toast.error('Failed to delete template');
+      toast.error(`Failed to delete template: ${error.message}`);
     }
   };
 
@@ -313,26 +342,22 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: `${template.name} (Copy)`,
         description: template.description,
         category: template.category,
-        is_active: false, // New duplicated templates are inactive by default
-        estimated_cost: template.estimated_cost
+        isActive: false, // New duplicated templates are inactive by default
+        estimatedCost: template.estimated_cost
       };
 
-      const { data: newTemplate, error } = await supabase
-        .from('starter_kit_templates')
-        .insert(duplicatedTemplate)
-        .select()
-        .single();
-
-      if (error) {
-        toast.error(`Failed to duplicate template: ${error.message}`);
-        return;
-      }
+      await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'starterKitTemplates',
+        'unique()',
+        duplicatedTemplate
+      );
 
       toast.success('Template duplicated successfully');
       fetchTemplates(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error duplicating template:', error);
-      toast.error('Failed to duplicate template');
+      toast.error(`Failed to duplicate template: ${error.message}`);
     }
   };
 

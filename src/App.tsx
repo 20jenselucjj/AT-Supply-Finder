@@ -12,26 +12,37 @@ import ScrollToTop from "@/components/ScrollToTop";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import ChatBot from "@/components/chatbot/ChatBot";
-import Index from "./pages/Index";
-import Catalog from "./pages/Catalog";
-import Build from "./pages/Build";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminKits from "./pages/admin/AdminKits";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminMarketing from "./pages/admin/AdminMarketing";
-import AdminOrders from "./pages/admin/AdminOrders";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import NotFound from "./pages/NotFound";
+import { lazy, Suspense } from "react";
+
+// Lazy load pages
+const Index = lazy(() => import("./pages/Index"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const Build = lazy(() => import("./pages/Build"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminKits = lazy(() => import("./pages/admin/AdminKits"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const Login = lazy(() => import("./pages/Login"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
 import AdminRoute from "./components/layout/AdminRoute";
 import { Navigate } from "react-router-dom";
 import "./App.css";
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -49,31 +60,33 @@ const App = () => {
                     <ScrollToTop />
                     <SiteHeader />
                     <main className="flex-1">
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/catalog" element={<Catalog />} />
-                        <Route path="/build" element={<Build />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/admin" element={
-                          <AdminRoute>
-                            <Admin />
-                          </AdminRoute>
-                        }>
-                          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                          <Route path="dashboard" element={<AdminDashboard />} />
-                          <Route path="users" element={<AdminUsers />} />
-                          <Route path="products" element={<AdminProducts />} />
-                          <Route path="orders" element={<AdminOrders />} />
-                          <Route path="analytics" element={<AdminAnalytics />} />
-                          <Route path="reports" element={<AdminReports />} />
-                          <Route path="marketing" element={<AdminMarketing />} />
-                          <Route path="templates" element={<AdminKits />} />
-                          <Route path="system" element={<AdminSettings />} />
-                        </Route>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <Routes>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/catalog" element={<Catalog />} />
+                          <Route path="/build" element={<Build />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/admin" element={
+                            <AdminRoute>
+                              <Admin />
+                            </AdminRoute>
+                          }>
+                            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                            <Route path="dashboard" element={<AdminDashboard />} />
+                            <Route path="users" element={<AdminUsers />} />
+                            <Route path="products" element={<AdminProducts />} />
+                            <Route path="orders" element={<AdminOrders />} />
+                            <Route path="analytics" element={<AdminAnalytics />} />
+                            <Route path="reports" element={<AdminReports />} />
+                            <Route path="marketing" element={<AdminMarketing />} />
+                            <Route path="templates" element={<AdminKits />} />
+                            <Route path="system" element={<AdminSettings />} />
+                          </Route>
+                          <Route path="/login" element={<Login />} />
+                          <Route path="/forgot-password" element={<ForgotPassword />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
                     </main>
                     <SiteFooter />
                   </div>

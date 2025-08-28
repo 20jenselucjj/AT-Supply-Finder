@@ -9,12 +9,14 @@ interface ProductSpecificationsProps {
   product: Product;
   isExpanded?: boolean;
   onToggle?: () => void;
+  compact?: boolean; // Add compact prop
 }
 
 const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({ 
   product, 
   isExpanded = false, 
-  onToggle 
+  onToggle,
+  compact = false // Default to false
 }) => {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const expanded = onToggle ? isExpanded : internalExpanded;
@@ -69,30 +71,30 @@ const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({
     value !== undefined && value !== null && value !== ''
   );
 
+  const keySpecs = compact ? specEntries.slice(0, 2) : specEntries.slice(0, 3);
+  const allSpecs = specEntries; // Define allSpecs variable
+  
   if (specEntries.length === 0) return null;
 
-  const keySpecs = specEntries.slice(0, 3);
-  const allSpecs = specEntries;
-
   return (
-    <div className="space-y-2">
+    <div className={compact ? "space-y-1" : "space-y-2"}>
       {/* Key Specifications - Always Visible */}
-      <div className="grid grid-cols-1 gap-2">
+      <div className={compact ? "grid grid-cols-1 gap-1" : "grid grid-cols-1 gap-2"}>
         {keySpecs.map(([key, value]) => (
-          <div key={key} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <div key={key} className={`flex items-center justify-between p-1 rounded ${compact ? 'bg-muted/30' : 'bg-muted/50 p-2'}`}>
+            <div className="flex items-center gap-1 text-muted-foreground">
               {getSpecIcon(key)}
-              <span className="text-xs font-medium">{formatSpecKey(key)}</span>
+              <span className={compact ? "text-xs font-medium" : "text-xs font-medium"}>{formatSpecKey(key)}</span>
             </div>
-            <div className="text-right">
+            <div className="text-right max-w-[60%]">
               {renderSpecValue(key, value)}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Toggle Button for Full Specifications */}
-      {allSpecs.length > 3 && (
+      {/* Toggle Button for Full Specifications - only show if not compact */}
+      {!compact && allSpecs.length > 3 && (
         <Button
           variant="ghost"
           size="sm"
@@ -113,8 +115,8 @@ const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({
         </Button>
       )}
 
-      {/* Full Specifications - Collapsible */}
-      {expanded && allSpecs.length > 3 && (
+      {/* Full Specifications - Collapsible - only show if not compact */}
+      {!compact && expanded && allSpecs.length > 3 && (
         <Card className="border-muted">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">

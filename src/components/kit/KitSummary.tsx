@@ -39,6 +39,9 @@ const KitSummary = () => {
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity > 0) {
       updateQuantity(itemId, newQuantity);
+    } else {
+      // When quantity would be 0 or less, remove the item from the kit
+      removeFromKit(itemId);
     }
   };
 
@@ -286,7 +289,6 @@ const KitSummary = () => {
                           variant="outline"
                           size="icon"
                           onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
                           className="h-6 w-6"
                         >
                           <Minus className="w-3 h-3" />

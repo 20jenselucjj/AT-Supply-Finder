@@ -190,14 +190,37 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
       removeFromKit(product.id);
     } else {
       addToKit(product, 1);
+      // Add a temporary visual indicator
+      setTimeout(() => {
+        const rowElement = document.querySelector(`[data-product-id="${product.id}"]`);
+        if (rowElement) {
+          const quantityCell = rowElement.querySelector('td:first-child');
+          if (quantityCell) {
+            quantityCell.classList.add('bg-primary/10');
+            setTimeout(() => {
+              quantityCell.classList.remove('bg-primary/10');
+            }, 1000);
+          }
+        }
+      }, 100);
     }
   };
 
   const handleQuantityChange = (product: Product, change: number) => {
     const currentQuantity = getProductQuantity(product.id);
     const newQuantity = currentQuantity + change;
+    
     if (newQuantity <= 0) {
-      removeFromKit(product.id);
+      // Add visual feedback before removing
+      const rowElement = document.querySelector(`[data-product-id="${product.id}"]`);
+      if (rowElement) {
+        rowElement.classList.add('bg-destructive/10');
+        setTimeout(() => {
+          removeFromKit(product.id);
+        }, 300);
+      } else {
+        removeFromKit(product.id);
+      }
     } else {
       if (currentQuantity === 0) {
         addToKit(product, newQuantity);
@@ -436,164 +459,152 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
               </CardContent>
             </Card>
           ) : viewMode === "table" ? (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort("name")} className="flex items-center gap-2 p-0">
-                        Product
-                        {getSortIcon("name")}
-                      </Button>
-                    </TableHead>
-                    <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort("brand")} className="flex items-center gap-2 p-0">
-                    Brand
-                    {getSortIcon("brand")}
-                  </Button>
-                </TableHead>
-                <TableHead>Specifications</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("price")} className="flex items-center gap-2 p-0">
-                    Price
-                    {getSortIcon("price")}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("rating")} className="flex items-center gap-2 p-0">
-                    Rating
-                    {getSortIcon("rating")}
-                  </Button>
-                </TableHead>
-                <TableHead>Vendors</TableHead>
-                <TableHead>Reviews</TableHead>
-                <TableHead className="w-32">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedProducts.map((product) => {
-                const inKit = isProductInKit(product.id);
-                const bestOffer = product.offers[0];
-                
-                return (
-                  <TableRow key={product.id} className={inKit ? 'bg-primary/5' : ''}>
-                    <TableCell>
-                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={product.imageUrl || "/placeholder.svg"} 
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <button 
-                            className="font-medium text-left hover:text-blue-600 hover:underline"
-                            onClick={() => setSelectedProduct(product)}
-                          >
-                            {product.name}
-                          </button>
-                          <div className="text-sm text-muted-foreground">{product.brand}</div>
-                          {product.features && product.features.length > 0 && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              {product.features.slice(0, 2).join(", ")}
-                              {product.features.length > 2 && "..."}
+            <div className="border rounded-lg overflow-hidden" id="product-table-container">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20 text-left">Quantity</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="w-40">Product</TableHead>
+                      <TableHead className="w-24">Brand</TableHead>
+                      <TableHead className="w-20">Price</TableHead>
+                      <TableHead className="w-20">Rating</TableHead>
+                      <TableHead className="w-32">Vendors</TableHead>
+                      <TableHead className="w-20">Reviews</TableHead>
+                      <TableHead className="w-32">Specifications</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedProducts.map((product) => {
+                      const inKit = isProductInKit(product.id);
+                      const bestOffer = product.offers[0];
+                      
+                      return (
+                        <TableRow 
+                          key={product.id} 
+                          className={`${inKit ? 'bg-primary/5' : ''} hover:bg-muted/50`}
+                          data-product-id={product.id}
+                        >
+                          <TableCell className="py-2 relative text-left">
+                            {inKit ? (
+                              <div className="flex flex-col items-center gap-0.5 animate-in fade-in zoom-in-95 duration-300">
+                                <Button 
+                                  onClick={() => handleQuantityChange(product, 1)}
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-6 w-6 p-0"
+                                  title="Increase quantity"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                                <span className="min-w-[1.2rem] text-center text-xs font-medium bg-primary/10 px-1 rounded">
+                                  {getProductQuantity(product.id)}
+                                </span>
+                                <Button 
+                                  onClick={() => handleQuantityChange(product, -1)}
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-6 w-6 p-0"
+                                  title={getProductQuantity(product.id) === 1 ? "Remove item" : "Decrease quantity"}
+                                >
+                                  {getProductQuantity(product.id) === 1 ? (
+                                    <span className="text-xs">✕</span>
+                                  ) : (
+                                    <Minus className="w-3 h-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                onClick={() => handleProductToggle(product)}
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2"
+                                title="Add to kit"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                <span className="text-xs">Add</span>
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div className="w-10 h-10 bg-muted rounded flex items-center justify-center overflow-hidden">
+                              <img 
+                                src={product.imageUrl || "/placeholder.svg"} 
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{product.brand}</TableCell>
-                    <TableCell>
-                      <ProductSpecifications product={product} />
-                    </TableCell>
-                    <TableCell>
-                      {bestOffer ? (
-                        <span className="font-semibold">{formatCurrency(bestOffer.price)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {product.rating && product.rating > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span>{product.rating.toFixed(1)}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">No rating</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {product.offers && product.offers.length > 0 ? (
-                        <div className="max-w-xs">
-                          <VendorComparison 
-                            offers={product.offers} 
-                            productName={product.name}
-                            onVendorSelect={(offer) => {
-                              console.log('Selected vendor:', offer.name, 'for', product.name);
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">No vendors</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {product.reviews && product.reviews.length > 0 ? (
-                        <button 
-                          className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
-                          onClick={() => setSelectedProduct(product)}
-                        >
-                          {product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''}
-                        </button>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No reviews</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {inKit ? (
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            onClick={() => handleQuantityChange(product, -1)}
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="min-w-[2rem] text-center text-sm font-medium">
-                            {getProductQuantity(product.id)}
-                          </span>
-                          <Button 
-                            onClick={() => handleQuantityChange(product, 1)}
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button 
-                          onClick={() => handleProductToggle(product)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="py-2 max-w-[150px]">
+                            <div>
+                              <button 
+                                className="font-medium text-left hover:text-blue-600 hover:underline line-clamp-2 text-sm"
+                                onClick={() => setSelectedProduct(product)}
+                              >
+                                {product.name}
+                              </button>
+                              <div className="text-xs text-muted-foreground truncate">{product.brand}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2 truncate">{product.brand}</TableCell>
+                          <TableCell className="py-2">
+                            {bestOffer ? (
+                              <span className="font-semibold">{formatCurrency(bestOffer.price)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2">
+                            {product.rating && product.rating > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                <span>{product.rating.toFixed(1)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">No rating</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 max-w-[100px]">
+                            <div className="max-w-[100px]">
+                              {product.offers && product.offers.length > 0 ? (
+                                <VendorComparison 
+                                  offers={product.offers} 
+                                  productName={product.name}
+                                  compact={true}
+                                  onVendorSelect={(offer) => {
+                                    console.log('Selected vendor:', offer.name, 'for', product.name);
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-muted-foreground text-xs">No vendors</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            {product.reviews && product.reviews.length > 0 ? (
+                              <button 
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                                onClick={() => setSelectedProduct(product)}
+                              >
+                                {product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No reviews</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 max-w-[120px]">
+                            <div className="max-w-[120px]">
+                              <ProductSpecifications product={product} compact={true} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

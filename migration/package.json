@@ -9,7 +9,6 @@
     "migrate": "node supabase-export.js && node appwrite-import.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
     "node-appwrite": "^8.0.0",
     "dotenv": "^16.3.1"
   },

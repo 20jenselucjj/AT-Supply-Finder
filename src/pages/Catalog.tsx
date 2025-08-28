@@ -1,16 +1,10 @@
 import { ChevronDown, Grid, List, SlidersHorizontal, X, Filter } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import { ProductQuickView } from "@/components/products/ProductQuickView";
-import { ProductGrid } from "@/components/products/ProductGrid";
-import { ProductComparison } from "@/components/products/ProductComparison";
-import { ProductTable } from "@/components/products/ProductTable";
-import { ProductListMobile } from "@/components/products/ProductListMobile";
-
 import { Product } from "@/lib/types";
 import { databases } from "@/lib/appwrite";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +22,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Lazy load heavy components - correct import syntax for named vs default exports
+const ProductQuickView = lazy(() => 
+  import("@/components/products/ProductQuickView").then(module => ({ default: module.ProductQuickView }))
+);
+const ProductGrid = lazy(() => 
+  import("@/components/products/ProductGrid").then(module => ({ default: module.ProductGrid }))
+);
+const ProductComparison = lazy(() => 
+  import("@/components/products/ProductComparison").then(module => ({ default: module.ProductComparison }))
+);
+const ProductTable = lazy(() => 
+  import("@/components/products/ProductTable").then(module => ({ default: module.ProductTable }))
+);
+const ProductListMobile = lazy(() => import("@/components/products/ProductListMobile"));
 
 // Storage key for product cache
 const PRODUCTS_CACHE_KEY = 'wrap_wizard_products_cache';
@@ -324,6 +333,13 @@ const Catalog = () => {
     if (priceRange[1] < 1000) count++;
     return count;
   }, [cat, brands, minRating, priceRange]);
+
+  // Loading fallback component
+  const LoadingFallback = () => (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
 
   return (
     <main className="container mx-auto py-6">
@@ -859,45 +875,49 @@ const Catalog = () => {
               </div>
             </div>
           ) : (
-            viewMode === 'list' ? (
-              <ProductListMobile
-                products={filtered}
-                selectedForCompare={selectedForCompare}
-                toggleCompare={(id) => setSelectedForCompare(prev =>
-                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                )}
-                setQuickViewProduct={setQuickViewProduct}
-              />
-            ) : (
-              <ProductGrid
-                products={filtered}
-                selectedForCompare={selectedForCompare}
-                toggleCompare={(id) => setSelectedForCompare(prev =>
-                  prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                )}
-                setQuickViewProduct={setQuickViewProduct}
-              />
-            )
+            <Suspense fallback={<LoadingFallback />}>
+              {viewMode === 'list' ? (
+                <ProductListMobile
+                  products={filtered}
+                  selectedForCompare={selectedForCompare}
+                  toggleCompare={(id) => setSelectedForCompare(prev =>
+                    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                  )}
+                  setQuickViewProduct={setQuickViewProduct}
+                />
+              ) : (
+                <ProductGrid
+                  products={filtered}
+                  selectedForCompare={selectedForCompare}
+                  toggleCompare={(id) => setSelectedForCompare(prev =>
+                    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                  )}
+                  setQuickViewProduct={setQuickViewProduct}
+                />
+              )}
+            </Suspense>
           )}
         </div>
       </div>
 
       {/* Modals */}
-      {selectedForCompare.length > 0 && (
-        <ProductComparison
-          products={products.filter(p => selectedForCompare.includes(p.id))}
-          onClose={() => setSelectedForCompare([])}
-        />
-      )}
-
-      <ProductQuickView
-        product={quickViewProduct}
-        onClose={() => setQuickViewProduct(null)}
-        onCompareToggle={(id) => setSelectedForCompare(prev =>
-          prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      <Suspense fallback={<LoadingFallback />}>
+        {selectedForCompare.length > 0 && (
+          <ProductComparison
+            products={products.filter(p => selectedForCompare.includes(p.id))}
+            onClose={() => setSelectedForCompare([])}
+          />
         )}
-        isComparing={selectedForCompare.includes(quickViewProduct?.id || '')}
-      />
+
+        <ProductQuickView
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+          onCompareToggle={(id) => setSelectedForCompare(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+          )}
+          isComparing={selectedForCompare.includes(quickViewProduct?.id || '')}
+        />
+      </Suspense>
     </main>
   );
 };

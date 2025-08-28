@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth-context';
 import { databases, account } from '@/lib/appwrite';
@@ -34,21 +33,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, subDays, startOfDay } from 'date-fns';
-import {
-  LineChart as RechartsLineChart,
-  Line,
-  BarChart as RechartsBarChart,
-  Bar,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+
+// Import the new smaller components
+import { MetricCard } from './MetricCard';
+import UserGrowthChart from './UserGrowthChart';
+import ProductCategoriesChart from './ProductCategoriesChart';
+import RevenueChart from './RevenueChart';
+import SystemHealthCard from './SystemHealthCard';
+import QuickActionsCard from './QuickActionsCard';
 
 interface MetricCard {
   id: string;
@@ -74,15 +66,6 @@ interface SystemHealth {
   errorRate: number;
 }
 
-interface QuickAction {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  action: () => void;
-  color: string;
-}
-
 interface ChartData {
   name: string;
   value: number;
@@ -104,7 +87,7 @@ export const DashboardOverview: React.FC = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const { user } = useAuth();
 
-  const quickActions: QuickAction[] = [
+  const quickActions = [
     {
       id: 'invite-user',
       title: 'Invite User',
@@ -351,88 +334,6 @@ export const DashboardOverview: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const renderMetricCard = (metric: MetricCard, index: number) => {
-    const isPositiveChange = metric.changeType === 'increase';
-    const changeIcon = isPositiveChange ? ArrowUp : ArrowDown;
-    const changeColor = isPositiveChange ? 'text-green-600' : 'text-red-600';
-
-    return (
-      <motion.div
-        key={metric.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
-        whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-      >
-        <Card className="relative overflow-hidden border-l-4 border-l-transparent hover:border-l-primary transition-all duration-300 group">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {metric.title}
-            </CardTitle>
-            <div className={cn("p-2 rounded-full", metric.color)}>
-              <metric.icon className="h-4 w-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <div className="text-2xl font-bold">
-                  {metric.isLoading ? (
-                    <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <>
-                      {metric.prefix}{typeof metric.value === 'number' ? metric.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : metric.value}{metric.suffix}
-                    </>
-                  )}
-                </div>
-                {metric.change !== undefined && (
-                  <div className={cn("flex items-center text-sm", changeColor)}>
-                    {React.createElement(changeIcon, { className: "h-3 w-3 mr-1" })}
-                    +{typeof metric.change === 'number' ? metric.change.toLocaleString(undefined, { maximumFractionDigits: 2 }) : metric.change}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{metric.description}</p>
-              
-              {/* Mini trend chart placeholder */}
-              {metric.trend && (
-                <div className="flex items-end gap-1 h-8 mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                  {metric.trend.map((value, i) => (
-                    <div
-                      key={i}
-                      className="bg-primary/30 rounded-sm flex-1 transition-all duration-300"
-                      style={{ height: `${(value / Math.max(...metric.trend!)) * 100}%` }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
-  };
-
-  const getStatusColor = (status: SystemHealth['status']) => {
-    switch (status) {
-      case 'healthy': return 'text-green-600 bg-green-100';
-      case 'warning': return 'text-yellow-600 bg-yellow-100';
-      case 'critical': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getStatusIcon = (status: SystemHealth['status']) => {
-    switch (status) {
-      case 'healthy': return CheckCircle;
-      case 'warning': return AlertTriangle;
-      case 'critical': return AlertTriangle;
-      default: return Clock;
-    }
-  };
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -461,195 +362,25 @@ export const DashboardOverview: React.FC = () => {
 
       {/* Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {metrics.map((metric, index) => renderMetricCard(metric, index))}
+        {metrics.map((metric, index) => (
+          <MetricCard key={metric.id} metric={metric} index={index} />
+        ))}
       </div>
 
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* User Growth Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <LineChart className="h-5 w-5" />
-              User Growth
-            </CardTitle>
-            <CardDescription>
-              New and total users over the last 7 days
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={userGrowthData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="newUsers" stroke="#82ca9d" />
-                </RechartsLineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Product Categories Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Product Categories
-            </CardTitle>
-            <CardDescription>
-              Distribution of products by category
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie
-                    data={productCategoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {productCategoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <UserGrowthChart data={userGrowthData} />
+        <ProductCategoriesChart data={productCategoryData} />
       </div>
 
       {/* Revenue and System Health */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Revenue Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Revenue Overview
-            </CardTitle>
-            <CardDescription>
-              Weekly revenue trends
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="revenue" fill="#8884d8" />
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* System Health */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              System Health
-            </CardTitle>
-            <CardDescription>
-              Real-time system status and performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {React.createElement(getStatusIcon(systemHealth.status), {
-                  className: cn("h-4 w-4", getStatusColor(systemHealth.status))
-                })}
-                <span className="font-medium">Overall Status</span>
-              </div>
-              <Badge className={getStatusColor(systemHealth.status)}>
-                {systemHealth.status.toUpperCase()}
-              </Badge>
-            </div>
-            
-            <Separator />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Uptime</p>
-                <p className="text-lg font-semibold">{systemHealth.uptime}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Response Time</p>
-                <p className="text-lg font-semibold">{systemHealth.responseTime}ms</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">DB Connections</p>
-                <p className="text-lg font-semibold">{systemHealth.dbConnections}/100</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Error Rate</p>
-                <p className="text-lg font-semibold">{systemHealth.errorRate.toFixed(2)}%</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Database Performance</span>
-                <span>Good</span>
-              </div>
-              <Progress value={85} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+        <RevenueChart data={revenueData} />
+        <SystemHealthCard systemHealth={systemHealth} />
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common administrative tasks
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => (
-            <motion.div
-              key={action.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 h-auto p-4"
-                onClick={action.action}
-              >
-                <div className={cn("p-2 rounded-full text-white", action.color)}>
-                  <action.icon className="h-4 w-4" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-sm">{action.title}</p>
-                  <p className="text-xs text-muted-foreground">{action.description}</p>
-                </div>
-              </Button>
-            </motion.div>
-          ))}
-        </CardContent>
-      </Card>
+      <QuickActionsCard actions={quickActions} />
     </div>
   );
 };
