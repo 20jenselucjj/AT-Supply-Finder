@@ -142,46 +142,52 @@ const DashboardOverview: React.FC = () => {
       try {
         // Use Appwrite function instead of direct API call
         const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
-        
+      
         if (!functionId) {
           throw new Error('Missing Appwrite function ID in environment variables');
         }
-        
+      
         const execution = await functions.createExecution(
           functionId,
           JSON.stringify({ page: 1, limit: 1000 }),
           false // synchronous execution
         );
-        
+      
         if (execution.status !== 'completed') {
           throw new Error(`Function execution failed: ${execution.status}`);
         }
-        
+      
         // Parse the response
         const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      
+        // Handle both success and error responses
+        if (responseData.success === false) {
+          throw new Error(responseData.error || 'Function execution failed');
+        }
+      
+        // Properly handle the response structure from the Appwrite function
+        if (responseData.data && responseData.data.users) {
+          const users = responseData.data.users;
+          totalUsers = responseData.data.total || users.length;
         
-        if (responseData.users && responseData.total) {
-          totalUsers = responseData.total || 0;
-          
           // Calculate active users and new users from the detailed data
-          const users = responseData.users || [];
           const thirtyDaysAgo = subDays(new Date(), 30);
           const today = startOfDay(new Date());
-          
+        
           // Use the same logic as UserManagement component for active users
           activeUsers = users.filter((user: any) => {
             // Check if user has accessed the system within the last 30 days
-            const accessedAt = user.lastSignInAt ? new Date(user.lastSignInAt) : null;
+            const accessedAt = user.lastSignInAt || user.accessedAt ? new Date(user.lastSignInAt || user.accessedAt) : null;
             if (accessedAt) {
               return accessedAt > thirtyDaysAgo;
             }
             // Fallback to creation date if no accessedAt
-            const createdAt = user.createdAt ? new Date(user.createdAt) : new Date();
+            const createdAt = user.createdAt || user.$createdAt ? new Date(user.createdAt || user.$createdAt) : new Date();
             return createdAt > thirtyDaysAgo;
           }).length;
-          
+        
           newUsersToday = users.filter((user: any) => {
-            const createdAt = new Date(user.createdAt);
+            const createdAt = user.createdAt || user.$createdAt ? new Date(user.createdAt || user.$createdAt) : new Date();
             return createdAt >= today;
           }).length;
         }
@@ -194,12 +200,12 @@ const DashboardOverview: React.FC = () => {
             'users'
           );
           totalUsers = usersResponse.total || 0;
-          
+        
           // Calculate active users and new users from the detailed data
           const users = usersResponse.documents || [];
           const thirtyDaysAgo = subDays(new Date(), 30);
           const today = startOfDay(new Date());
-          
+        
           // Use the same logic as UserManagement component for active users
           activeUsers = users.filter((user: any) => {
             // Check if user has accessed the system within the last 30 days
@@ -211,7 +217,7 @@ const DashboardOverview: React.FC = () => {
             const createdAt = user.createdAt ? new Date(user.createdAt) : new Date();
             return createdAt > thirtyDaysAgo;
           }).length;
-          
+        
           newUsersToday = users.filter((user: any) => {
             const createdAt = new Date(user.createdAt);
             return createdAt >= today;

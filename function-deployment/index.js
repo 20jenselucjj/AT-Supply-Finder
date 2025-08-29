@@ -1,7 +1,7 @@
 // Appwrite Function to list users with their roles
 const { Client, Users, Databases, Query } = require('node-appwrite');
 
-module.exports = async function(req, res) {
+module.exports = async function(context) {
   // Initialize the Appwrite SDK
   const client = new Client();
   
@@ -23,8 +23,8 @@ module.exports = async function(req, res) {
     let limit = 25;
     
     try {
-      if (req.body) {
-        const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      if (context.req.body) {
+        const body = typeof context.req.body === 'string' ? JSON.parse(context.req.body) : context.req.body;
         search = body.search || '';
         page = parseInt(body.page) || 1;
         limit = parseInt(body.limit) || 25;
@@ -74,7 +74,8 @@ module.exports = async function(req, res) {
     }
     
     // Enhance user data with roles
-    const usersWithRoles = userList.users.map(user => ({
+    const usersArray = Array.isArray(userList.users) ? userList.users : [];
+    const usersWithRoles = usersArray.map(user => ({
       id: user.$id,
       email: user.email,
       phone: user.phone,
@@ -92,19 +93,25 @@ module.exports = async function(req, res) {
     }));
     
     // Return the enhanced user data
-    return res.json({
-      users: usersWithRoles,
-      total: userList.total,
-      page: page,
-      limit: limit
-    });
+    const response = {
+      success: true,
+      data: {
+        users: usersWithRoles,
+        total: userList.total || usersWithRoles.length,
+        page: page,
+        limit: limit
+      }
+    };
+    
+    // Send the response using Appwrite's context.res object
+    return context.res.json(response);
   } catch (error) {
     console.error('Error listing users:', error);
-    return res.json({ 
+    const errorResponse = {
+      success: false,
       error: 'Failed to list users',
-      message: error.message,
-      users: [],
-      total: 0
-    }, 500);
+      message: error.message
+    };
+    return context.res.json(errorResponse);
   }
 };

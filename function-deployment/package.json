@@ -5,8 +5,5 @@
   "main": "index.js",
   "dependencies": {
     "node-appwrite": "^14.0.0"
-  },
-  "scripts": {
-    "deploy": "node ../../deploy-function.js"
   }
 }

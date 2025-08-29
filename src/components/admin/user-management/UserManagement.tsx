@@ -110,20 +110,26 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
       console.log('Server response data:', responseData);
       
-      if (responseData.success && responseData.data) {
+      // Handle both success and error responses
+      if (responseData.success === false) {
+        throw new Error(responseData.error || 'Function execution failed');
+      }
+      
+      // Properly handle the response structure from the Appwrite function
+      if (responseData.data && responseData.data.users) {
         console.log('Raw user data from server:', responseData.data.users);
         
         const transformedUsers = responseData.data.users
-          .filter((user: any) => user.$id) // Filter out users without IDs
+          .filter((user: any) => user.id) // Filter out users without IDs
           .map((user: any) => ({
-            id: user.$id || '',
+            id: user.id || '',
             email: user.email || 'No email',
-            $createdAt: user.$createdAt || new Date().toISOString(),
-            $lastSignInAt: user.accessedAt,
+            $createdAt: user.createdAt || new Date().toISOString(),
+            $lastSignInAt: user.lastSignInAt || user.accessedAt,
             role: user.role || 'user',
             emailVerified: user.emailVerification ? true : false,
-            is_active: user.accessedAt ? 
-              new Date(user.accessedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
+            is_active: user.lastSignInAt || user.accessedAt ? 
+              new Date(user.lastSignInAt || user.accessedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
               false
           }));
 
