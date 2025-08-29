@@ -132,29 +132,44 @@ export const Analytics: React.FC = () => {
       let newUsersThisWeek = 0;
       
       try {
-        // Use the working API endpoint directly as the primary method
-        const response = await fetch('/api/list-users?page=1&limit=1000');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            totalUsers = data.data.total || 0;
-            
-            // Calculate new users from the detailed data
-            const users = data.data.users || [];
-            const today = new Date();
-            const startOfToday = startOfDay(today);
-            const weekAgo = subDays(today, 7);
-            
-            newUsersToday = users.filter((user: any) => {
-              const createdAt = new Date(user.$createdAt);
-              return createdAt >= startOfToday;
-            }).length;
-            
-            newUsersThisWeek = users.filter((user: any) => {
-              const createdAt = new Date(user.$createdAt);
-              return createdAt >= weekAgo;
-            }).length;
-          }
+        // Use Appwrite function instead of direct API call
+        const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+        
+        if (!functionId) {
+          throw new Error('Missing Appwrite function ID in environment variables');
+        }
+        
+        const execution = await functions.createExecution(
+          functionId,
+          JSON.stringify({ page: 1, limit: 1000 }),
+          false // synchronous execution
+        );
+        
+        if (execution.status !== 'completed') {
+          throw new Error(`Function execution failed: ${execution.status}`);
+        }
+        
+        // Parse the response
+        const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+        
+        if (responseData.users && responseData.total) {
+          totalUsers = responseData.total || 0;
+          
+          // Calculate new users from the detailed data
+          const users = responseData.users || [];
+          const today = new Date();
+          const startOfToday = startOfDay(today);
+          const weekAgo = subDays(today, 7);
+          
+          newUsersToday = users.filter((user: any) => {
+            const createdAt = new Date(user.createdAt);
+            return createdAt >= startOfToday;
+          }).length;
+          
+          newUsersThisWeek = users.filter((user: any) => {
+            const createdAt = new Date(user.createdAt);
+            return createdAt >= weekAgo;
+          }).length;
         }
       } catch (serverError) {
         console.error('Error fetching user data from server API:', serverError);

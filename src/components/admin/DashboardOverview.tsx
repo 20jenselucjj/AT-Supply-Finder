@@ -72,7 +72,7 @@ interface ChartData {
   value: number;
 }
 
-export const DashboardOverview: React.FC = () => {
+const DashboardOverview: React.FC = () => {
   const [metrics, setMetrics] = useState<MetricCard[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     status: 'healthy',
@@ -140,36 +140,50 @@ export const DashboardOverview: React.FC = () => {
       let newUsersToday = 0;
       
       try {
-        // Use the same API endpoint as UserManagement component
-        const response = await fetch('http://localhost:3001/api/list-users?page=1&limit=1000');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            totalUsers = data.data.total || 0;
-            
-            // Calculate active users and new users from the detailed data
-            const users = data.data.users || [];
-            const thirtyDaysAgo = subDays(new Date(), 30);
-            const today = startOfDay(new Date());
-            
-            // Use the same logic as UserManagement component for active users
-            activeUsers = users.filter((user: any) => {
-              // Check if user has accessed the system within the last 30 days
-              // This matches the logic in UserManagement.tsx
-              const accessedAt = user.accessedAt ? new Date(user.accessedAt) : null;
-              if (accessedAt) {
-                return accessedAt > thirtyDaysAgo;
-              }
-              // Fallback to creation date if no accessedAt
-              const createdAt = user.$createdAt ? new Date(user.$createdAt) : new Date();
-              return createdAt > thirtyDaysAgo;
-            }).length;
-            
-            newUsersToday = users.filter((user: any) => {
-              const createdAt = new Date(user.$createdAt);
-              return createdAt >= today;
-            }).length;
-          }
+        // Use Appwrite function instead of direct API call
+        const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+        
+        if (!functionId) {
+          throw new Error('Missing Appwrite function ID in environment variables');
+        }
+        
+        const execution = await functions.createExecution(
+          functionId,
+          JSON.stringify({ page: 1, limit: 1000 }),
+          false // synchronous execution
+        );
+        
+        if (execution.status !== 'completed') {
+          throw new Error(`Function execution failed: ${execution.status}`);
+        }
+        
+        // Parse the response
+        const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+        
+        if (responseData.users && responseData.total) {
+          totalUsers = responseData.total || 0;
+          
+          // Calculate active users and new users from the detailed data
+          const users = responseData.users || [];
+          const thirtyDaysAgo = subDays(new Date(), 30);
+          const today = startOfDay(new Date());
+          
+          // Use the same logic as UserManagement component for active users
+          activeUsers = users.filter((user: any) => {
+            // Check if user has accessed the system within the last 30 days
+            const accessedAt = user.lastSignInAt ? new Date(user.lastSignInAt) : null;
+            if (accessedAt) {
+              return accessedAt > thirtyDaysAgo;
+            }
+            // Fallback to creation date if no accessedAt
+            const createdAt = user.createdAt ? new Date(user.createdAt) : new Date();
+            return createdAt > thirtyDaysAgo;
+          }).length;
+          
+          newUsersToday = users.filter((user: any) => {
+            const createdAt = new Date(user.createdAt);
+            return createdAt >= today;
+          }).length;
         }
       } catch (serverError) {
         console.error('Error fetching user data from server API:', serverError);
@@ -189,18 +203,17 @@ export const DashboardOverview: React.FC = () => {
           // Use the same logic as UserManagement component for active users
           activeUsers = users.filter((user: any) => {
             // Check if user has accessed the system within the last 30 days
-            // This matches the logic in UserManagement.tsx
-            const accessedAt = user.accessedAt ? new Date(user.accessedAt) : null;
+            const accessedAt = user.lastSignInAt ? new Date(user.lastSignInAt) : null;
             if (accessedAt) {
               return accessedAt > thirtyDaysAgo;
             }
             // Fallback to creation date if no accessedAt
-            const createdAt = user.$createdAt ? new Date(user.$createdAt) : new Date();
+            const createdAt = user.createdAt ? new Date(user.createdAt) : new Date();
             return createdAt > thirtyDaysAgo;
           }).length;
           
           newUsersToday = users.filter((user: any) => {
-            const createdAt = new Date(user.$createdAt);
+            const createdAt = new Date(user.createdAt);
             return createdAt >= today;
           }).length;
         } catch (fallbackError) {

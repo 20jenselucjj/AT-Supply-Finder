@@ -7,49 +7,38 @@ const AdminUsers = () => {
   const [userCount, setUserCount] = useState(0);
 
   useEffect(() => {
-    // Fetch initial user count using the API endpoint as the primary method
+    // Fetch initial user count using the Appwrite function as the primary method
     const fetchUserCount = async () => {
       try {
-        // Use the working API endpoint directly as the primary method
-        const response = await fetch('/api/list-users?page=1&limit=1');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setUserCount(data.data.total || 0);
+        // First try using the Appwrite function
+        const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+        if (functionId) {
+          // Execute the Appwrite Function to get user data
+          const execution = await functions.createExecution(
+            functionId,
+            JSON.stringify({ page: 1, limit: 1 }), // We only need the total count
+            false
+          );
+          
+          if (execution.status === 'completed') {
+            const data = JSON.parse(execution.responseBody || '{"users":[],"total":0}');
+            setUserCount(data.total || 0);
             return;
           }
+        } else {
+          console.error('Missing Appwrite function ID in environment variables');
         }
-      } catch (apiError) {
-        console.error('Error fetching user count from API endpoint:', apiError);
-        // Fallback to Appwrite Function
+      } catch (functionError) {
+        console.error('Error fetching user count from Appwrite function:', functionError);
+        // Fallback to direct Appwrite query
         try {
-          const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
-          if (functionId) {
-            // Execute the Appwrite Function to get user data
-            const execution = await functions.createExecution(
-              functionId,
-              JSON.stringify({ page: 1, limit: 1 }), // We only need the total count
-              false
-            );
-            
-            if (execution.status === 'completed') {
-              const data = JSON.parse(execution.responseBody || '{"users":[], "total": 0}');
-              setUserCount(data.total || 0);
-              return;
-            }
-          }
-        } catch (functionError) {
-          console.error('Error fetching user count from Appwrite function:', functionError);
-          // Fallback to direct Appwrite query
-          try {
-            const response = await databases.listDocuments(
-              import.meta.env.VITE_APPWRITE_DATABASE_ID,
-              'users'
-            );
-            setUserCount(response.total || 0);
-          } catch (fallbackError) {
-            console.error('Error fetching user count from Appwrite:', fallbackError);
-          }
+          const response = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'users'
+          );
+          setUserCount(response.total || 0);
+        } catch (fallbackError) {
+          console.error('Error fetching user count from Appwrite:', fallbackError);
         }
       }
     };

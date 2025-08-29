@@ -77,26 +77,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     try {
       setLoading(true);
       
-      const params = new URLSearchParams({
+      const params = {
         search: filterOptions.search || '',
         page: page.toString(),
         limit: usersPerPage.toString()
-      });
+      };
       
-      console.log('Calling server API with params:', params.toString());
+      console.log('Calling Appwrite function with params:', params);
       
-      const response = await fetch(`http://localhost:3001/api/list-users?${params}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Import the functions object from appwrite.ts
+      const { functions } = await import('@/lib/appwrite');
       
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+      
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
       }
       
-      const responseData = await response.json();
+      // Execute the Appwrite function
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify(params),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
+      }
+      
+      // Parse the response
+      const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
       console.log('Server response data:', responseData);
       
       if (responseData.success && responseData.data) {

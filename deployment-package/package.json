@@ -1,0 +1,12 @@
+{
+  "name": "list-users-appwrite-function",
+  "version": "1.0.0",
+  "description": "Appwrite function to list users with their roles",
+  "main": "index.js",
+  "dependencies": {
+    "node-appwrite": "^14.0.0"
+  },
+  "scripts": {
+    "deploy": "node ../../deploy-function.js"
+  }
+}
