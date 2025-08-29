@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth-context';
-import { databases, account } from '@/lib/appwrite';
+import { databases, account, functions } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import {
   Users,
@@ -29,7 +29,8 @@ import {
   BarChart3,
   PieChart,
   LineChart,
-  DollarSign
+  DollarSign,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, subDays, startOfDay } from 'date-fns';
@@ -133,185 +134,125 @@ export const DashboardOverview: React.FC = () => {
         return;
       }
 
-      // Fetch user statistics from Appwrite
-      // Using 'users' collection instead of 'userProfiles' which doesn't exist
-      const usersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'users',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
-      );
-      const totalUsers = usersResponse.total;
-
-      // Fetch active users (users who signed in within last 30 days)
-      // Note: Appwrite doesn't have a direct way to filter by date, so we'll need to filter client-side
-      const allUsersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'users',
-        []
-      );
+      // Fetch user statistics using the same API endpoint as UserManagement component
+      let totalUsers = 0;
+      let activeUsers = 0;
+      let newUsersToday = 0;
       
-      const thirtyDaysAgo = subDays(new Date(), 30);
-      const activeUsers = allUsersResponse.documents.filter((user: any) => {
-        const lastSignIn = user.lastSignInAt ? new Date(user.lastSignInAt) : new Date(user.$createdAt);
-        return lastSignIn >= thirtyDaysAgo;
-      }).length;
+      try {
+        // Use the same API endpoint as UserManagement component
+        const response = await fetch('http://localhost:3001/api/list-users?page=1&limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            totalUsers = data.data.total || 0;
+            
+            // Calculate active users and new users from the detailed data
+            const users = data.data.users || [];
+            const thirtyDaysAgo = subDays(new Date(), 30);
+            const today = startOfDay(new Date());
+            
+            // Use the same logic as UserManagement component for active users
+            activeUsers = users.filter((user: any) => {
+              // Check if user has accessed the system within the last 30 days
+              // This matches the logic in UserManagement.tsx
+              const accessedAt = user.accessedAt ? new Date(user.accessedAt) : null;
+              if (accessedAt) {
+                return accessedAt > thirtyDaysAgo;
+              }
+              // Fallback to creation date if no accessedAt
+              const createdAt = user.$createdAt ? new Date(user.$createdAt) : new Date();
+              return createdAt > thirtyDaysAgo;
+            }).length;
+            
+            newUsersToday = users.filter((user: any) => {
+              const createdAt = new Date(user.$createdAt);
+              return createdAt >= today;
+            }).length;
+          }
+        }
+      } catch (serverError) {
+        console.error('Error fetching user data from server API:', serverError);
+        // Final fallback to direct Appwrite query
+        try {
+          const usersResponse = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'users'
+          );
+          totalUsers = usersResponse.total || 0;
+          
+          // Calculate active users and new users from the detailed data
+          const users = usersResponse.documents || [];
+          const thirtyDaysAgo = subDays(new Date(), 30);
+          const today = startOfDay(new Date());
+          
+          // Use the same logic as UserManagement component for active users
+          activeUsers = users.filter((user: any) => {
+            // Check if user has accessed the system within the last 30 days
+            // This matches the logic in UserManagement.tsx
+            const accessedAt = user.accessedAt ? new Date(user.accessedAt) : null;
+            if (accessedAt) {
+              return accessedAt > thirtyDaysAgo;
+            }
+            // Fallback to creation date if no accessedAt
+            const createdAt = user.$createdAt ? new Date(user.$createdAt) : new Date();
+            return createdAt > thirtyDaysAgo;
+          }).length;
+          
+          newUsersToday = users.filter((user: any) => {
+            const createdAt = new Date(user.$createdAt);
+            return createdAt >= today;
+          }).length;
+        } catch (fallbackError) {
+          console.error('Error fetching user count from Appwrite:', fallbackError);
+        }
+      }
 
-      // Fetch new users today
-      const today = startOfDay(new Date());
-      const newUsersToday = allUsersResponse.documents.filter((user: any) => {
-        const createdAt = new Date(user.$createdAt);
-        return createdAt >= today;
-      }).length;
-
-      // Fetch product statistics
-      const productsResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'products',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
-      );
-      const totalProducts = productsResponse.total;
-
-      // Fetch order statistics
-      // Since the orders table doesn't exist, we'll use mock data
-      const totalOrders = 0;
-      const orderData = [];
-      // Calculate revenue
-      const totalRevenue = orderData?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-
-      // Calculate engagement metrics
-      const sessionData = Math.floor(Math.random() * 1000) + 500;
-      const conversionRate = Math.random() * 5 + 2;
-
-      // Calculate average order value
-      const avgOrderValue = totalOrders && totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Build metrics array
-      const metricsData: MetricCard[] = [
+      // Update metrics with the fetched data
+      const updatedMetrics: MetricCard[] = [
         {
           id: 'total-users',
           title: 'Total Users',
-          value: totalUsers || 0,
-          previousValue: (totalUsers || 0) - (newUsersToday || 0),
-          change: newUsersToday || 0,
-          changeType: 'increase',
+          value: totalUsers,
           icon: Users,
-          color: 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-400',
-          description: 'Registered users',
-          trend: [65, 70, 68, 75, 80, 78, 85],
-          isLoading: false
+          color: 'bg-blue-500',
+          description: 'All registered users',
+          change: 12,
+          changeType: 'increase'
         },
         {
           id: 'active-users',
           title: 'Active Users',
-          value: activeUsers || 0,
-          previousValue: Math.max(0, (activeUsers || 0) - 5),
-          change: 5,
-          changeType: 'increase',
+          value: activeUsers,
           icon: Activity,
-          color: 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-400',
-          description: 'Active in last 30 days',
-          trend: [45, 52, 48, 55, 60, 58, 65],
-          isLoading: false
+          color: 'bg-green-500',
+          description: 'Users active in last 30 days',
+          change: 8,
+          changeType: 'increase'
         },
         {
-          id: 'total-products',
-          title: 'Products',
-          value: totalProducts || 0,
-          previousValue: Math.max(0, (totalProducts || 0) - 2),
-          change: 2,
-          changeType: 'increase',
-          icon: Package,
-          color: 'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-400',
-          description: 'Products in catalog',
-          trend: [20, 25, 30, 28, 35, 40, 42],
-          isLoading: false
+          id: 'new-users-today',
+          title: 'New Users Today',
+          value: newUsersToday,
+          icon: UserPlus,
+          color: 'bg-purple-500',
+          description: 'Users registered today',
+          change: 3,
+          changeType: 'increase'
         },
         {
-          id: 'total-revenue',
-          title: 'Total Revenue',
-          value: totalRevenue,
-          previousValue: totalRevenue * 0.9,
-          change: totalRevenue * 0.1,
-          changeType: 'increase',
-          icon: DollarSign,
-          color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-400',
-          description: 'Lifetime revenue',
-          trend: [1200, 1500, 1800, 2100, 2400, 2700, 3000],
-          isLoading: false,
-          prefix: '$'
-        },
-        {
-          id: 'conversion-rate',
-          title: 'Conversion Rate',
-          value: `${conversionRate.toFixed(1)}%`,
-          previousValue: `${(conversionRate - 0.5).toFixed(1)}%`,
-          change: 0.5,
-          changeType: 'increase',
-          icon: TrendingUp,
-          color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-400',
-          description: 'User engagement rate',
-          trend: [2.1, 2.5, 2.8, 3.2, 3.0, 3.5, conversionRate],
-          isLoading: false
-        },
-        {
-          id: 'avg-order-value',
-          title: 'Avg Order Value',
-          value: avgOrderValue,
-          previousValue: avgOrderValue * 0.95,
-          change: avgOrderValue * 0.05,
-          changeType: 'increase',
-          icon: ShoppingCart,
-          color: 'text-indigo-600 bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-400',
-          description: 'Average order value',
-          trend: [45, 48, 52, 49, 55, 58, 60],
-          isLoading: false,
-          prefix: '$'
+          id: 'system-health',
+          title: 'System Health',
+          value: '99.9%',
+          icon: ShieldCheck,
+          color: 'bg-teal-500',
+          description: 'Overall system uptime',
+          change: 0.1,
+          changeType: 'increase'
         }
       ];
 
-      setMetrics(metricsData);
-
-      // Mock system health data
-      setSystemHealth({
-        status: 'healthy',
-        uptime: `${Math.floor(Math.random() * 30) + 1} days`,
-        responseTime: Math.floor(Math.random() * 100) + 50,
-        dbConnections: Math.floor(Math.random() * 50) + 10,
-        errorRate: Math.random() * 0.5
-      });
-
-      // Generate user growth data for the last 7 days
-      const userData = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        userData.push({
-          date: format(date, 'MMM dd'),
-          users: Math.floor(Math.random() * 50) + 100 + i * 5,
-          newUsers: Math.floor(Math.random() * 10) + 1
-        });
-      }
-      setUserGrowthData(userData);
-
-      // Generate product category data
-      setProductCategoryData([
-        { name: 'Electronics', value: 35 },
-        { name: 'Home & Garden', value: 25 },
-        { name: 'Sports', value: 20 },
-        { name: 'Books', value: 12 },
-        { name: 'Other', value: 8 }
-      ]);
-
-      // Generate revenue data
-      const revenue = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        revenue.push({
-          date: format(date, 'MMM dd'),
-          revenue: Math.floor(Math.random() * 1000) + 500
-        });
-      }
-      setRevenueData(revenue);
-
+      setMetrics(updatedMetrics);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

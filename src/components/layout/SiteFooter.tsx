@@ -34,7 +34,6 @@ const SiteFooter = () => {
         <div>
           <h4 className="text-sm font-bold mb-4 uppercase tracking-wider text-foreground/80">Information</h4>
           <ul className="space-y-3 text-sm">
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/blog">Blog</a></li>
             <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">About Us</a></li>
             <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">Contact</a></li>
             <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">Affiliate Disclosure</a></li>

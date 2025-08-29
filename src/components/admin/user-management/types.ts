@@ -1,11 +1,24 @@
 export interface UserData {
   id: string;
   email: string;
-  createdAt: string;
-  lastSignInAt?: string;
+  $createdAt: string;
+  $lastSignInAt?: string;
   role?: string;
-  emailConfirmedAt?: string;
-  isActive?: boolean;
+  emailVerified?: boolean;
+  raw_user_meta_data?: any;
+  is_active?: boolean;
+}
+
+export interface FilterOptions {
+  role: string;
+  status: string;
+  dateRange: string;
+  search: string;
+}
+
+export interface BulkOperation {
+  type: 'role_change' | 'status_change' | 'delete' | 'export';
+  value?: string;
 }
 
 export interface UserManagementProps {
@@ -13,17 +26,45 @@ export interface UserManagementProps {
   onUserCountChange: (count: number) => void;
 }
 
-export interface UserTableProps {
+export interface UserGridProps {
   users: UserData[];
-  selectedUsers: Set<string>;
-  handleSelectUser: (userId: string, checked: boolean) => void;
-  handleSelectAll: (checked: boolean) => void;
-  openEditDialog: (user: UserData) => void;
-  openDeleteDialog: (user: UserData) => void;
+  selectedUsers: string[];
+  onUserSelect: (userId: string) => void;
+  onSelectAll: (checked: boolean) => void;
+  onViewUser: (user: UserData) => void;
+  onEditUser: (user: UserData) => void;
+  onDeleteUser: (user: UserData) => void;
+  onUserRoleChange: (userId: string, newRole: string) => void;
   loading: boolean;
+  sortBy: '$createdAt' | '$lastSignInAt' | 'email';
+  sortOrder: 'asc' | 'desc';
+  onSort: (field: '$createdAt' | '$lastSignInAt' | 'email') => void;
 }
 
-export interface UserFormProps {
+export interface UserFiltersProps {
+  filters: FilterOptions;
+  onFiltersChange: (filters: FilterOptions) => void;
+  onApplyFilters: () => void;
+  onResetFilters: () => void;
+  showFilters: boolean;
+  onToggleFilters: () => void;
+}
+
+export interface UserActionsProps {
+  selectedUsers: string[];
+  onBulkOperation: (operation: BulkOperation) => void;
+  onCreateUser: () => void;
+  onImportUsers: () => void;
+  onExportUsers: () => void;
+}
+
+export interface UserDetailProps {
+  user: UserData | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface CreateUserFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
@@ -35,35 +76,4 @@ export interface UserFormProps {
   setNewUserRole: React.Dispatch<React.SetStateAction<'user' | 'editor' | 'admin'>>;
   inviteMode: 'invite' | 'create';
   setInviteMode: React.Dispatch<React.SetStateAction<'invite' | 'create'>>;
-}
-
-export interface EditUserFormProps {
-  user: UserData | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: () => void;
-  editUserRole: string;
-  setEditUserRole: React.Dispatch<React.SetStateAction<string>>;
-}
-
-export interface FiltersProps {
-  selectedRole: string;
-  setSelectedRole: React.Dispatch<React.SetStateAction<string>>;
-  selectedStatus: string;
-  setSelectedStatus: React.Dispatch<React.SetStateAction<string>>;
-  showFilters: boolean;
-  setShowFilters: React.Dispatch<React.SetStateAction<boolean>>;
-  onApplyFilters: () => void;
-  onResetFilters: () => void;
-}
-
-export interface SearchAndActionsProps {
-  searchTerm: string;
-  setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
-  onSearch: () => void;
-  onCreateUser: () => void;
-  onImportUsers: () => void;
-  onExportUsers: () => void;
-  hasActiveFilters: boolean;
-  onResetFilters: () => void;
 }

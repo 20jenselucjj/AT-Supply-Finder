@@ -28,4 +28,5 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const functions = new Functions(client);
 
+// Export client for debugging
 export { client };

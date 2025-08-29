@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Mail, Shield } from 'lucide-react';
-import { UserFormProps } from './types';
+import { CreateUserFormProps } from './types';
 
-export const UserForm: React.FC<UserFormProps> = ({
+export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   isOpen,
   onClose,
   onSubmit,

@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { databases, account } from '@/lib/appwrite';
+import { databases, functions, account } from '@/lib/appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';
@@ -126,37 +126,72 @@ export const Analytics: React.FC = () => {
       // Note: In Appwrite, we'll need to check user roles differently
       // For now, we'll assume that if the user can access this page, they're authorized
     
-      // Fetch user statistics from userRoles collection
-      const userRolesResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'userRoles',
-        []
-      );
+      // Fetch user statistics using the same API endpoint as UserManagement component
+      let totalUsers = 0;
+      let newUsersToday = 0;
+      let newUsersThisWeek = 0;
       
-      const totalUsers = userRolesResponse.total || 0;
+      try {
+        // Use the working API endpoint directly as the primary method
+        const response = await fetch('/api/list-users?page=1&limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            totalUsers = data.data.total || 0;
+            
+            // Calculate new users from the detailed data
+            const users = data.data.users || [];
+            const today = new Date();
+            const startOfToday = startOfDay(today);
+            const weekAgo = subDays(today, 7);
+            
+            newUsersToday = users.filter((user: any) => {
+              const createdAt = new Date(user.$createdAt);
+              return createdAt >= startOfToday;
+            }).length;
+            
+            newUsersThisWeek = users.filter((user: any) => {
+              const createdAt = new Date(user.$createdAt);
+              return createdAt >= weekAgo;
+            }).length;
+          }
+        }
+      } catch (serverError) {
+        console.error('Error fetching user data from server API:', serverError);
+        // Final fallback to direct Appwrite query
+        try {
+          const usersResponse = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'users'
+          );
+          totalUsers = usersResponse.total || 0;
+          
+          // Fetch users created today
+          const today = new Date();
+          const startOfToday = startOfDay(today).toISOString();
+          const endOfToday = endOfDay(today).toISOString();
+          
+          const todayUsersResponse = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'users',
+            [Query.greaterThanEqual('$createdAt', startOfToday), Query.lessThanEqual('$createdAt', endOfToday)]
+          );
+          
+          newUsersToday = todayUsersResponse.total || 0;
 
-      // Fetch users created today
-      const today = new Date();
-      const startOfToday = startOfDay(today).toISOString();
-      const endOfToday = endOfDay(today).toISOString();
-      
-      const todayUsersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'userRoles',
-        [Query.greaterThanEqual('$createdAt', startOfToday), Query.lessThanEqual('$createdAt', endOfToday)]
-      );
-      
-      const newUsersToday = todayUsersResponse.total || 0;
-
-      // Fetch users created this week
-      const weekAgo = subDays(today, 7).toISOString();
-      const weekUsersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'userRoles',
-        [Query.greaterThanEqual('$createdAt', weekAgo)]
-      );
-      
-      const newUsersThisWeek = weekUsersResponse.total || 0;
+          // Fetch users created this week
+          const weekAgo = subDays(today, 7).toISOString();
+          const weekUsersResponse = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'users',
+            [Query.greaterThanEqual('$createdAt', weekAgo)]
+          );
+          
+          newUsersThisWeek = weekUsersResponse.total || 0;
+        } catch (fallbackError) {
+          console.error('Error fetching user count from Appwrite:', fallbackError);
+        }
+      }
 
       // Fetch product statistics
       const productsResponse = await databases.listDocuments(
@@ -198,12 +233,19 @@ export const Analytics: React.FC = () => {
 
       // Generate product category data
       const productCategoryData = [
-        { category: 'Electronics', value: 35, color: '#8884d8' },
-        { category: 'Home & Garden', value: 25, color: '#82ca9d' },
-        { category: 'Sports', value: 20, color: '#ffc658' },
-        { category: 'Books', value: 12, color: '#ff7300' },
-        { category: 'Other', value: 8, color: '#d084d0' }
+        { category: 'Electronics', value: 35, color: '#0088FE' },
+        { category: 'Home & Garden', value: 25, color: '#00C49F' },
+        { category: 'Sports', value: 20, color: '#FFBB28' },
+        { category: 'Books', value: 12, color: '#FF8042' },
+        { category: 'Other', value: 8, color: '#8884D8' }
       ];
+
+      // Generate system metrics (mock data)
+      const systemMetrics = {
+        databaseSize: `${(Math.random() * 100).toFixed(1)} MB`,
+        responseTime: Math.floor(Math.random() * 100) + 50,
+        uptime: `${Math.floor(Math.random() * 30) + 1} days`
+      };
 
       // Generate revenue data
       const revenueData = [];
@@ -217,53 +259,49 @@ export const Analytics: React.FC = () => {
 
       // Generate top categories data
       const topCategories = [
-        { category: 'Electronics', products: 120, revenue: 15000 },
-        { category: 'Home & Garden', products: 85, revenue: 9500 },
-        { category: 'Sports', products: 68, revenue: 7200 },
-        { category: 'Books', products: 42, revenue: 3800 },
-        { category: 'Other', products: 28, revenue: 2100 }
+        { category: 'Electronics', products: 1250, revenue: 45000 },
+        { category: 'Home & Garden', products: 980, revenue: 32000 },
+        { category: 'Sports', products: 760, revenue: 28000 },
+        { category: 'Books', products: 420, revenue: 15000 },
+        { category: 'Other', products: 280, revenue: 9800 }
       ];
 
       // Generate user activity data
-      const userActivityData = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        userActivityData.push({
-          day: format(date, 'EEE'),
-          activeUsers: Math.floor(Math.random() * 300) + 100
-        });
-      }
+      const userActivityData = [
+        { day: 'Mon', activeUsers: Math.floor(Math.random() * 100) + 200 },
+        { day: 'Tue', activeUsers: Math.floor(Math.random() * 100) + 250 },
+        { day: 'Wed', activeUsers: Math.floor(Math.random() * 100) + 300 },
+        { day: 'Thu', activeUsers: Math.floor(Math.random() * 100) + 280 },
+        { day: 'Fri', activeUsers: Math.floor(Math.random() * 100) + 350 },
+        { day: 'Sat', activeUsers: Math.floor(Math.random() * 100) + 400 },
+        { day: 'Sun', activeUsers: Math.floor(Math.random() * 100) + 380 }
+      ];
 
       // Generate product performance data
       const productPerformanceData = [
-        { name: 'Product A', sales: 4000, views: 2400, conversion: 4.8 },
-        { name: 'Product B', sales: 3000, views: 1398, conversion: 3.2 },
-        { name: 'Product C', sales: 2000, views: 9800, conversion: 2.1 },
-        { name: 'Product D', sales: 2780, views: 3908, conversion: 3.7 },
-        { name: 'Product E', sales: 1890, views: 4800, conversion: 2.9 }
+        { name: 'Product A', sales: 400, views: 1200, conversion: 33.3 },
+        { name: 'Product B', sales: 350, views: 1100, conversion: 31.8 },
+        { name: 'Product C', sales: 300, views: 1000, conversion: 30.0 },
+        { name: 'Product D', sales: 250, views: 900, conversion: 27.8 },
+        { name: 'Product E', sales: 200, views: 800, conversion: 25.0 }
       ];
 
       // Generate geographic data
       const geographicData = [
-        { country: 'USA', users: 4000, revenue: 2400 },
-        { country: 'UK', users: 3000, revenue: 1398 },
-        { country: 'Canada', users: 2000, revenue: 9800 },
-        { country: 'Germany', users: 2780, revenue: 3908 },
-        { country: 'France', users: 1890, revenue: 4800 }
+        { country: 'USA', users: 12500, revenue: 450000 },
+        { country: 'UK', users: 8500, revenue: 320000 },
+        { country: 'Canada', users: 6200, revenue: 280000 },
+        { country: 'Germany', users: 5800, revenue: 250000 },
+        { country: 'France', users: 4900, revenue: 220000 },
+        { country: 'Australia', users: 4200, revenue: 190000 },
+        { country: 'Japan', users: 3800, revenue: 170000 }
       ];
 
-      // Mock system metrics
-      const systemMetrics = {
-        databaseSize: `${Math.floor(Math.random() * 500) + 100} MB`,
-        responseTime: Math.floor(Math.random() * 200) + 50,
-        uptime: `${Math.floor(Math.random() * 30) + 1} days`
-      };
-
       setAnalytics({
-        totalUsers: totalUsers || 0,
-        newUsersToday: newUsersToday || 0,
-        newUsersThisWeek: newUsersThisWeek || 0,
-        totalProducts: totalProducts || 0,
+        totalUsers,
+        newUsersToday,
+        newUsersThisWeek,
+        totalProducts,
         popularProducts,
         userGrowthData,
         productCategoryData,
@@ -274,10 +312,9 @@ export const Analytics: React.FC = () => {
         productPerformanceData,
         geographicData
       });
-
-    } catch (error: any) {
-      console.error('Error fetching analytics:', error);
-      toast.error(`Failed to fetch analytics data: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+      toast.error('Failed to fetch analytics data');
     } finally {
       setLoading(false);
     }

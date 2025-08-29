@@ -72,7 +72,6 @@ const sidebarItems: SidebarItem[] = [
     label: 'User Management',
     icon: Users,
     href: '/admin/users',
-    badge: 'New',
     requiredRole: 'admin'
   },
   {
