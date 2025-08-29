@@ -152,22 +152,28 @@ export const Analytics: React.FC = () => {
         // Parse the response
         const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
         
-        if (responseData.users && responseData.total) {
-          totalUsers = responseData.total || 0;
+        // Handle both success and error responses
+        if (responseData.success === false) {
+          throw new Error(responseData.error || 'Function execution failed');
+        }
+        
+        // Properly handle the response structure from the Appwrite function
+        if (responseData.data && responseData.data.users) {
+          totalUsers = responseData.data.total || 0;
           
           // Calculate new users from the detailed data
-          const users = responseData.users || [];
+          const users = responseData.data.users || [];
           const today = new Date();
           const startOfToday = startOfDay(today);
           const weekAgo = subDays(today, 7);
           
           newUsersToday = users.filter((user: any) => {
-            const createdAt = new Date(user.createdAt);
+            const createdAt = user.createdAt || user.$createdAt ? new Date(user.createdAt || user.$createdAt) : new Date();
             return createdAt >= startOfToday;
           }).length;
           
           newUsersThisWeek = users.filter((user: any) => {
-            const createdAt = new Date(user.createdAt);
+            const createdAt = user.createdAt || user.$createdAt ? new Date(user.createdAt || user.$createdAt) : new Date();
             return createdAt >= weekAgo;
           }).length;
         }

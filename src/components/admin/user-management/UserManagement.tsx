@@ -373,8 +373,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       throw new Error(errorData.error || 'Failed to update user');
     }
 
-    // Refresh the user list
-    fetchUsers(currentPage, filters);
+    // Return the response data instead of automatically refreshing
+    return await response.json();
   };
 
   const changeUserPassword = async (userId: string, newPassword: string) => {
@@ -406,7 +406,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       toast.success('User role updated successfully');
     } catch (error: any) {
       // Revert the UI change if the update fails
-      fetchUsers(currentPage, filters); // Refresh to get the actual state
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId ? { ...user, role: users.find(u => u.id === userId)?.role || 'user' } : user
+        )
+      );
       console.error('Error updating user role:', error);
       toast.error(`Failed to update user role: ${error.message || 'Unknown error'}`);
     }

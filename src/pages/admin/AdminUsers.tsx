@@ -21,8 +21,16 @@ const AdminUsers = () => {
           );
           
           if (execution.status === 'completed') {
-            const data = JSON.parse(execution.responseBody || '{"users":[],"total":0}');
-            setUserCount(data.total || 0);
+            const data = JSON.parse(execution.responseBody || '{"data":{"users":[],"total":0}}');
+            // Handle the proper response structure from the Appwrite function
+            if (data.data && data.data.total !== undefined) {
+              setUserCount(data.data.total);
+            } else if (data.total !== undefined) {
+              // Fallback for older response format
+              setUserCount(data.total);
+            } else {
+              setUserCount(0);
+            }
             return;
           }
         } else {
