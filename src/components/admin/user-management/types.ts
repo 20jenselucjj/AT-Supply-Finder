@@ -72,6 +72,8 @@ export interface CreateUserFormProps {
   setNewUserEmail: React.Dispatch<React.SetStateAction<string>>;
   newUserPassword: string;
   setNewUserPassword: React.Dispatch<React.SetStateAction<string>>;
+  newUserName: string;
+  setNewUserName: React.Dispatch<React.SetStateAction<string>>;
   newUserRole: 'user' | 'editor' | 'admin';
   setNewUserRole: React.Dispatch<React.SetStateAction<'user' | 'editor' | 'admin'>>;
   inviteMode: 'invite' | 'create';

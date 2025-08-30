@@ -15,6 +15,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   setNewUserEmail,
   newUserPassword,
   setNewUserPassword,
+  newUserName,
+  setNewUserName,
   newUserRole,
   setNewUserRole,
   inviteMode,
@@ -65,6 +67,21 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                 value={newUserEmail}
                 onChange={(e) => setNewUserEmail(e.target.value)}
                 placeholder="user@example.com"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Name
+            </Label>
+            <div className="col-span-3">
+              <Input
+                id="name"
+                type="text"
+                value={newUserName}
+                onChange={(e) => setNewUserName(e.target.value)}
+                placeholder="Enter full name"
               />
             </div>
           </div>

@@ -154,49 +154,34 @@ app.get('/api/list-users', async (req, res) => {
 // User Management Endpoints
 // Create User endpoint
 app.post('/api/users', async (req, res) => {
-  try {
-    const { email, password, name, role } = req.body;
-    
-    // Import the Appwrite SDK
-    const { Client, Users, Databases, ID } = await import('node-appwrite');
-    
-    // Initialize the Appwrite SDK
-    const client = new Client();
-    client
-      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
-      .setKey(process.env.VITE_APPWRITE_API_KEY);
+  const { email, password, role, name } = req.body;
 
-    const users = new Users(client);
-    const databases = new Databases(client);
-    
+  try {
     // Create user in Appwrite Auth
     const user = await users.create(
       ID.unique(),
       email,
-      undefined, // phone
+      null, // phone
       password,
       name
     );
-    
-    // Assign role in userRoles collection if it's not the default 'user' role
-    if (role && role !== 'user') {
-      try {
-        await databases.createDocument(
-          process.env.VITE_APPWRITE_DATABASE_ID,
-          'userRoles',
-          ID.unique(),
-          {
-            userId: user.$id,
-            role: role
-          }
-        );
-      } catch (roleError) {
-        console.error('Error assigning role:', roleError);
-        // Don't fail the whole operation if role assignment fails
-      }
+
+    // Assign role in a separate collection
+    try {
+      await databases.createDocument(
+        process.env.VITE_APPWRITE_DATABASE_ID,
+        'userRoles',
+        ID.unique(),
+        {
+          userId: user.$id,
+          role: role
+        }
+      );
+    } catch (roleError) {
+      console.error('Error assigning role:', roleError);
+      // Don't fail the whole operation if role assignment fails
     }
-    
+
     res.status(201).json({
       success: true,
       user: {

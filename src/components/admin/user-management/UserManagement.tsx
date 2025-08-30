@@ -59,6 +59,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserName, setNewUserName] = useState('');
   const [newUserRole, setNewUserRole] = useState<'user' | 'editor' | 'admin'>('user');
   const [inviteMode, setInviteMode] = useState<'invite' | 'create'>('invite');
   const [isImportUsersOpen, setIsImportUsersOpen] = useState(false);
@@ -283,29 +284,35 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         return;
       }
 
-      // Create user directly using our new API endpoint
-      const response = await fetch('http://localhost:3001/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Create user using Appwrite function
+      const { functions } = await import('@/lib/appwrite');
+      
+      const execution = await functions.createExecution(
+        '68b211da003bfec2ae74', // user-management function ID
+        JSON.stringify({
+          action: 'createUser',
           email: newUserEmail,
           password: newUserPassword,
+          name: newUserName,
           role: newUserRole
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create user');
+        }),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
       }
-
-      const data = await response.json();
+      
+      const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      
+      if (responseData.success === false) {
+        throw new Error(responseData.error || 'Failed to create user');
+      }
       toast.success('User created successfully!');
 
       setIsCreateUserOpen(false);
       setNewUserEmail('');
+      setNewUserName('');
       setNewUserPassword('');
       setNewUserRole('user');
       
@@ -342,53 +349,145 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const deleteUser = async (userId: string) => {
-    const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
+    try {
+      const params = {
+        action: 'delete',
+        userId: userId
+      };
+      
+      console.log('Deleting user with params:', params);
+      
+      // Import the functions object from appwrite.ts
+      const { functions } = await import('@/lib/appwrite');
+      
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+      
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
       }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete user');
+      
+      // Execute the Appwrite function
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify(params),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
+      }
+      
+      // Parse the response
+      const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      console.log('Delete user response:', responseData);
+      
+      // Handle both success and error responses
+      if (responseData.success === false) {
+        throw new Error(responseData.error || responseData.message || 'Function execution failed');
+      }
+      
+      return responseData;
+    } catch (error) {
+      console.error('Error in deleteUser:', error);
+      throw error;
     }
   };
 
   const updateUser = async (userId: string, updates: Partial<UserData>) => {
-    const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      const params = {
+        action: 'update',
+        userId: userId,
         email: updates.email,
+        // Remove name property since it doesn't exist in UserData type
         role: updates.role,
         status: updates.is_active !== undefined ? (updates.is_active ? 'active' : 'inactive') : undefined
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to update user');
+      };
+      
+      console.log('Updating user with params:', params);
+      
+      // Import the functions object from appwrite.ts
+      const { functions } = await import('@/lib/appwrite');
+      
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+      
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
+      }
+      
+      // Execute the Appwrite function
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify(params),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
+      }
+      
+      // Parse the response
+      const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      console.log('Update user response:', responseData);
+      
+      // Handle both success and error responses
+      if (responseData.success === false) {
+        throw new Error(responseData.error || responseData.message || 'Function execution failed');
+      }
+      
+      return responseData;
+    } catch (error) {
+      console.error('Error in updateUser:', error);
+      throw error;
     }
-
-    // Return the response data instead of automatically refreshing
-    return await response.json();
   };
 
   const changeUserPassword = async (userId: string, newPassword: string) => {
-    const response = await fetch(`http://localhost:3001/api/users/${userId}/password`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ password: newPassword })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to change password');
+    try {
+      const params = {
+        action: 'changePassword',
+        userId: userId,
+        newPassword: newPassword
+      };
+      
+      console.log('Changing user password with params:', params);
+      
+      // Import the functions object from appwrite.ts
+      const { functions } = await import('@/lib/appwrite');
+      
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+      
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
+      }
+      
+      // Execute the Appwrite function
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify(params),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
+      }
+      
+      // Parse the response
+      const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      console.log('Change password response:', responseData);
+      
+      // Handle both success and error responses
+      if (responseData.success === false) {
+        throw new Error(responseData.error || responseData.message || 'Function execution failed');
+      }
+      
+      return responseData;
+    } catch (error) {
+      console.error('Error in changeUserPassword:', error);
+      throw error;
     }
   };
 
@@ -697,6 +796,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         onClose={() => {
           setIsCreateUserOpen(false);
           setNewUserEmail('');
+          setNewUserName('');
           setNewUserPassword('');
           setNewUserRole('user');
           setInviteMode('invite');
@@ -706,6 +806,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         setNewUserEmail={setNewUserEmail}
         newUserPassword={newUserPassword}
         setNewUserPassword={setNewUserPassword}
+        newUserName={newUserName}
+        setNewUserName={setNewUserName}
         newUserRole={newUserRole}
         setNewUserRole={setNewUserRole}
         inviteMode={inviteMode}
