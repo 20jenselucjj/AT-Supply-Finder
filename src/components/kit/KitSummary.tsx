@@ -23,16 +23,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useMemo, useState } from "react";
 import { CheckCircle, AlertCircle, Package, Star, ExternalLink, Plus, Minus, Save } from "lucide-react";
 import { FIRST_AID_CATEGORIES } from "@/components/kit/FirstAidCategories";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const KitSummary = () => {
   const { kit, getVendorTotals, clearKit, updateQuantity, removeFromKit, saveKit } = useKit();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [openConfirm, setOpenConfirm] = useState(false);
   const [showDetailedItems, setShowDetailedItems] = useState(true);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
   const [kitName, setKitName] = useState('');
   const [kitDescription, setKitDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -43,6 +43,16 @@ const KitSummary = () => {
     } else {
       // When quantity would be 0 or less, remove the item from the kit
       removeFromKit(itemId);
+    }
+  };
+
+  const handleSaveKitClick = () => {
+    if (user) {
+      setSaveDialogOpen(true);
+    } else {
+      // Redirect to login page with a return URL to the current page
+      toast.info('Please log in or create an account to save your kit');
+      navigate('/login', { state: { from: location.pathname } });
     }
   };
 
@@ -61,14 +71,6 @@ const KitSummary = () => {
       setIsPublic(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to save kit');
-    }
-  };
-
-  const handleSaveClick = () => {
-    if (user) {
-      setSaveDialogOpen(true);
-    } else {
-      setLoginPromptOpen(true);
     }
   };
 
@@ -154,7 +156,7 @@ const KitSummary = () => {
       <div className="flex flex-col xs:flex-row justify-between xs:items-center gap-3 xs:gap-4 mb-4">
         <h2 id="kit-summary-heading" className="text-lg xs:text-xl font-bold">Kit Summary</h2>
         <div className="flex gap-2">
-          <Button size="sm" className="xs:size-default" onClick={handleSaveClick}>
+          <Button size="sm" className="xs:size-default" onClick={handleSaveKitClick}>
             <Save className="mr-2 h-4 w-4" />
             Save to Profile
           </Button>
@@ -177,88 +179,6 @@ const KitSummary = () => {
           </AlertDialog>
         </div>
       </div>
-      
-      {/* Login Prompt Dialog */}
-      <Dialog open={loginPromptOpen} onOpenChange={(open) => {
-        setLoginPromptOpen(open);
-        // If dialog is closing and user goes to login page, we should close it
-        if (!open) {
-          // Reset state if needed
-        }
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save Kit to Profile</DialogTitle>
-            <DialogDescription>
-              To save your kit to your profile, you'll need to create an account or log in.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Saving your kit allows you to access it from any device and manage multiple kits.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-end">
-              <Button variant="outline" asChild>
-                <Link to="/login">Log In</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/login">Create Account</Link>
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Save Kit Dialog (only shown when user is logged in) */}
-      {user && (
-        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Save Kit</DialogTitle>
-              <DialogDescription>
-                Save your current kit ({kit.length} items) to access it later from any device.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="kit-name">Kit Name</Label>
-                <Input
-                  id="kit-name"
-                  value={kitName}
-                  onChange={(e) => setKitName(e.target.value)}
-                  placeholder="Enter kit name..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="kit-description">Description (Optional)</Label>
-                <Textarea
-                  id="kit-description"
-                  value={kitDescription}
-                  onChange={(e) => setKitDescription(e.target.value)}
-                  placeholder="Describe your kit..."
-                  rows={3}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is-public"
-                  checked={isPublic}
-                  onCheckedChange={(checked) => setIsPublic(checked as boolean)}
-                />
-                <Label htmlFor="is-public">Make this kit public</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveKit}>
-                Save Kit
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
       
       {/* Kit Completion Status */}
       <div className="mb-6 p-4 bg-muted rounded-lg">
@@ -411,6 +331,56 @@ const KitSummary = () => {
         </div>
       </div>
       
+      {/* Save Kit Dialog - Only render when user is authenticated */}
+      {user && (
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Kit</DialogTitle>
+              <DialogDescription>
+                Save your current kit ({kit.length} items) to access it later from any device.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="kit-name">Kit Name</Label>
+                <Input
+                  id="kit-name"
+                  value={kitName}
+                  onChange={(e) => setKitName(e.target.value)}
+                  placeholder="Enter kit name..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="kit-description">Description (Optional)</Label>
+                <Textarea
+                  id="kit-description"
+                  value={kitDescription}
+                  onChange={(e) => setKitDescription(e.target.value)}
+                  placeholder="Describe your kit..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is-public"
+                  checked={isPublic}
+                  onCheckedChange={(checked) => setIsPublic(checked as boolean)}
+                />
+                <Label htmlFor="is-public">Make this kit public</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveKit}>
+                Save Kit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </Card>
   );
