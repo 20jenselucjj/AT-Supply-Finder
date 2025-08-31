@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 type Theme = 'light' | 'dark' | 'system';
 type ContrastMode = 'normal' | 'high';
-type ColorScheme = 'default' | 'blue' | 'green' | 'purple';
+type ColorScheme = 'default' | 'first-aid' | 'blue' | 'green' | 'purple';
 
 interface ThemeContextType {
   theme: Theme;
@@ -53,9 +53,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
     try {
       const stored = localStorage.getItem('colorScheme');
-      return (stored as ColorScheme) || 'default';
+      return (stored as ColorScheme) || 'first-aid';
     } catch {
-      return 'default';
+      return 'first-aid';
     }
   });
 
@@ -109,7 +109,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       root.classList.toggle('high-contrast', contrastMode === 'high');
       
       // Apply color scheme
-      root.classList.remove('scheme-default', 'scheme-blue', 'scheme-green', 'scheme-purple');
+      root.classList.remove('scheme-default', 'scheme-first-aid', 'scheme-blue', 'scheme-green', 'scheme-purple');
       root.classList.add(`scheme-${colorScheme}`);
       
       // Apply reduced motion preference

@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useKit } from "@/context/kit-context";
 import { useAuth } from "@/context/auth-context";
+import { useTheme } from "@/context/theme-context";
 import { ShieldAlert } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -17,30 +18,8 @@ const navLinkClass = ({ isActive, mobile = false }: { isActive: boolean; mobile?
 const SiteHeader = () => {
   const { kitCount } = useKit();
   const { user, isAdmin } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = React.useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark");
-    }
-    return false;
-  });
-
-  React.useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
-
-  const handleProfileClick = () => {
-    if (user) {
-      navigate("/profile");
-    } else {
-      navigate("/login");
-    }
-  };
-
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const location = useLocation();
@@ -49,6 +28,14 @@ const SiteHeader = () => {
   React.useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  const handleProfileClick = () => {
+    if (user) {
+      navigate("/profile");
+    } else {
+      navigate("/login");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md shadow-sm">
@@ -123,7 +110,7 @@ const SiteHeader = () => {
                   )}
                   <Button
                     variant="outline"
-                    onClick={() => setDarkMode(d => !d)}
+                    onClick={toggleTheme}
                     className="justify-start"
                   >
                     Toggle Theme
@@ -177,10 +164,10 @@ const SiteHeader = () => {
           <Button
             variant="outline"
             aria-label="Toggle dark mode"
-            onClick={() => setDarkMode((d) => !d)}
+            onClick={toggleTheme}
             className="px-3 sm:px-4"
           >
-            {darkMode ? "🌙" : "☀️"}
+            {isDark ? "🌙" : "☀️"}
           </Button>
         </div>
       </div>

@@ -44,10 +44,10 @@ const Hero = () => {
             Trusted by Medical Professionals
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item" style={{ fontFamily: 'var(--font-heading)' }}>
-            Professional <span className="text-primary">Medical Equipment</span> Finder
+            Build Your <span className="text-primary">First Aid Kit</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
-            Compare prices across <strong>trusted vendors</strong> instantly. Build your professional medical kit with premium quality supplies at competitive prices.
+            Find essential medical supplies for any emergency. Compare prices across <strong>trusted vendors</strong> instantly and build your professional first aid kit with premium quality supplies at competitive prices.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-medium stagger-item">
@@ -78,7 +78,7 @@ const Hero = () => {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="px-10 py-7 text-lg font-medium border-2 hover:bg-primary/10 transition-all duration-300 transform hover:-translate-y-1 rounded-xl shadow-sm hover:shadow-md">
-              <Link to="/catalog" className="flex items-center">Browse Products</Link>
+              <Link to="/catalog" className="flex items-center">Browse Supplies</Link>
             </Button>
           </div>
 
