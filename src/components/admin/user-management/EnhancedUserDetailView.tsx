@@ -136,7 +136,7 @@ export const EnhancedUserDetailView: React.FC<EnhancedUserDetailViewProps> = ({
                           {user.role || 'user'}
                         </Badge>
                         {user.is_active ? (
-                          <Badge variant="default" className="bg-green-500 hover:bg-green-500/90">
+                          <Badge variant="default" className="bg-primary hover:bg-primary/90">
                             <Activity className="h-3 w-3 mr-1" />
                             Active
                           </Badge>
@@ -147,7 +147,7 @@ export const EnhancedUserDetailView: React.FC<EnhancedUserDetailViewProps> = ({
                           </Badge>
                         )}
                         {user.emailVerified ? (
-                          <Badge variant="outline" className="border-green-500 text-green-500">
+                          <Badge variant="outline" className="border-primary text-primary">
                             <UserCheck className="h-3 w-3 mr-1" />
                             Verified
                           </Badge>

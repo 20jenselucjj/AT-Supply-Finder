@@ -41,7 +41,6 @@ import UserGrowthChart from './UserGrowthChart';
 import ProductCategoriesChart from './ProductCategoriesChart';
 import RevenueChart from './RevenueChart';
 import SystemHealthCard from './SystemHealthCard';
-import QuickActionsCard from './QuickActionsCard';
 
 interface MetricCard {
   id: string;
@@ -76,52 +75,36 @@ const DashboardOverview: React.FC = () => {
   const [metrics, setMetrics] = useState<MetricCard[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     status: 'healthy',
-    uptime: '0 days',
-    responseTime: 0,
-    dbConnections: 0,
-    errorRate: 0
+    uptime: '99.9%',
+    responseTime: 120,
+    dbConnections: 42,
+    errorRate: 0.1
   });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [userGrowthData, setUserGrowthData] = useState<any[]>([]);
-  const [productCategoryData, setProductCategoryData] = useState<ChartData[]>([]);
-  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [userGrowthData, setUserGrowthData] = useState<any[]>([
+    { date: 'Mon', users: 400, newUsers: 24 },
+    { date: 'Tue', users: 300, newUsers: 13 },
+    { date: 'Wed', users: 200, newUsers: 8 },
+    { date: 'Thu', users: 278, newUsers: 15 },
+    { date: 'Fri', users: 189, newUsers: 9 },
+    { date: 'Sat', users: 239, newUsers: 12 },
+    { date: 'Sun', users: 349, newUsers: 18 }
+  ]);
+  const [productCategoryData, setProductCategoryData] = useState<ChartData[]>([
+    { name: 'First Aid', value: 45 },
+    { name: 'Mobility', value: 30 },
+    { name: 'Daily Living', value: 15 },
+    { name: 'Medical Equipment', value: 10 }
+  ]);
+  const [revenueData, setRevenueData] = useState<any[]>([
+    { date: 'Week 1', revenue: 4000 },
+    { date: 'Week 2', revenue: 3000 },
+    { date: 'Week 3', revenue: 2000 },
+    { date: 'Week 4', revenue: 2780 },
+    { date: 'Week 5', revenue: 1890 }
+  ]);
   const { user } = useAuth();
-
-  const quickActions = [
-    {
-      id: 'invite-user',
-      title: 'Invite User',
-      description: 'Send invitation to new team member',
-      icon: Users,
-      color: 'bg-blue-500',
-      action: () => toast.info('User invitation feature coming soon!')
-    },
-    {
-      id: 'add-product',
-      title: 'Add Product',
-      description: 'Add new product to catalog',
-      icon: Package,
-      color: 'bg-green-500',
-      action: () => toast.info('Product management feature coming soon!')
-    },
-    {
-      id: 'view-analytics',
-      title: 'View Analytics',
-      description: 'Check detailed analytics',
-      icon: Activity,
-      color: 'bg-purple-500',
-      action: () => toast.info('Detailed analytics coming soon!')
-    },
-    {
-      id: 'system-backup',
-      title: 'System Backup',
-      description: 'Create system backup',
-      icon: Database,
-      color: 'bg-orange-500',
-      action: () => toast.info('Backup feature coming soon!')
-    }
-  ];
 
   const fetchDashboardData = async () => {
     try {
@@ -234,7 +217,7 @@ const DashboardOverview: React.FC = () => {
           title: 'Total Users',
           value: totalUsers,
           icon: Users,
-          color: 'bg-blue-500',
+          color: 'text-blue-500',
           description: 'All registered users',
           change: 12,
           changeType: 'increase'
@@ -244,7 +227,7 @@ const DashboardOverview: React.FC = () => {
           title: 'Active Users',
           value: activeUsers,
           icon: Activity,
-          color: 'bg-green-500',
+          color: 'text-green-500',
           description: 'Users active in last 30 days',
           change: 8,
           changeType: 'increase'
@@ -254,7 +237,7 @@ const DashboardOverview: React.FC = () => {
           title: 'New Users Today',
           value: newUsersToday,
           icon: UserPlus,
-          color: 'bg-purple-500',
+          color: 'text-purple-500',
           description: 'Users registered today',
           change: 3,
           changeType: 'increase'
@@ -264,7 +247,7 @@ const DashboardOverview: React.FC = () => {
           title: 'System Health',
           value: '99.9%',
           icon: ShieldCheck,
-          color: 'bg-teal-500',
+          color: 'text-teal-500',
           description: 'Overall system uptime',
           change: 0.1,
           changeType: 'increase'
@@ -299,8 +282,8 @@ const DashboardOverview: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
+          <p className="text-muted-foreground text-sm">
             Welcome back, {user?.email?.split('@')[0]}! Here's what's happening with your platform.
           </p>
         </div>
@@ -320,27 +303,24 @@ const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Metrics Grid - Responsive for all screen sizes */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric, index) => (
           <MetricCard key={metric.id} metric={metric} index={index} />
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Charts Section - Fully responsive */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <UserGrowthChart data={userGrowthData} />
         <ProductCategoriesChart data={productCategoryData} />
       </div>
 
-      {/* Revenue and System Health */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Revenue and System Health - Responsive layout */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <RevenueChart data={revenueData} />
         <SystemHealthCard systemHealth={systemHealth} />
       </div>
-
-      {/* Quick Actions */}
-      <QuickActionsCard actions={quickActions} />
     </div>
   );
 };

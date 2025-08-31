@@ -326,8 +326,8 @@ export const CatalogRefactored = () => {
   return (
     <>
       <Helmet>
-        <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | AT Supply Finder</title>
-        <meta name="description" content="Compare prices on athletic tape, bandages, pre-wrap & training supplies across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
+        <title>Compare Medical Supplies Prices | Save 20-40% | AT Supply Finder</title>
+        <meta name="description" content="Compare prices on medical supplies, bandages, tape & emergency equipment across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
         <link rel="canonical" href={canonical} />
       </Helmet>
       

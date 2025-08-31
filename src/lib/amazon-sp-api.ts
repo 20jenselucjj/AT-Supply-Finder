@@ -178,7 +178,7 @@ class AmazonSPAPI {
     };
   }
 
-  // Helper method to search for athletic training products specifically
+  // Helper method to search for first aid products specifically
   async searchAthleticProducts(keywords: string = 'medical equipment supplies'): Promise<AmazonProduct[]> {
     const categories = [
       'Sports & Outdoors',

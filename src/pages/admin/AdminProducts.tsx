@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ProductManagement } from '@/components/admin/ProductManagement';
+import ProductManagementRefactored from '@/components/admin/ProductManagementRefactored';
 import { databases, account } from '@/lib/appwrite';
 
 const AdminProducts = () => {
@@ -35,10 +35,10 @@ const AdminProducts = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Product Management</h1>
-          <p className="text-muted-foreground">Manage products, inventory, and catalog data</p>
+          <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
         
-        <ProductManagement
+        <ProductManagementRefactored
           totalProducts={productCount}
           onProductCountChange={setProductCount}
         />

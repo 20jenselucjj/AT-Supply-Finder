@@ -11,7 +11,7 @@ class AmazonProductService {
   private cache: Map<string, ProductCache> = new Map();
   private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-  // Search for athletic training products
+  // Search for first aid products
   async searchAthleticProducts(searchTerm: string = 'medical equipment supplies', forceRefresh: boolean = false): Promise<Product[]> {
     const cacheKey = `athletic_${searchTerm}`;
     const cached = this.cache.get(cacheKey);
@@ -34,7 +34,7 @@ class AmazonProductService {
 
       return products;
     } catch (error) {
-      console.error('Error searching athletic products:', error);
+      console.error('Error searching first aid products:', error);
       return [];
     }
   }
@@ -87,7 +87,7 @@ class AmazonProductService {
     }
   }
 
-  // Get popular athletic training categories
+  // Get popular first aid categories
   async getPopularCategories(): Promise<string[]> {
     try {
       const response = await databases.listDocuments(

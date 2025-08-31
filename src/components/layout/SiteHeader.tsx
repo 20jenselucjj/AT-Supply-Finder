@@ -6,7 +6,7 @@ import { useTheme } from "@/context/theme-context";
 import { ShieldAlert } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Sun, Moon } from "lucide-react";
 import React from "react";
 
 const navLinkClass = ({ isActive, mobile = false }: { isActive: boolean; mobile?: boolean }) =>
@@ -42,10 +42,10 @@ const SiteHeader = () => {
       <div className="container mx-auto flex h-16 xs:h-18 sm:h-20 items-center justify-between px-2 xs:px-3 sm:px-4">
         <Link to="/" className="flex items-center gap-2 xs:gap-3">
           <div
-            className="h-8 w-8 xs:h-10 xs:w-10 sm:h-12 sm:w-12 rounded-md border-2 border-primary/20 shadow-md flex items-center justify-center bg-white overflow-hidden"
+            className="h-8 w-8 xs:h-10 xs:w-10 sm:h-12 sm:w-12 rounded-md border-2 border-primary/20 shadow-md flex items-center justify-center bg-background overflow-hidden"
             aria-label="AT Supply Finder Logo"
           >
-            <img src="/logo.svg" alt="AT Supply Finder Logo" className="h-6 w-6 xs:h-8 xs:w-8 sm:h-10 sm:w-10" />
+            <img src="/logo.png" alt="AT Supply Finder Logo" className="h-6 w-6 xs:h-8 xs:w-8 sm:h-10 sm:w-10" />
           </div>
           <div className="flex flex-col">
             <span className="text-sm xs:text-base sm:text-lg font-bold text-primary leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>AT Supply Finder</span>
@@ -61,12 +61,12 @@ const SiteHeader = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[270px] sm:w-[320px] p-0 flex flex-col">
-              <div className="px-4 pt-4 pb-3 border-b flex items-center gap-3">
+              <div className="px-4 pt-4 pb-3 border-b border-border flex items-center gap-3">
                 <div
-                  className="h-10 w-10 rounded-md border-2 border-primary/20 overflow-hidden flex items-center justify-center bg-white"
+                  className="h-10 w-10 rounded-md border-2 border-primary/20 overflow-hidden flex items-center justify-center bg-background"
                   aria-label="AT Supply Finder Logo"
                 >
-                  <img src="/logo.svg" alt="AT Supply Finder Logo" className="h-8 w-8" />
+                  <img src="/logo.png" alt="AT Supply Finder Logo" className="h-8 w-8" />
                 </div>
                 <span className="font-semibold tracking-tight">AT Supply Finder</span>
               </div>
@@ -79,7 +79,7 @@ const SiteHeader = () => {
                 </NavLink>
                 <NavLink to="/build" className={(props) => navLinkClass({ ...props, mobile: true })} onClick={() => setMobileOpen(false)}>
                   <span className="inline-flex items-center">
-                    Build a Kit
+                    Build Your Kit
                     {kitCount > 0 && (
                       <span className="ml-2 bg-primary text-primary-foreground text-[10px] rounded-full h-5 w-5 flex items-center justify-center">
                         {kitCount}
@@ -88,7 +88,7 @@ const SiteHeader = () => {
                   </span>
                 </NavLink>
                 {/* Additional actions */}
-                <div className="mt-4 pt-4 border-t flex flex-col gap-2">
+                <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
                   <Button
                     variant="outline"
                     onClick={() => { handleProfileClick(); setMobileOpen(false); }}
@@ -113,7 +113,17 @@ const SiteHeader = () => {
                     onClick={toggleTheme}
                     className="justify-start"
                   >
-                    Toggle Theme
+                    {isDark ? (
+                      <>
+                        <Sun className="mr-2 h-4 w-4" />
+                        Light Mode
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="mr-2 h-4 w-4" />
+                        Dark Mode
+                      </>
+                    )}
                   </Button>
                 </div>
               </nav>
@@ -129,7 +139,7 @@ const SiteHeader = () => {
             </NavLink>
             <NavLink to="/build" className={navLinkClass}>
               <span className="inline-flex items-center">
-                Build a Kit
+                Build Your Kit
                 {kitCount > 0 && (
                   <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {kitCount}
@@ -163,11 +173,11 @@ const SiteHeader = () => {
           </Button>
           <Button
             variant="outline"
-            aria-label="Toggle dark mode"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             onClick={toggleTheme}
             className="px-3 sm:px-4"
           >
-            {isDark ? "🌙" : "☀️"}
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </div>
       </div>

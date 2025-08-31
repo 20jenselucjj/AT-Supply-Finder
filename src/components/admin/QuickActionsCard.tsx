@@ -1,17 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 interface QuickAction {
   id: string;
   title: string;
   description: string;
   icon: React.ElementType;
-  action: () => void;
   color: string;
+  action: () => void;
 }
 
 interface QuickActionsCardProps {
@@ -20,36 +18,32 @@ interface QuickActionsCardProps {
 
 export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ actions }) => {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-lg">Quick Actions</CardTitle>
+        <CardDescription className="text-xs">
           Common administrative tasks
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {actions.map((action, index) => (
-          <motion.div
-            key={action.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto p-4"
-              onClick={action.action}
-            >
-              <div className={cn("p-2 rounded-full text-white", action.color)}>
-                <action.icon className="h-4 w-4" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-sm">{action.title}</p>
-                <p className="text-xs text-muted-foreground">{action.description}</p>
-              </div>
-            </Button>
-          </motion.div>
-        ))}
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+          {actions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.id}
+                variant="outline"
+                size="sm"
+                className="h-auto flex flex-col items-center justify-center p-3 gap-1 min-h-[100px]"
+                onClick={action.action}
+              >
+                <Icon className={cn("h-5 w-5", action.color)} />
+                <span className="text-xs font-medium text-center">{action.title}</span>
+                <span className="text-xs text-muted-foreground text-center">{action.description}</span>
+              </Button>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );

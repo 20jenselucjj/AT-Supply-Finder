@@ -38,7 +38,7 @@ export const ProductRow = ({
             <div className="text-sm text-muted-foreground">{product.brand}</div>
             {product.features && product.features.length > 0 && (
               <div className="text-sm text-muted-foreground mt-1">
-                {product.features.slice(0, 2).join(", ")}
+                {product.features.slice(0, 2).join(" • ")}
                 {product.features.length > 2 && "..."}
               </div>
             )}

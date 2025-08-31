@@ -42,7 +42,7 @@ export const StarterKitBuilderRefactored: React.FC = () => {
   const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<StarterKitTemplate | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'created_at' | 'name' | 'estimated_cost'>('created_at');
+  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'estimated_cost'>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeTab, setActiveTab] = useState('templates');

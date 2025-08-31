@@ -4,7 +4,7 @@ const SiteFooter = () => {
       <div className="container mx-auto py-12 grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <img src="/logo.svg" alt="AT Supply Finder Logo" className="h-10 w-10" />
+            <img src="/logo.png" alt="AT Supply Finder Logo" className="h-10 w-10" />
         <h3 className="text-base font-bold text-primary" style={{ fontFamily: 'var(--font-heading)' }}>AT Supply Finder</h3>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">
@@ -27,16 +27,16 @@ const SiteFooter = () => {
           <ul className="space-y-3 text-sm">
             <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/catalog">All Products</a></li>
             <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/build">Build a Kit</a></li>
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/catalog?cat=athletic-tape">Athletic Tape</a></li>
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/catalog?cat=kinesiology-tape">Kinesiology Tape</a></li>
+            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/catalog?cat=wound-care-dressings">Wound Care</a></li>
+            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/catalog?cat=tapes-wraps">Medical Tapes & Wraps</a></li>
           </ul>
         </div>
         <div>
           <h4 className="text-sm font-bold mb-4 uppercase tracking-wider text-foreground/80">Information</h4>
           <ul className="space-y-3 text-sm">
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">About Us</a></li>
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">Contact</a></li>
-            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="#">Affiliate Disclosure</a></li>
+            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/about">About Us</a></li>
+            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/contact">Contact</a></li>
+            <li><a className="text-muted-foreground transition-colors duration-200 hover:text-primary" href="/affiliate-disclosure">Affiliate Disclosure</a></li>
           </ul>
         </div>
       </div>

@@ -22,9 +22,9 @@ export const SystemHealthCard: React.FC<SystemHealthCardProps> = ({
   loading
 }) => {
   const getHealthStatus = (value: number) => {
-    if (value >= 90) return { color: 'text-red-600 bg-red-100', icon: 'XCircle' };
-    if (value >= 75) return { color: 'text-yellow-600 bg-yellow-100', icon: 'AlertTriangle' };
-    return { color: 'text-green-600 bg-green-100', icon: 'CheckCircle2' };
+    if (value >= 90) return { color: 'text-destructive bg-destructive/10', icon: 'XCircle' };
+    if (value >= 75) return { color: 'text-yellow-500 bg-yellow-500/10', icon: 'AlertTriangle' };
+    return { color: 'text-primary bg-primary/10', icon: 'CheckCircle2' };
   };
 
   return (

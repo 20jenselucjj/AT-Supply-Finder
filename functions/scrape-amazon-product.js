@@ -26,6 +26,122 @@ function cleanText(text) {
   return text.replace(/\s+/g, ' ').trim();
 }
 
+// Helper function to create concise product names
+function createConciseName(title, brand) {
+  if (!title) return '';
+  
+  // Remove brand name if it's at the beginning
+  let conciseTitle = title;
+  if (brand) {
+    const brandRegex = new RegExp('^' + brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\s*', 'i');
+    conciseTitle = title.replace(brandRegex, '');
+  }
+  
+  // Remove common phrases that make titles too long
+  const phrasesToRemove = [
+    'First Aid and Wound Care Supplies',
+    'First Aid Supplies',
+    'Wound Care Supplies',
+    'Wound Care',
+    'All-One Size',
+    'Assorted Sizes',
+    'Various Sizes',
+    'Multi-Pack',
+    'Multipack',
+    'Count',
+    'Pack of',
+    'Package of',
+    'Set of',
+    'Assorted',
+    'Flexible',
+    'Adhesive',
+    'Fabric',
+    'Plastic',
+    'Disposable',
+    'Single Use',
+    'Sterile',
+    'Non-Sterile',
+    'Latex Free',
+    'Latex-Free',
+    'Hypoallergenic',
+    'for ',
+    'with ',
+    'and ',
+    'Individually Wrapped',
+    'Individually Packed',
+    'Bulk',
+    'Economy',
+    'Value Pack',
+    // Add more specific phrases to remove
+    '100 Count',
+    '200 Count',
+    '50 Count',
+    '30 Count',
+    '10 Count',
+    'Each',
+    'per Pack',
+    'per Box'
+  ];
+  
+  for (const phrase of phrasesToRemove) {
+    const regex = new RegExp('\\s*[,\\-\\(\\)]*\\s*' + phrase.replace(/[.*+?^${}()|[\\]\\-]/g, '\\$&') + '[\\s\\,\\-\\(\\)]*', 'gi');
+    conciseTitle = conciseTitle.replace(regex, ' ');
+  }
+  
+  // Remove extra spaces and trim
+  conciseTitle = conciseTitle.replace(/\s+/g, ' ').trim();
+  
+  
+  // If the title is still long, try to extract the core product name
+  if (conciseTitle.length > 50) {
+    // Try to find the main product type
+    const productTypes = [
+      'Bandages', 'Bandage', 'Tape', 'Gauze', 'Wipes', 'Gloves', 'Thermometer',
+      'Pack', 'Kit', 'Set', 'Pads', 'Dressings', 'Dressing', 'Wraps', 'Wrap',
+      'Tablets', 'Capsules', 'Gel', 'Cream', 'Solution', 'Spray', 'Ointment',
+      'Shears', 'Scissors', 'Tweezers', 'Pins', 'Mask', 'Sanitizer', 'Blanket',
+      'Antiseptic', 'Hydrogen Peroxide', 'Alcohol', 'Cleanser', 'Wash',
+      // Add more specific product types
+      'Adhesive Bandages', 'Fabric Bandages', 'Foam Dressings', 'Gel Dressings',
+      'Medical Tape', 'Athletic Tape', 'Elastic Bandage', 'Compression Bandage'
+    ];
+    
+    for (const type of productTypes) {
+      const typeIndex = conciseTitle.toLowerCase().indexOf(type.toLowerCase());
+      if (typeIndex !== -1) {
+        // Take a substring around the product type
+        const start = Math.max(0, typeIndex - 20);
+        const end = Math.min(conciseTitle.length, typeIndex + type.length + 20);
+        conciseTitle = conciseTitle.substring(start, end).trim();
+        break;
+      }
+    }
+    
+    // If still too long, truncate and add ellipsis
+    if (conciseTitle.length > 60) {
+      conciseTitle = conciseTitle.substring(0, 57) + '...';
+    }
+  }
+  
+  // Add brand back if it was removed and the title is very short
+  if (brand && conciseTitle.length < 10) {
+    conciseTitle = brand + ' ' + conciseTitle;
+  }
+  
+  // Ensure the title fits in build categories (max 60 characters)
+  if (conciseTitle.length > 60) {
+    conciseTitle = conciseTitle.substring(0, 57) + '...';
+  }
+  
+  // Ensure we always return a valid name
+  const finalTitle = conciseTitle.trim();
+  if (!finalTitle || finalTitle.length === 0) {
+    return 'Unnamed Product';
+  }
+  
+  return finalTitle;
+}
+
 // Helper function to extract price
 function extractPrice(priceText) {
   if (!priceText) return null;
@@ -104,13 +220,17 @@ export default async function scrapeAmazonProduct(req, res) {
       '.a-size-large.product-title-word-break'
     ];
     
+    let fullTitle = '';
     for (const selector of titleSelectors) {
       const title = $(selector).first().text();
       if (title) {
-        productData.name = cleanText(title);
+        fullTitle = cleanText(title);
         break;
       }
     }
+    
+    // Create a concise name from the full title
+    productData.name = createConciseName(fullTitle, productData.brand);
 
     // Extract brand
     const brandSelectors = [
@@ -223,6 +343,56 @@ export default async function scrapeAmazonProduct(req, res) {
         break;
       }
     }
+    
+    // Map Amazon categories to our first aid categories
+    const categoryMapping = {
+      'Medical Supplies': 'First Aid & Wound Care',
+      'Wound Care Supplies': 'First Aid & Wound Care',
+      'Bandages': 'First Aid & Wound Care',
+      'First Aid': 'First Aid & Wound Care',
+      'Tape': 'Taping & Bandaging',
+      'Bandaging Supplies': 'Taping & Bandaging',
+      'Elastic Bandages': 'Taping & Bandaging',
+      'Ace Bandages': 'Taping & Bandaging',
+      'Athletic Tape': 'Taping & Bandaging',
+      'Medical Tape': 'Taping & Bandaging',
+      'Antiseptics': 'First Aid & Wound Care',
+      'Hydrogen Peroxide': 'First Aid & Wound Care',
+      'Alcohol': 'First Aid & Wound Care',
+      'Pain Relievers': 'Over-the-Counter Medication',
+      'Pain Relief': 'Over-the-Counter Medication',
+      'Medication': 'Over-the-Counter Medication',
+      'Allergy': 'Over-the-Counter Medication',
+      'Antihistamines': 'Over-the-Counter Medication',
+      'Thermometers': 'Health Monitoring',
+      'Health Monitoring': 'Health Monitoring',
+      'Medical Instruments': 'Instruments & Tools',
+      'First Aid Tools': 'Instruments & Tools',
+      'Scissors': 'Instruments & Tools',
+      'Tweezers': 'Instruments & Tools',
+      'Gloves': 'Instruments & Tools',
+      'Safety Equipment': 'Instruments & Tools',
+      'Emergency Supplies': 'Emergency Care',
+      'Emergency Blankets': 'Emergency Care',
+      'Trauma Supplies': 'Emergency Care',
+      'Cold Packs': 'Hot & Cold Therapy',
+      'Heat Packs': 'Hot & Cold Therapy',
+      'Hot & Cold': 'Hot & Cold Therapy',
+      'Documentation': 'Documentation & Communication',
+      'First Aid Books': 'Documentation & Communication',
+      'Instructional': 'Documentation & Communication'
+    };
+    
+    // Try to map the extracted category to our system
+    if (productData.category) {
+      const lowerCategory = productData.category.toLowerCase();
+      for (const [amazonCategory, firstAidCategory] of Object.entries(categoryMapping)) {
+        if (lowerCategory.includes(amazonCategory.toLowerCase())) {
+          productData.category = firstAidCategory;
+          break;
+        }
+      }
+    }
 
     // Extract dimensions and weight from product details
     const detailRows = $('#productDetails_detailBullets_sections1 tr, #productDetails_techSpec_section_1 tr');
@@ -241,6 +411,16 @@ export default async function scrapeAmazonProduct(req, res) {
 
     console.log('Extracted product data:', productData);
 
+    // Validate required fields
+    if (!productData.name || productData.name.trim() === '') {
+      console.error('Product name is missing or empty');
+      return res.status(500).json({ 
+        error: 'Failed to extract product name',
+        details: 'Product name is required but was not found or is empty',
+        suggestion: 'The product page might be protected or the URL format is not supported'
+      });
+    }
+
     // Return the extracted data
     return res.status(200).json({
       success: true,
@@ -249,12 +429,14 @@ export default async function scrapeAmazonProduct(req, res) {
 
   } catch (error) {
     console.error('Error scraping Amazon product:', error.message);
+    console.error('Error stack:', error.stack);
     
-    // Return error with some helpful information
+    // Return error with more detailed information
     return res.status(500).json({ 
       error: 'Failed to scrape product information',
       details: error.message,
-      suggestion: 'The product page might be protected or the URL format is not supported'
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      suggestion: 'The product page might be protected, the URL format may not be supported, or the product may be unavailable.'
     });
   }
 }

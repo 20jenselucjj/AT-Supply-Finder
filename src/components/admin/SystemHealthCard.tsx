@@ -1,91 +1,86 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+
+interface SystemHealth {
+  status: 'healthy' | 'warning' | 'critical';
+  uptime: string;
+  responseTime: number;
+  dbConnections: number;
+  errorRate: number;
+}
 
 interface SystemHealthCardProps {
-  systemHealth: {
-    status: 'healthy' | 'warning' | 'critical';
-    uptime: string;
-    responseTime: number;
-    dbConnections: number;
-    errorRate: number;
-  };
+  systemHealth: SystemHealth;
 }
 
 export const SystemHealthCard: React.FC<SystemHealthCardProps> = ({ systemHealth }) => {
-  const getStatusColor = (status: SystemHealthCardProps['systemHealth']['status']) => {
-    switch (status) {
-      case 'healthy': return 'text-green-600 bg-green-100';
-      case 'warning': return 'text-yellow-600 bg-yellow-100';
-      case 'critical': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+  const getStatusIcon = () => {
+    switch (systemHealth.status) {
+      case 'healthy':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case 'critical':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default:
+        return <ShieldCheck className="h-4 w-4 text-blue-500" />;
     }
   };
 
-  const getStatusIcon = (status: SystemHealthCardProps['systemHealth']['status']) => {
-    switch (status) {
-      case 'healthy': return CheckCircle;
-      case 'warning': return AlertTriangle;
-      case 'critical': return AlertTriangle;
-      default: return Clock;
-    }
+  const getStatusColor = () => {
+    switch (systemHealth.status) {
+      case 'healthy':
+        return 'text-green-500';
+      case 'warning':
+        return 'text-yellow-500';
+      case 'critical':
+        return 'text-red-500';
+      default:
+        return 'text-blue-500';
+      }
+  };
+
+  const getUptimePercentage = () => {
+    // Convert uptime string to percentage (e.g., "99.9%" -> 99.9)
+    const match = systemHealth.uptime.match(/(\d+\.?\d*)%/);
+    return match ? parseFloat(match[1]) : 0;
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg">
+          {getStatusIcon()}
           System Health
         </CardTitle>
-        <CardDescription>
-          Real-time system status and performance metrics
+        <CardDescription className="text-xs">
+          Current system status and metrics
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {React.createElement(getStatusIcon(systemHealth.status), {
-              className: cn("h-4 w-4", getStatusColor(systemHealth.status))
-            })}
-            <span className="font-medium">Overall Status</span>
-          </div>
-          <Badge className={getStatusColor(systemHealth.status)}>
-            {systemHealth.status.toUpperCase()}
-          </Badge>
-        </div>
-        
-        <Separator />
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Uptime</p>
-            <p className="text-lg font-semibold">{systemHealth.uptime}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Response Time</p>
-            <p className="text-lg font-semibold">{systemHealth.responseTime}ms</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">DB Connections</p>
-            <p className="text-lg font-semibold">{systemHealth.dbConnections}/100</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Error Rate</p>
-            <p className="text-lg font-semibold">{systemHealth.errorRate.toFixed(2)}%</p>
-          </div>
-        </div>
-
+      <CardContent className="space-y-3">
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span>Database Performance</span>
-            <span>Good</span>
+          <div className="flex justify-between text-sm">
+            <span>Uptime</span>
+            <span className={getStatusColor()}>{systemHealth.uptime}</span>
           </div>
-          <Progress value={85} className="h-2" />
+          <Progress value={getUptimePercentage()} className="h-2" />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <div className="text-muted-foreground">Response Time</div>
+            <div>{systemHealth.responseTime}ms</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">DB Connections</div>
+            <div>{systemHealth.dbConnections}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Error Rate</div>
+            <div>{systemHealth.errorRate}%</div>
+          </div>
         </div>
       </CardContent>
     </Card>

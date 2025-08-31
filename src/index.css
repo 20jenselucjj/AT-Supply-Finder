@@ -11,25 +11,25 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Light mode - Red Cross theme */
-    --background: 0 0% 100%; /* White */
-    --foreground: 0 0% 0%; /* Black */
-
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 0%; /* Black */
-
-    --popover: 0 0% 100%; /* White */
-    --popover-foreground: 0 0% 0%; /* Black */
+    --background: 0 0% 90%; /* Even softer off-white instead of 93% */
+    --foreground: 0 0% 25%; /* Even softer black */
+    
+    --card: 0 0% 92%; /* Slightly darker off-white for cards */
+    --card-foreground: 0 0% 25%; /* Softer black for card text */
+    
+    --popover: 0 0% 92%; /* Slightly darker off-white for popovers */
+    --popover-foreground: 0 0% 25%; /* Softer black for popover text */
 
     /* Red Cross palette */
     --primary: 0 84% 42%; /* Red (#dc2626) */
     --primary-foreground: 0 0% 100%; /* White */
     --primary-2: 0 75% 50%; /* Slightly lighter red */
 
-    --secondary: 0 0% 90%; /* Light grey */
-    --secondary-foreground: 0 0% 0%; /* Black */
+    --secondary: 0 0% 85%; /* Light grey */
+    --secondary-foreground: 0 0% 25%; /* Darker text for better contrast */
 
-    --muted: 0 0% 90%; /* Light grey */
-    --muted-foreground: 0 0% 45%; /* Medium grey */
+    --muted: 0 0% 85%; /* Light grey */
+    --muted-foreground: 0 0% 55%; /* Medium grey, more readable */
 
     --accent: 0 84% 42%; /* Red */
     --accent-foreground: 0 0% 100%; /* White */
@@ -37,20 +37,20 @@ All colors MUST be HSL.
     --destructive: 0 84% 42%; /* Red */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 0 0% 85%; /* Light grey */
-    --input: 0 0% 85%; /* Light grey */
+    --border: 0 0% 80%; /* Light grey */
+    --input: 0 0% 80%; /* Light grey */
     --ring: 0 84% 42%; /* Red */
 
     --radius: 0.5rem;
 
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
+    --sidebar-background: 0 0% 88%; /* More comfortable background */
+    --sidebar-foreground: 0 0% 25%; /* Darker text for better contrast */
     --sidebar-primary: 0 84% 42%; /* Red */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
+    --sidebar-accent: 0 0% 82%; /* Softer accent */
+    --sidebar-accent-foreground: 0 0% 25%; /* Dark text */
+    --sidebar-border: 0 0% 80%; /* Softer border */
     --sidebar-ring: 0 84% 40%;
 
     /* Professional design tokens */
@@ -78,25 +78,25 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark mode - Red Cross theme */
-    --background: 0 0% 0%; /* Black */
-    --foreground: 0 0% 100%; /* White */
+    /* Adjusted dark mode - more comfortable theme */
+    --background: 0 0% 15%; /* Dark grey instead of pure black */
+    --foreground: 0 0% 90%; /* Off-white instead of pure white */
 
-    --card: 0 0% 5%; /* Very dark grey */
-    --card-foreground: 0 0% 100%; /* White */
+    --card: 0 0% 18%; /* Slightly lighter for better contrast */
+    --card-foreground: 0 0% 90%; /* Off-white for card text */
 
-    --popover: 0 0% 5%; /* Very dark grey */
-    --popover-foreground: 0 0% 100%; /* White */
+    --popover: 0 0% 18%; /* Consistent with cards */
+    --popover-foreground: 0 0% 90%; /* Off-white for popover text */
 
-    /* Red Cross palette */
+    /* Red Cross palette - unchanged */
     --primary: 0 84% 42%; /* Red (#dc2626) */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 0 0% 15%; /* Dark grey */
-    --secondary-foreground: 0 0% 100%; /* White */
+    --secondary: 0 0% 25%; /* Lighter for better visual hierarchy */
+    --secondary-foreground: 0 0% 90%; /* Off-white for better readability */
 
-    --muted: 0 0% 15%; /* Dark grey */
-    --muted-foreground: 0 0% 65%; /* Light grey */
+    --muted: 0 0% 25%; /* Consistent with secondary */
+    --muted-foreground: 0 0% 60%; /* Slightly lighter for better readability */
 
     --accent: 0 84% 42%; /* Red */
     --accent-foreground: 0 0% 100%; /* White */
@@ -104,17 +104,17 @@ All colors MUST be HSL.
     --destructive: 0 84% 42%; /* Red */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 0 0% 15%; /* Dark grey */
-    --input: 0 0% 15%; /* Dark grey */
+    --border: 0 0% 25%; /* Better visibility */
+    --input: 0 0% 25%; /* Consistent with borders */
     --ring: 0 84% 42%; /* Red */
 
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 90%;
+    --sidebar-background: 0 0% 20%; /* More consistent with other elements */
+    --sidebar-foreground: 0 0% 85%; /* Good readability */
     --sidebar-primary: 0 84% 42%; /* Red */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
+    --sidebar-accent: 0 0% 25%; /* Better visibility */
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 25%;
     --sidebar-ring: 0 84% 45%;
   }
 }
@@ -133,14 +133,6 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
     /* Provide padding for sticky header anchor jumps */
     scroll-padding-top: 4.5rem;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
-    }
   }
 }
 

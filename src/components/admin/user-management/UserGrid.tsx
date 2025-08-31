@@ -155,8 +155,8 @@ export const UserGrid: React.FC<UserGridProps> = ({
                   <div className="flex items-center gap-1">
                     {user.is_active ? (
                       <>
-                        <Activity className="h-4 w-4 text-green-500" />
-                        <Badge variant="default" className="bg-green-500 hover:bg-green-500/90">
+                        <Activity className="h-4 w-4 text-primary" />
+                        <Badge variant="default" className="bg-primary hover:bg-primary/90">
                           Active
                         </Badge>
                       </>

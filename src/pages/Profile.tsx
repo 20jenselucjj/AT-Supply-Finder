@@ -144,7 +144,7 @@ const Profile = () => {
                     </div>
                   </div>
                   
-                  <div className="pt-4 border-t">
+                  <div className="pt-4 border-t border-border">
                     <Button variant="destructive" className="w-full" onClick={handleSignOut}>
                       Sign Out
                     </Button>
@@ -227,7 +227,7 @@ const Profile = () => {
                     </div>
                     
                     {savedKits.length === 0 ? (
-                      <div className="rounded-md border p-6 text-center">
+                      <div className="rounded-md border border-border p-6 text-center">
                         <Package className="h-12 w-12 mx-auto text-muted-foreground" />
                         <p className="text-muted-foreground mt-2">You haven't saved any kits yet.</p>
                         <p className="text-sm mt-2">Create a kit and save it to access it from any device.</p>
@@ -240,7 +240,7 @@ const Profile = () => {
                     ) : (
                       <div className="space-y-3">
                         {savedKits.map((savedKit) => (
-                          <div key={savedKit.id} className="rounded-md border p-4 hover:bg-muted/50 transition-colors">
+                          <div key={savedKit.id} className="rounded-md border border-border p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
@@ -282,7 +282,7 @@ const Profile = () => {
                   </div>
                   
                   {/* Favorites */}
-                  <div className="space-y-4 pt-4 border-t">
+                  <div className="space-y-4 pt-4 border-t border-border">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-medium flex items-center gap-2">
                         <Heart className="h-5 w-5" />
@@ -295,7 +295,7 @@ const Profile = () => {
                     </div>
                     
                     {favorites.length === 0 ? (
-                      <div className="rounded-md border p-6 text-center">
+                      <div className="rounded-md border border-border p-6 text-center">
                         <Heart className="h-12 w-12 mx-auto text-muted-foreground" />
                         <p className="text-muted-foreground mt-2">You haven't favorited any products yet.</p>
                         <p className="text-sm mt-2">Browse the catalog and favorite products to easily find them later.</p>
@@ -304,7 +304,7 @@ const Profile = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="rounded-md border p-4">
+                      <div className="rounded-md border border-border p-4">
                         <p className="text-muted-foreground">You have {favorites.length} favorited products.</p>
                         <p className="text-sm mt-2">Visit the catalog to view and manage your favorites.</p>
                         <Button asChild className="mt-4" variant="outline">
@@ -390,7 +390,7 @@ const Profile = () => {
                       </Button>
                     </div>
                     
-                    <div className="mt-6 pt-6 border-t">
+                    <div className="mt-6 pt-6 border-t border-border">
                       <Button asChild variant="default" className="w-full">
                         <Link to="/admin" className="flex items-center justify-center gap-2">
                           <Settings className="h-4 w-4" />

@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
 import KitItem from "@/components/kit/KitItem";
 import KitSummary from "@/components/kit/KitSummary";
-import ATSupplyCategories from "@/components/kit/ATSupplyCategories";
+import FirstAidCategories from "@/components/kit/FirstAidCategories";
 import CategoryProductSelector from "@/components/kit/CategoryProductSelector";
 import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { Product } from "@/lib/types";
@@ -46,18 +46,72 @@ const Build = () => {
           // Clear existing kit and add AI-generated items
           clearKit();
           parsedKit.forEach((item: any) => {
+            // Map product categories to first aid categories when possible
+            const categoryMapping: Record<string, string> = {
+              // Wound Care & Dressings
+              'Bandages': 'First Aid & Wound Care',
+              'Gauze': 'First Aid & Wound Care',
+              'Dressings': 'First Aid & Wound Care',
+              'Adhesive Bandages': 'First Aid & Wound Care',
+              
+              // Tapes & Wraps
+              'Medical Tape': 'Taping & Bandaging',
+              'Elastic Bandages': 'Taping & Bandaging',
+              'Athletic Tape': 'Taping & Bandaging',
+              'Cohesive Wrap': 'Taping & Bandaging',
+              
+              // Antiseptics & Ointments
+              'Antibiotic Ointment': 'First Aid & Wound Care',
+              'Antiseptic': 'First Aid & Wound Care',
+              'Alcohol': 'First Aid & Wound Care',
+              'Hydrogen Peroxide': 'First Aid & Wound Care',
+              
+              // Pain & Symptom Relief
+              'Pain Relievers': 'Over-the-Counter Medication',
+              'Pain Relief': 'Over-the-Counter Medication',
+              'Antihistamines': 'Over-the-Counter Medication',
+              'Medication': 'Over-the-Counter Medication',
+              
+              // Instruments & Tools
+              'Scissors': 'Instruments & Tools',
+              'Tweezers': 'Instruments & Tools',
+              'Thermometers': 'Instruments & Tools',
+              'Medical Instruments': 'Instruments & Tools',
+              
+              // Trauma & Emergency
+              'Emergency Supplies': 'Emergency Care',
+              'Cold Packs': 'Hot & Cold Therapy',
+              'Emergency Blankets': 'Emergency Care',
+              
+              // PPE
+              'Gloves': 'Personal Protection Equipment (PPE)',
+              'Masks': 'Personal Protection Equipment (PPE)',
+              'Sanitizer': 'Personal Protection Equipment (PPE)',
+              
+              // Information & Essentials
+              'First Aid Books': 'Documentation & Communication',
+              'Documentation': 'Documentation & Communication'
+            };
+            
+            // Try to map the category or use the existing one
+            let mappedCategory = item.category || 'Other';
+            for (const [source, target] of Object.entries(categoryMapping)) {
+              if (mappedCategory.includes(source) || item.name.includes(source)) {
+                mappedCategory = target;
+                break;
+              }
+            }
+
             addToKit({
               id: item.id || `ai-${Date.now()}-${Math.random()}`,
               name: item.name,
               brand: item.brand || 'Unknown',
               price: item.price || 0,
               imageUrl: item.image || '/placeholder-product.jpg',
-              category: item.category || 'Other',
+              category: mappedCategory, // Use mapped category
               description: item.description || '',
               features: item.features || [],
               materials: item.materials || [],
-              // Remove sizes property since it's not defined in Product type
-              // Remove colors property since it's not defined in Product type
               offers: item.offers || [{
                 name: 'AI Generated',
                 url: '#',
@@ -79,8 +133,10 @@ const Build = () => {
   const grouped = useMemo(() => {
     const map = new Map<string, typeof kit>();
     kit.forEach(item => {
-      if (!map.has(item.category)) map.set(item.category, []);
-      map.get(item.category)!.push(item);
+      // Ensure we have a category, defaulting to "Other" if none exists
+      const category = item.category || 'Other';
+      if (!map.has(category)) map.set(category, []);
+      map.get(category)!.push(item);
     });
     return Array.from(map.entries()).sort(([a],[b]) => a.localeCompare(b));
   }, [kit]);
@@ -95,8 +151,8 @@ const Build = () => {
   return (
     <main className="container mx-auto py-6 xs:py-8 sm:py-10 px-3 xs:px-4 sm:px-6">
       <Helmet>
-        <title>AT Supply Finder</title>
-        <meta name="description" content="Select tapes, bandages and more to create your athletic training kit and compare prices across vendors." />
+        <title>Kit Builder | AT Supply Finder</title>
+        <meta name="description" content="Build your professional medical kit with AT Supply Finder. Select supplies and compare prices across trusted vendors." />
         <link rel="canonical" href={canonical} />
       </Helmet>
 
@@ -108,7 +164,7 @@ const Build = () => {
       <div className={kit.length > 0 ? "grid gap-4 xs:gap-6 lg:grid-cols-3" : ""}>
         <div className={kit.length > 0 ? "lg:col-span-2" : ""}>
           {viewMode === 'categories' ? (
-            <ATSupplyCategories onCategorySelect={handleCategorySelect} />
+            <FirstAidCategories onCategorySelect={handleCategorySelect} />
           ) : viewMode === 'category-products' ? (
             <CategoryProductSelector 
               categoryId={selectedCategoryId} 
@@ -130,13 +186,14 @@ const Build = () => {
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">
-                Start building your athletic training kit by selecting categories above.
+                Start building your first aid kit by selecting categories above.
               </p>
               <Button asChild variant="outline">
                 <Link to="/catalog">Or browse all products</Link>
               </Button>
             </div>
           )}
+
         </div>
         {kit.length > 0 && (
           <div className="lg:col-span-1">

@@ -24,7 +24,7 @@ const KitItem = ({ item }: KitItemProps) => {
           <Star
             key={star}
             className={`w-3 h-3 ${
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= rating ? 'fill-primary text-primary' : 'text-gray-300'
             }`}
           />
         ))}

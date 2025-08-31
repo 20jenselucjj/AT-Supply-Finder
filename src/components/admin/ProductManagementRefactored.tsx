@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { databases, account } from '@/lib/appwrite';
@@ -35,7 +36,7 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<'created_at' | 'name' | 'price'>('created_at');
+  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'price'>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
   
@@ -136,12 +137,13 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
         queries.push(JSON.stringify({ method: 'search', attribute: 'weight', values: [`%${advancedFilters.weight}%`] }));
       }
 
-      // Apply sorting
-      if (sortBy) {
+      // Apply sorting - map frontend sortBy values to Appwrite attributes
+      const appwriteSortAttribute = sortBy === '$createdAt' ? '$createdAt' : sortBy;
+      if (appwriteSortAttribute) {
         if (sortOrder === 'asc') {
-          queries.push(JSON.stringify({ method: 'orderAsc', attribute: sortBy }));
+          queries.push(JSON.stringify({ method: 'orderAsc', attribute: appwriteSortAttribute }));
         } else {
-          queries.push(JSON.stringify({ method: 'orderDesc', attribute: sortBy }));
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: appwriteSortAttribute }));
         }
       }
 
@@ -1038,14 +1040,6 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Product Management</h2>
-              <p className="text-muted-foreground">Manage your product catalog</p>
-            </div>
-          </div>
-        </CardHeader>
         <CardContent>
           <SearchAndActions
             searchTerm={searchTerm}
@@ -1071,6 +1065,11 @@ export const ProductManagementRefactored: React.FC<ProductManagementProps> = ({ 
             isImportProductsOpen={isImportProductsOpen}
             setIsImportProductsOpen={setIsImportProductsOpen}
             handleCSVImport={handleCSVImport}
+            productForm={productForm}
+            setProductForm={setProductForm}
+            handleAffiliateLinkChange={handleAffiliateLinkChange}
+            isLoadingProductInfo={isLoadingProductInfo}
+            handleAddProduct={handleAddProduct}
           />
           
           {/* Advanced Filters Panel */}

@@ -9,8 +9,8 @@ interface GeminiConfig {
 interface KitGenerationRequest {
   userQuery: string;
   availableProducts: Product[];
-  sportType?: string;
-  skillLevel?: 'beginner' | 'intermediate' | 'advanced';
+  kitType?: 'basic' | 'travel' | 'workplace' | 'outdoor' | 'pediatric';
+  scenario?: string;
   budget?: number;
 }
 
@@ -47,12 +47,38 @@ class GeminiService {
     try {
       const model = this.client.getGenerativeModel({ model: this.model });
       
+      
       const result = await model.generateContent(prompt);
       const generatedText = result.response.text();
       return this.parseKitResponse(generatedText, relevantProducts);
     } catch (error) {
       console.error('Error generating kit with Gemini:', error);
       throw new Error('Failed to generate training kit. Please try again.');
+    }
+  }
+
+  async generateFirstAidKit(request: KitGenerationRequest): Promise<GeneratedKit> {
+    const { userQuery, availableProducts, kitType, scenario, budget } = request;
+
+    // Use RAG to filter relevant products first
+    const relevantProducts = await this.searchProducts(userQuery, availableProducts);
+    
+    if (relevantProducts.length === 0) {
+      throw new Error('No relevant first aid products found for your request. Please try a different query.');
+    }
+
+    // Create a structured prompt for kit generation
+    const prompt = this.buildKitGenerationPrompt(userQuery, relevantProducts, kitType, scenario, budget);
+
+    try {
+      const model = this.client.getGenerativeModel({ model: this.model });
+      
+      const result = await model.generateContent(prompt);
+      const generatedText = result.response.text();
+      return this.parseKitResponse(generatedText, relevantProducts);
+    } catch (error) {
+      console.error('Error generating first aid kit with Gemini:', error);
+      throw new Error('Failed to generate first aid kit. Please try again.');
     }
   }
 
@@ -114,6 +140,66 @@ Guidelines:
 - Only select products from the provided catalog`;
   }
 
+  private buildKitGenerationPrompt(
+    userQuery: string,
+    products: Product[],
+    kitType?: string,
+    scenario?: string,
+    budget?: number
+  ): string {
+    const productCatalog = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      price: product.vendor_offers?.[0]?.price || 0,
+      description: product.description,
+      specifications: product.specifications
+    }));
+
+    return `You are an expert first aid specialist and medical supply specialist. Your task is to create a personalized first aid kit based on the user's request.
+
+User Request: "${userQuery}"
+Kit Type: ${kitType || 'Not specified'}
+First Aid Scenario: ${scenario || 'Not specified'}
+Budget: ${budget ? `$${budget}` : 'Not specified'}
+
+Available Products:
+${JSON.stringify(productCatalog, null, 2)}
+
+Please create a comprehensive first aid kit that includes:
+1. A descriptive name for the kit (keep it concise, under 50 characters)
+2. A brief description explaining the kit's purpose for first aid situations (under 100 characters)
+3. Selected products from the catalog that best match the user's needs
+4. Clear reasoning for each product selection in a first aid context (be concise)
+5. Total estimated price
+
+Respond in the following JSON format:
+{
+  "name": "Kit Name",
+  "description": "Brief description of the first aid kit",
+  "selectedProducts": [
+    {
+      "productId": "product_id_from_catalog",
+      "quantity": 1,
+      "reason": "Why this product was selected for first aid purposes"
+    }
+  ],
+  "totalPrice": 0,
+  "reasoning": "Brief explanation of the kit composition (under 200 characters)"
+}
+
+Guidelines:
+- Select 5-12 products that work well together for first aid situations
+- Consider the kit type and scenario (e.g., basic home, travel, workplace, outdoor, pediatric)
+- Stay within budget if specified
+- Prioritize essential first aid supplies and quality medical equipment
+- Ensure products complement each other for comprehensive first aid coverage
+- Only select products from the provided catalog that are appropriate for first aid
+- Keep all text concise and focused
+- Focus on medical supplies, wound care, medications, instruments, and emergency equipment`;
+  }
+
   private parseKitResponse(response: string, availableProducts: Product[]): GeneratedKit {
     try {
       // Extract JSON from the response (in case there's additional text)
@@ -140,7 +226,8 @@ Guidelines:
           product_image_url: product.image_url,
           quantity: item.quantity || 1,
           price: product.vendor_offers?.[0]?.price || 0,
-          notes: item.reason || ''
+          notes: item.reason || '',
+          reasoning: item.reason || ''
         };
       });
 
@@ -204,12 +291,12 @@ Guidelines:
         });
       });
 
-      // Sport-specific keyword boosting
-      const sportKeywords = this.extractSportKeywords(query);
-      sportKeywords.forEach(keyword => {
+      // First aid keyword boosting
+      const firstAidKeywords = this.extractFirstAidKeywords(query);
+      firstAidKeywords.forEach(keyword => {
         Object.values(searchableFields).forEach(text => {
           if (text.toLowerCase().includes(keyword.toLowerCase())) {
-            score += 1.5;
+            score += 2.0; // Increased boost for first aid keywords
           }
         });
       });
@@ -256,6 +343,32 @@ Guidelines:
     return [...new Set(keywords)];
   }
 
+  private extractFirstAidKeywords(query: string): string[] {
+    const firstAidMappings: Record<string, string[]> = {
+      'basic': ['basic', 'home', 'simple', 'essential', 'fundamental'],
+      'travel': ['travel', 'trip', 'journey', 'portable', 'compact'],
+      'workplace': ['work', 'office', 'job', 'employment', 'professional'],
+      'outdoor': ['outdoor', 'camping', 'hiking', 'adventure', 'wilderness'],
+      'pediatric': ['child', 'children', 'baby', 'pediatric', 'kids'],
+      'emergency': ['emergency', 'urgent', 'critical', 'severe', 'serious'],
+      'wound': ['wound', 'cut', 'scrape', 'laceration', 'abrasion'],
+      'burn': ['burn', 'scald', 'heat', 'fire'],
+      'allergy': ['allergy', 'allergic', 'antihistamine', 'reaction'],
+      'pain': ['pain', 'ache', 'hurt', 'discomfort']
+    };
+
+    const keywords: string[] = [];
+    const queryLower = query.toLowerCase();
+    
+    Object.entries(firstAidMappings).forEach(([type, terms]) => {
+      if (terms.some(term => queryLower.includes(term))) {
+        keywords.push(...terms);
+      }
+    });
+
+    return [...new Set(keywords)];
+  }
+
   private getCategoryRelevance(query: string, category: string): number {
     const queryLower = query.toLowerCase();
     const categoryLower = category.toLowerCase();
@@ -265,14 +378,14 @@ Guidelines:
       return 2.0;
     }
 
-    // Category synonym matching
+    // First aid category synonym matching
     const categorySynonyms: Record<string, string[]> = {
-      'footwear': ['shoes', 'boots', 'cleats', 'sneakers'],
-      'protective_gear': ['protection', 'safety', 'pads', 'guards', 'helmet'],
-      'training_equipment': ['training', 'exercise', 'workout', 'fitness'],
-      'balls_equipment': ['ball', 'balls', 'equipment'],
-      'apparel': ['clothing', 'wear', 'shirt', 'shorts', 'uniform'],
-      'accessories': ['accessory', 'gear', 'equipment', 'tools']
+      'first aid': ['first aid', 'medical', 'emergency', 'treatment'],
+      'wound care': ['wound', 'bandage', 'gauze', 'dressing'],
+      'medication': ['medicine', 'drug', 'pill', 'tablet', 'ointment'],
+      'instruments': ['tool', 'scissors', 'tweezers', 'thermometer'],
+      'ppe': ['protection', 'gloves', 'mask', 'safety'],
+      'emergency': ['emergency', 'urgent', 'critical', 'severe']
     };
 
     const synonyms = categorySynonyms[categoryLower] || [];

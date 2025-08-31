@@ -65,8 +65,8 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
           <CardContent className="p-6">
             <div className="space-y-4">
               {/* Product Image Placeholder */}
-              <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-                <Package className="w-16 h-16 text-gray-400" />
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Package className="w-16 h-16 text-muted-foreground" />
               </div>
               
               <div className="space-y-2">

@@ -44,10 +44,10 @@ const Hero = () => {
             Trusted by Medical Professionals
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item" style={{ fontFamily: 'var(--font-heading)' }}>
-            Build Your <span className="text-primary">First Aid Kit</span>
+            Build Your <span className="text-primary">Professional Kit</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
-            Find essential medical supplies for any emergency. Compare prices across <strong>trusted vendors</strong> instantly and build your professional first aid kit with premium quality supplies at competitive prices.
+            Find essential medical supplies for any emergency. Compare prices across <strong className="font-semibold">trusted vendors</strong> instantly and build your professional kit with premium quality supplies at competitive prices.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-medium stagger-item">

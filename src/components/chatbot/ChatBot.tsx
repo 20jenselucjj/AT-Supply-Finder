@@ -60,10 +60,10 @@ interface ChatState {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Basketball Kit', query: 'I need a complete basketball training kit for intermediate level' },
-  { label: 'Home Gym', query: 'Help me build a home gym setup for strength training' },
-  { label: 'Running Gear', query: 'I want gear for marathon training and running' },
-  { label: 'Recovery Kit', query: 'Show me recovery and injury prevention equipment' }
+  { label: 'Basic First Aid Kit', query: 'Create a basic first aid kit for home use' },
+  { label: 'Travel First Aid Kit', query: 'Create a compact travel first aid kit' },
+  { label: 'Workplace Kit', query: 'Create a first aid kit for my workplace' },
+  { label: 'Outdoor Adventure Kit', query: 'Create a first aid kit for hiking and camping' }
 ];
 
 interface ChatBotProps {
@@ -115,13 +115,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       {
         id: '1',
         type: 'bot',
-        content: 'Hi! I\'m your athletic training kit assistant. Tell me about your sport, training goals, or what kind of equipment you need, and I\'ll create a personalized kit for you!',
+        content: 'Hi! I\'m your first aid kit assistant. Tell me what kind of first aid kit you need and I\'ll create a personalized kit for you!',
         timestamp: new Date(),
         status: 'delivered'
       }
     ];
   });
-  
+
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -161,7 +161,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       {
         id: '1',
         type: 'bot' as const,
-        content: 'Hi! I\'m your athletic training kit assistant. Tell me about your sport, training goals, or what kind of equipment you need, and I\'ll create a personalized kit for you!',
+        content: 'Hi! I\'m your first aid kit assistant. Tell me what kind of first aid kit you need and I\'ll create a personalized kit for you!',
         timestamp: new Date(),
         status: 'delivered' as const
       }
@@ -170,6 +170,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     updateChatState({ unreadCount: 0, hasNotification: false });
     try {
       localStorage.removeItem('chatbot-messages');
+      localStorage.removeItem('chatbot-state');
     } catch (error) {
       console.warn('Failed to clear chat history:', error);
     }
@@ -267,16 +268,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       const relevantProducts = await geminiService.searchProducts(content, products);
       
       // Generate kit using Gemini 2.5 Flash
-      const generatedKit = await geminiService.generateTrainingKit({
+      const generatedKit = await geminiService.generateFirstAidKit({
         userQuery: content,
         availableProducts: relevantProducts.slice(0, 50) // Limit for API efficiency
       });
 
       updateChatState({ connectionStatus: 'online' });
 
+      // Create a more concise response without markdown formatting
       const botMessage = addMessage({
         type: 'bot',
-        content: `I've created a personalized training kit for you: **${generatedKit.name}**\n\n${generatedKit.description}\n\n**Kit includes ${generatedKit.items.length} items** with a total value of $${generatedKit.totalPrice.toFixed(2)}\n\n${generatedKit.reasoning}`,
+        content: `I've created a first aid kit for you: ${generatedKit.name}\n\nIt includes ${generatedKit.items.length} items for $${generatedKit.totalPrice.toFixed(2)}\n\n${generatedKit.reasoning.substring(0, 200)}${generatedKit.reasoning.length > 200 ? '...' : ''}`,
         status: 'delivered',
         kit: generatedKit
       });
@@ -284,7 +286,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       // Show notification if chat is closed
       if (!chatState.isOpen) {
         updateChatState({ hasNotification: true, unreadCount: chatState.unreadCount + 1 });
-        toast.success('Your training kit is ready!');
+        toast.success('Your first aid kit is ready!');
       }
       
     } catch (error) {
@@ -293,11 +295,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       
       addMessage({
         type: 'bot',
-        content: 'I apologize, but I encountered an error while creating your kit. Please try rephrasing your request or try again later.',
+        content: 'I apologize, but I encountered an error while creating your first aid kit. Please try rephrasing your request or try again later.',
         status: 'error'
       });
       
-      toast.error('Failed to generate training kit');
+      toast.error('Failed to generate first aid kit');
     } finally {
       setIsLoading(false);
     }
@@ -323,7 +325,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     // Navigate to build page with kit data
     navigate(buildUrl);
     updateChatState({ isOpen: false });
-    toast.success(`Generated kit with ${kit.items.length} items! Opening Build page...`);
+    toast.success(`Generated first aid kit with ${kit.items.length} items! Opening Build page...`);
   };
 
   const handleQuickAction = (query: string) => {
@@ -426,10 +428,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                       <Bot className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
-                  {/* Removing the status indicator with WiFi symbol next to the avatar */}
                 </div>
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="truncate text-sm font-semibold">Kit Assistant</span>
+                  <span className="truncate text-sm font-semibold">Medical Assistant</span>
                   <span className="text-xs text-muted-foreground capitalize">
                     {chatState.connectionStatus === 'online' && 'Online'}
                     {chatState.connectionStatus === 'offline' && 'Offline'}
@@ -547,7 +548,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                                 <div className="bg-background/50 rounded-lg p-3 border border-border/50">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Package2 className="h-4 w-4 text-primary" />
-                                    <span className="font-medium text-sm">{message.kit.name}</span>
+                                    <span className="font-medium text-sm">Medical Kit: {message.kit.name}</span>
                                   </div>
                                   
                                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
@@ -602,10 +603,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                               
                               <div className="flex items-center gap-1">
                                 {message.status === 'delivered' && message.type === 'user' && (
-                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  <CheckCircle2 className="h-3 w-3 text-primary" />
                                 )}
                                 {message.status === 'error' && (
-                                  <AlertCircle className="h-3 w-3 text-red-500" />
+                                  <AlertCircle className="h-3 w-3 text-destructive" />
                                 )}
                               </div>
                             </div>
@@ -645,7 +646,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                               <div className="chat-typing-dot"></div>
                             </div>
                             <span className="text-sm text-muted-foreground">
-                              {isLoading ? 'Creating your kit...' : 'Typing...'}
+                              {isLoading ? 'Creating your first aid kit...' : 'Typing...'}
                             </span>
                           </div>
                         </div>
@@ -665,7 +666,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Describe your training needs..."
+                      placeholder="Describe your first aid needs..."
                       disabled={isLoading}
                       className="
                         text-sm resize-none border-border/50 
@@ -675,6 +676,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                       maxLength={500}
                       aria-label="Chat input"
                     />
+
                   </div>
                   
                   <Button
@@ -707,10 +709,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                       )}
                     </div>
                   </div>
-                  <span className={inputValue.length > 450 ? 'text-orange-500' : ''}>
+                  <span className={inputValue.length > 450 ? 'text-yellow-500' : ''}>
                     {inputValue.length}/500
                   </span>
                 </div>
+
               </div>
             </div>
           )}

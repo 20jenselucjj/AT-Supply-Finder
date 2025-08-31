@@ -18,18 +18,18 @@ export const ProductCategoriesChart: React.FC<ProductCategoriesChartProps> = ({ 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PieChart className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <PieChart className="h-4 w-4" />
           Product Categories
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Distribution of products by category
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsPieChart>
               <Pie
@@ -37,7 +37,7 @@ export const ProductCategoriesChart: React.FC<ProductCategoriesChartProps> = ({ 
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                outerRadius={80}
+                outerRadius={60}
                 fill="#8884d8"
                 dataKey="value"
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}

@@ -42,7 +42,7 @@ export const ProductCard = ({
             
             {product.features && product.features.length > 0 && (
               <div className="text-xs text-muted-foreground">
-                {product.features.slice(0, 3).join(", ")}
+                {product.features.slice(0, 3).join(" • ")}
                 {product.features.length > 3 && "..."}
               </div>
             )}

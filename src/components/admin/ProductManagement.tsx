@@ -18,8 +18,8 @@ import { logger } from '@/lib/logger';
 import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash, Upload, Download, Filter, Search, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { fuzzySearch, generateSuggestions } from '@/lib/fuzzy-search';
-import { ProductData, VendorOffer, ProductManagementProps, AdvancedFilters } from './product-management/types';
-import { ProductForm } from './product-management/ProductForm';
+import { ProductData, VendorOffer, ProductManagementProps, AdvancedFilters } from './types';
+import { ProductForm } from './ProductForm';
 
 // Helper function to map Appwrite product data to frontend format
 const mapAppwriteProductToFrontend = (product: any): ProductData => ({
@@ -32,7 +32,14 @@ const mapAppwriteProductToFrontend = (product: any): ProductData => ({
   dimensions: product.dimensions,
   weight: product.weight,
   material: product.material,
-  features: product.features ? product.features.split(',') : [],
+  // Fix the features parsing to handle both string and array formats properly
+  features: product.features ? 
+    (Array.isArray(product.features) ? 
+      product.features : 
+      (typeof product.features === 'string' ? 
+        product.features.split(',').map(f => f.trim()).filter(f => f.length > 0) : 
+        [])
+    ) : [],
   imageUrl: product.imageUrl,
   asin: product.asin,
   affiliateLink: product.affiliateLink,
@@ -51,7 +58,12 @@ const mapFrontendProductToAppwrite = (product: any) => ({
   dimensions: product.dimensions || null,
   weight: product.weight || null,
   material: product.material || null,
-  features: product.features ? product.features.split('\n').filter((f: string) => f.trim()) : null,
+  // Ensure features is a string with max 1000 characters
+  features: product.features ? 
+    (Array.isArray(product.features) ? 
+      product.features.join(', ').substring(0, 1000) : 
+      product.features.toString().substring(0, 1000)
+    ) : null,
   imageUrl: product.imageUrl || null,
   asin: product.asin || null,
   affiliateLink: product.affiliateLink || null
@@ -563,7 +575,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             const numValue = parseFloat(value);
             product[header] = isNaN(numValue) ? null : numValue;
           } else if (header === 'features') {
-            product[header] = value ? value.split(';').map(f => f.trim()) : [];
+            // Ensure features is a string with max 1000 characters
+            product[header] = value ? value.substring(0, 1000) : null;
           } else {
             product[header] = value || null;
           }
@@ -696,6 +709,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     setIsLoadingProductInfo(true);
     
     try {
+      console.log('Processing affiliate link:', url);
       // Call our scraping API to get product information
       const response = await fetch('http://localhost:3001/api/scrape-amazon-product', {
         method: 'POST',
@@ -705,7 +719,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         body: JSON.stringify({ url }),
       });
       
+      console.log('Scraping API response status:', response.status);
+      
       const result = await response.json();
+      
+      console.log('Scraping API response:', result);
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to scrape product information');
@@ -713,6 +731,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       
       if (result.success && result.data) {
         const productData = result.data;
+        
+        console.log('Scraped product data:', productData);
         
         // Auto-populate the form with scraped data
         setProductForm(prev => ({
@@ -788,7 +808,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       await logger.auditLog({
         action: 'CREATE_PRODUCT',
         entity_type: 'PRODUCT',
-        entity_id: data?.[0]?.id,
+        entity_id: data?.[0]?.$id,
         details: {
           product_name: productForm.name,
           category: productForm.category,
@@ -1136,8 +1156,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="created_at-desc">Newest First</SelectItem>
-                <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                <SelectItem value="$createdAt-desc">Newest First</SelectItem>
+                <SelectItem value="$createdAt-asc">Oldest First</SelectItem>
                 <SelectItem value="name-asc">Name A-Z</SelectItem>
                 <SelectItem value="name-desc">Name Z-A</SelectItem>
                 <SelectItem value="price-asc">Price Low-High</SelectItem>
@@ -1476,7 +1496,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                           <TableCell>
                             {product.rating && (
                               <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="h-4 w-4 fill-primary text-primary" />
                                 {product.rating}
                               </div>
                             )}
@@ -1623,7 +1643,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                           <div className="flex items-center gap-1">
                             {product.rating ? (
                               <>
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <Star className="h-3 w-3 fill-primary text-primary" />
                                 <span className="text-xs font-medium">{product.rating}</span>
                               </>
                             ) : (

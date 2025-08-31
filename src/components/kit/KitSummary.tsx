@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMemo, useState } from "react";
 import { CheckCircle, AlertCircle, Package, Star, ExternalLink, Plus, Minus, Save } from "lucide-react";
-import { AT_SUPPLY_CATEGORIES } from "@/components/kit/ATSupplyCategories";
+import { FIRST_AID_CATEGORIES } from "@/components/kit/FirstAidCategories";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -32,6 +32,7 @@ const KitSummary = () => {
   const [openConfirm, setOpenConfirm] = useState(false);
   const [showDetailedItems, setShowDetailedItems] = useState(true);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
   const [kitName, setKitName] = useState('');
   const [kitDescription, setKitDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -63,6 +64,14 @@ const KitSummary = () => {
     }
   };
 
+  const handleSaveClick = () => {
+    if (user) {
+      setSaveDialogOpen(true);
+    } else {
+      setLoginPromptOpen(true);
+    }
+  };
+
   const renderStars = (rating?: number) => {
     if (!rating) return null;
     return (
@@ -71,7 +80,7 @@ const KitSummary = () => {
           <Star
             key={star}
             className={`w-3 h-3 ${
-              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+              star <= rating ? 'fill-primary text-primary' : 'text-gray-300'
             }`}
           />
         ))}
@@ -94,14 +103,33 @@ const KitSummary = () => {
       return total + (bestPrice * item.quantity);
     }, 0);
     
-    // Analyze category coverage
-    const categoryBreakdown = AT_SUPPLY_CATEGORIES.map(category => {
-      const categoryItems = kit.filter(item => 
-        item.category === category.name || 
-        category.subcategories.some(sub => 
-          item.name.toLowerCase().includes(sub.toLowerCase())
-        )
-      );
+    // Analyze category coverage - updated to use FIRST_AID_CATEGORIES
+    const categoryBreakdown = FIRST_AID_CATEGORIES.map(category => {
+      // Map first aid categories to product categories (reverse mapping from FirstAidCategories.tsx)
+      const categoryMapping: Record<string, string> = {
+        "wound-care-dressings": "First Aid & Wound Care",
+        "tapes-wraps": "Taping & Bandaging",
+        "antiseptics-ointments": "First Aid & Wound Care",
+        "pain-relief": "Over-the-Counter Medication",
+        "instruments-tools": "Instruments & Tools",
+        "trauma-emergency": "Emergency Care",
+        "ppe": "Personal Protection Equipment (PPE)",
+        "information-essentials": "Documentation & Communication"
+      };
+      
+      const productCategory = categoryMapping[category.id];
+      // Handle both standard category matches and additional category mappings
+      const categoryItems = kit.filter(item => {
+        // Base case: direct category match
+        if (item.category === productCategory) return true;
+        
+        // Special cases for categories that map to multiple product categories
+        if (category.id === "trauma-emergency" && item.category === "Hot & Cold Therapy") return true;
+        if (category.id === "instruments-tools" && item.category === "Health Monitoring") return true;
+        
+        return false;
+      });
+      
       return {
         ...category,
         itemCount: categoryItems.length,
@@ -110,8 +138,9 @@ const KitSummary = () => {
       };
     });
     
+    // Update completion score calculation to use FIRST_AID_CATEGORIES
     const categoriesWithItems = categoryBreakdown.filter(cat => cat.hasItems).length;
-    const completionScore = Math.round((categoriesWithItems / AT_SUPPLY_CATEGORIES.length) * 100);
+    const completionScore = Math.round((categoriesWithItems / FIRST_AID_CATEGORIES.length) * 100);
     
     return { vendorTotals, bestVendor, subtotal, categoryBreakdown, completionScore };
   }, [kit, getVendorTotals]);
@@ -125,61 +154,10 @@ const KitSummary = () => {
       <div className="flex flex-col xs:flex-row justify-between xs:items-center gap-3 xs:gap-4 mb-4">
         <h2 id="kit-summary-heading" className="text-lg xs:text-xl font-bold">Kit Summary</h2>
         <div className="flex gap-2">
-          {user && (
-            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="xs:size-default">
-                  <Save className="mr-2 h-4 w-4" />
-                  Save to Profile
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Save Kit</DialogTitle>
-                  <DialogDescription>
-                    Save your current kit ({kit.length} items) to access it later from any device.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="kit-name">Kit Name</Label>
-                    <Input
-                      id="kit-name"
-                      value={kitName}
-                      onChange={(e) => setKitName(e.target.value)}
-                      placeholder="Enter kit name..."
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="kit-description">Description (Optional)</Label>
-                    <Textarea
-                      id="kit-description"
-                      value={kitDescription}
-                      onChange={(e) => setKitDescription(e.target.value)}
-                      placeholder="Describe your kit..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is-public"
-                      checked={isPublic}
-                      onCheckedChange={(checked) => setIsPublic(checked as boolean)}
-                    />
-                    <Label htmlFor="is-public">Make this kit public</Label>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveKit}>
-                    Save Kit
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+          <Button size="sm" className="xs:size-default" onClick={handleSaveClick}>
+            <Save className="mr-2 h-4 w-4" />
+            Save to Profile
+          </Button>
           <AlertDialog open={openConfirm} onOpenChange={setOpenConfirm}>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="xs:size-default">Clear Kit</Button>
@@ -200,14 +178,96 @@ const KitSummary = () => {
         </div>
       </div>
       
+      {/* Login Prompt Dialog */}
+      <Dialog open={loginPromptOpen} onOpenChange={(open) => {
+        setLoginPromptOpen(open);
+        // If dialog is closing and user goes to login page, we should close it
+        if (!open) {
+          // Reset state if needed
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Kit to Profile</DialogTitle>
+            <DialogDescription>
+              To save your kit to your profile, you'll need to create an account or log in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Saving your kit allows you to access it from any device and manage multiple kits.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-end">
+              <Button variant="outline" asChild>
+                <Link to="/login">Log In</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/login">Create Account</Link>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Save Kit Dialog (only shown when user is logged in) */}
+      {user && (
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Kit</DialogTitle>
+              <DialogDescription>
+                Save your current kit ({kit.length} items) to access it later from any device.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="kit-name">Kit Name</Label>
+                <Input
+                  id="kit-name"
+                  value={kitName}
+                  onChange={(e) => setKitName(e.target.value)}
+                  placeholder="Enter kit name..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="kit-description">Description (Optional)</Label>
+                <Textarea
+                  id="kit-description"
+                  value={kitDescription}
+                  onChange={(e) => setKitDescription(e.target.value)}
+                  placeholder="Describe your kit..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is-public"
+                  checked={isPublic}
+                  onCheckedChange={(checked) => setIsPublic(checked as boolean)}
+                />
+                <Label htmlFor="is-public">Make this kit public</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveKit}>
+                Save Kit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
       {/* Kit Completion Status */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+      <div className="mb-6 p-4 bg-muted rounded-lg">
         <div className="flex items-center gap-2 mb-3">
           <Package className="w-5 h-5 text-primary" />
           <h3 className="font-medium text-sm xs:text-base">Kit Completion</h3>
         </div>
         <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1 bg-gray-200 rounded-full h-2">
+          <div className="flex-1 bg-muted rounded-full h-2">
             <div 
               className="bg-primary h-2 rounded-full transition-all duration-300" 
               style={{ width: `${completionScore}%` }}
@@ -215,8 +275,8 @@ const KitSummary = () => {
           </div>
           <span className="text-sm font-medium">{completionScore}%</span>
         </div>
-        <p className="text-xs text-gray-600">
-          {categoryBreakdown.filter(cat => cat.hasItems).length} of {AT_SUPPLY_CATEGORIES.length} categories covered
+        <p className="text-xs text-muted-foreground">
+          {categoryBreakdown.filter(cat => cat.hasItems).length} of {FIRST_AID_CATEGORIES.length} categories covered
         </p>
       </div>
 
@@ -240,9 +300,9 @@ const KitSummary = () => {
               const offers = item.offers || [];
         const bestOffer = offers.length > 0 ? offers.slice().sort((a, b) => a.price - b.price)[0] : null;
               return (
-                <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg bg-gray-50">
+                <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg bg-muted">
                   {/* Product Image */}
-                  <div className="w-12 h-12 bg-white rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 bg-background rounded-md flex items-center justify-center overflow-hidden flex-shrink-0 border">
                     <img
                       src={item.imageUrl || "/placeholder.svg"}
                       alt={item.name}

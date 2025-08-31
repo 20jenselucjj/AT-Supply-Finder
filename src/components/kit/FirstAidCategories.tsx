@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 
-export interface ATSupplyCategory {
+export interface FirstAidCategory {
   id: string;
   name: string;
   description: string;
@@ -15,167 +15,137 @@ export interface ATSupplyCategory {
   estimatedItems: number;
 }
 
-export const AT_SUPPLY_CATEGORIES: ATSupplyCategory[] = [
+export const FIRST_AID_CATEGORIES: FirstAidCategory[] = [
   {
-    id: "taping-bandaging",
-    name: "Taping & Bandaging",
-    description: "Essential taping and wrapping supplies for injury prevention and support",
+    id: "wound-care-dressings",
+    name: "Wound Care & Dressings",
+    description: "Essential supplies for treating cuts, scrapes, and wounds",
     icon: "🩹",
     subcategories: [
-      "White athletic tape (multiple sizes)",
-      "Elastic adhesive tape (Kinesiology tape)",
-      "Cohesive wrap (Vetrap)",
-      "Underwrap (pre-wrap)",
-      "Elastic bandages (ACE bandages, various sizes)",
-      "Adhesive spray (tuffner)",
-      "Tape remover"
-    ],
-    required: false,
-    estimatedItems: 7
-  },
-  {
-    id: "first-aid-wound-care",
-    name: "First Aid & Wound Care",
-    description: "Comprehensive wound care and first aid supplies",
-    icon: "🏥",
-    subcategories: [
-      "Sterile gauze pads (multiple sizes)",
-      "Sterile dressings and non-adherent pads",
-      "Assortment of adhesive bandages (Band-Aids, various shapes and sizes)",
-      "Butterfly closures/adhesive skin closures",
-      "Sterile cotton balls and cotton swabs",
-      "Antibiotic ointment/cream",
-      "Antiseptic wipes or solution (alcohol pads, hydrogen peroxide)",
-      "Saline solution for wound irrigation",
-      "Hand sanitizer"
-    ],
-    required: false,
-    estimatedItems: 9
-  },
-  {
-    id: "instruments-tools",
-    name: "Instruments & Tools",
-    description: "Essential tools and instruments for athletic training",
-    icon: "🔧",
-    subcategories: [
-      "Bandage scissors/trauma shears",
-      "Tape cutters",
-      "Tweezers",
-      "Splints (Sam Splint)",
-      "Safety pins",
-      "Small mirror",
-      "Penlight/flashlight",
-      "Gloves (latex-free/nitrile)"
-    ],
-    required: false,
-    estimatedItems: 8
-  },
-  {
-    id: "hot-cold-therapy",
-    name: "Hot & Cold Therapy",
-    description: "Temperature therapy supplies for injury treatment",
-    icon: "🧊",
-    subcategories: [
-      "Instant cold packs",
-      "Reusable cold/hot gel packs",
-      "Ice bags",
-      "Cold spray"
-    ],
-    required: false,
-    estimatedItems: 4
-  },
-  {
-    id: "injury-prevention-rehab",
-    name: "Injury Prevention & Rehab",
-    description: "Preventive care and rehabilitation supplies",
-    icon: "💪",
-    subcategories: [
-      "Pre-wrap",
-      "Compression sleeves",
-      "Protective padding (foam)",
-      "Nasal plugs/sponges",
-      "Petroleum jelly or friction-reducing lube",
-      "Elastic wraps for compression"
+      "Assorted adhesive bandages (e.g., Band-Aids, various sizes, knuckle, fingertip)",
+      "Sterile gauze pads (various sizes, e.g., 2x2, 3x3, 4x4)",
+      "Non-adherent pads",
+      "Sterile eye pads",
+      "Rolled gauze bandages",
+      "Liquid bandages/skin adhesive"
     ],
     required: false,
     estimatedItems: 6
   },
   {
-    id: "otc-medication",
-    name: "Over-the-Counter Medication",
-    description: "Basic medications for common issues (check local regulations)",
+    id: "tapes-wraps",
+    name: "Tapes & Wraps",
+    description: "Medical tapes and wraps for securing dressings and providing support",
+    icon: "🧵",
+    subcategories: [
+      "Medical adhesive tape",
+      "Elastic bandages/wraps (e.g., ACE bandages)",
+      "Cohesive wrap (self-adhering bandage)",
+      "Athletic tape (for sprains and support)",
+      "Pre-wrap"
+    ],
+    required: false,
+    estimatedItems: 5
+  },
+  {
+    id: "antiseptics-ointments",
+    name: "Antiseptics & Ointments",
+    description: "Products for cleaning wounds and preventing infection",
+    icon: "🧴",
+    subcategories: [
+      "Antibiotic ointment packets",
+      "Antiseptic wipes or towelettes",
+      "Alcohol prep pads",
+      "Hydrogen peroxide or wound wash solution",
+      "Burn gel or cream",
+      "Hydrocortisone cream (for skin irritation)"
+    ],
+    required: false,
+    estimatedItems: 6
+  },
+  {
+    id: "pain-relief",
+    name: "Pain & Symptom Relief",
+    description: "Medications for pain and other common symptoms",
     icon: "💊",
     subcategories: [
-      "Pain relievers (Ibuprofen, Acetaminophen)",
-      "Antihistamines",
-      "Antacids"
+      "Over-the-counter pain relievers (e.g., Ibuprofen, Acetaminophen)",
+      "Antihistamines (for allergies)",
+      "Antacids (for upset stomach)",
+      "Oral rehydration salts or tablets",
+      "Sting and bite relief swabs"
     ],
     required: false,
-    estimatedItems: 3
+    estimatedItems: 5
   },
   {
-    id: "protective-equipment-safety",
-    name: "Protective Equipment & Safety",
-    description: "Safety and protective equipment for emergency situations",
+    id: "instruments-tools",
+    name: "Instruments & Tools",
+    description: "Essential tools for first aid treatment",
+    icon: "🛠️",
+    subcategories: [
+      "Trauma shears or medical scissors",
+      "Tweezers (fine-point)",
+      "Safety pins",
+      "Single-use splinters probes/lancets",
+      "A digital thermometer",
+      "Small flashlight or penlight",
+      "Resuscitation/CPR face shield"
+    ],
+    required: false,
+    estimatedItems: 7
+  },
+  {
+    id: "trauma-emergency",
+    name: "Trauma & Emergency",
+    description: "Supplies for emergency situations and serious injuries",
+    icon: "🚨",
+    subcategories: [
+      "Instant cold packs",
+      "Emergency blanket (shock/hypothermia)",
+      "Triangular bandages (for slings)",
+      "Splints (e.g., Sam Splint)",
+      "Tourniquet (for severe bleeding)",
+      "Duct tape (for improvised repairs)"
+    ],
+    required: false,
+    estimatedItems: 6
+  },
+  {
+    id: "ppe",
+    name: "Personal Protection Equipment (PPE)",
+    description: "Equipment to protect yourself and others from contamination",
     icon: "🛡️",
     subcategories: [
-      "CPR mask/barrier",
-      "Biohazard waste bags",
-      "Sunscreen",
-      "Insect repellent",
-      "Emergency blanket"
+      "Nitrile or vinyl gloves (multiple pairs)",
+      "Medical face masks",
+      "Hand sanitizer",
+      "Biohazard waste bags"
     ],
     required: false,
-    estimatedItems: 5
+    estimatedItems: 4
   },
   {
-    id: "documentation-communication",
-    name: "Documentation & Communication",
-    description: "Record keeping and communication tools",
+    id: "information-essentials",
+    name: "First Aid Information & Essentials",
+    description: "Important information and essentials for first aid",
     icon: "📋",
     subcategories: [
-      "Pen and paper",
-      "Emergency action plan",
-      "Medical history and emergency contact forms for athletes"
+      "A concise first aid guide or booklet",
+      "Waterproof paper and pen",
+      "Emergency contact information cards",
+      "Medication log"
     ],
     required: false,
-    estimatedItems: 3
-  },
-  {
-    id: "hydration-nutrition",
-    name: "Hydration & Nutrition",
-    description: "Hydration and nutritional support supplies",
-    icon: "💧",
-    subcategories: [
-      "Oral rehydration solution or tablets",
-      "Energy gels or snacks",
-      "Water bottles or cooler"
-    ],
-    required: false,
-    estimatedItems: 3
-  },
-  {
-    id: "miscellaneous-general",
-    name: "Miscellaneous & General",
-    description: "Additional useful supplies for comprehensive coverage",
-    icon: "🎒",
-    subcategories: [
-      "Eye wash solution",
-      "Sanitary napkins/tampons",
-      "Duct tape or super glue for quick repairs",
-      "Small plastic bags (for ice, biohazard waste, etc.)",
-      "Spare shoelaces"
-    ],
-    required: false,
-    estimatedItems: 5
+    estimatedItems: 4
   }
 ];
 
-interface ATSupplyCategoriesProps {
+interface FirstAidCategoriesProps {
   onCategorySelect: (categoryId: string) => void;
 }
 
-const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
+const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const { kit } = useKit();
 
@@ -191,18 +161,16 @@ const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
 
   const getCategoryItemCount = (categoryId: string) => {
     return kit.filter(item => {
-      // Map product categories to AT supply categories
+      // Map product categories to first aid categories
       const categoryMapping: Record<string, string> = {
-        "Taping & Bandaging": "taping-bandaging",
-        "First Aid & Wound Care": "first-aid-wound-care",
+        "First Aid & Wound Care": "wound-care-dressings",
+        "Taping & Bandaging": "tapes-wraps",
+        "Over-the-Counter Medication": "pain-relief",
         "Instruments & Tools": "instruments-tools",
-        "Hot & Cold Therapy": "hot-cold-therapy",
-        "Injury Prevention & Rehab": "injury-prevention-rehab",
-        "Over-the-Counter Medication": "otc-medication",
-        "Protective Equipment & Safety": "protective-equipment-safety",
-        "Documentation & Communication": "documentation-communication",
-        "Hydration & Nutrition": "hydration-nutrition",
-        "Miscellaneous & General": "miscellaneous-general"
+        "Emergency Care": "trauma-emergency",
+        "Documentation & Communication": "information-essentials",
+        "Hot & Cold Therapy": "trauma-emergency",
+        "Health Monitoring": "instruments-tools"
       };
       
       return Object.entries(categoryMapping).some(([productCategory, mappedId]) => 
@@ -214,30 +182,27 @@ const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
   return (
     <div className="space-y-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Build Your Athletic Training Kit</h2>
+        <h2 className="text-2xl font-bold mb-2">Build Your Professional Kit</h2>
         <p className="text-muted-foreground">
-          Select components for each category to build a comprehensive athletic training supply kit.
-          
+          Select components for each category to build a comprehensive professional kit.
         </p>
       </div>
 
       <div className="grid gap-4">
-        {AT_SUPPLY_CATEGORIES.map((category) => {
+        {FIRST_AID_CATEGORIES.map((category) => {
           const isExpanded = expandedCategories.has(category.id);
           const itemCount = getCategoryItemCount(category.id);
           const hasItems = itemCount > 0;
           const selectedItems = kit.filter(item => {
             const categoryMapping: Record<string, string> = {
-              "Taping & Bandaging": "taping-bandaging",
-              "First Aid & Wound Care": "first-aid-wound-care",
+              "First Aid & Wound Care": "wound-care-dressings",
+              "Taping & Bandaging": "tapes-wraps",
+              "Over-the-Counter Medication": "pain-relief",
               "Instruments & Tools": "instruments-tools",
-              "Hot & Cold Therapy": "hot-cold-therapy",
-              "Injury Prevention & Rehab": "injury-prevention-rehab",
-              "Over-the-Counter Medication": "otc-medication",
-              "Protective Equipment & Safety": "protective-equipment-safety",
-              "Documentation & Communication": "documentation-communication",
-              "Hydration & Nutrition": "hydration-nutrition",
-              "Miscellaneous & General": "miscellaneous-general"
+              "Emergency Care": "trauma-emergency",
+              "Documentation & Communication": "information-essentials",
+              "Hot & Cold Therapy": "trauma-emergency",
+              "Health Monitoring": "instruments-tools"
             };
             
             return Object.entries(categoryMapping).some(([productCategory, mappedId]) => 
@@ -267,7 +232,6 @@ const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
                           </Badge>
                         )}
                       </div>
-
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -329,7 +293,6 @@ const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
                         </div>
                       </>
                     )}
-
                   </div>
                 </CardContent>
               )}
@@ -341,4 +304,4 @@ const ATSupplyCategories = ({ onCategorySelect }: ATSupplyCategoriesProps) => {
   );
 };
 
-export default ATSupplyCategories;
+export default FirstAidCategories;

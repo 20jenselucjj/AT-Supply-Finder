@@ -117,13 +117,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       
       // Set CSS custom properties for enhanced theming
       if (shouldBeDark) {
-        root.style.setProperty('--bg-primary', contrastMode === 'high' ? '#000000' : '#0a0a0a');
+        root.style.setProperty('--bg-primary', contrastMode === 'high' ? '#0a0a0a' : '#1a1a1a');
         root.style.setProperty('--text-primary', contrastMode === 'high' ? '#ffffff' : '#fafafa');
-        root.style.setProperty('--border-color', contrastMode === 'high' ? '#ffffff' : '#262626');
+        root.style.setProperty('--border-color', contrastMode === 'high' ? '#333333' : '#404040');
       } else {
-        root.style.setProperty('--bg-primary', contrastMode === 'high' ? '#ffffff' : '#ffffff');
-        root.style.setProperty('--text-primary', contrastMode === 'high' ? '#000000' : '#0a0a0a');
-        root.style.setProperty('--border-color', contrastMode === 'high' ? '#000000' : '#e5e5e5');
+        root.style.setProperty('--bg-primary', contrastMode === 'high' ? '#f5f5f5' : '#fafafa');
+        root.style.setProperty('--text-primary', contrastMode === 'high' ? '#000000' : '#1a1a1a');
+        root.style.setProperty('--border-color', contrastMode === 'high' ? '#000000' : '#d4d4d4');
       }
     };
 

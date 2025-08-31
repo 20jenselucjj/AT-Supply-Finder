@@ -42,9 +42,7 @@ import {
   Mail,
   MapPin,
   Tag,
-  Filter,
-  Download,
-  Upload
+  Filter
 } from 'lucide-react';
 import { NotificationsPanel } from '@/components/admin/NotificationsPanel';
 import { cn } from '@/lib/utils';
@@ -314,8 +312,8 @@ data-tooltip-position="right"
       {/* Header */}
       <div className={cn("p-4 border-b border-border", collapsed && "px-2")}>
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-lg text-primary-foreground font-bold text-sm">
-            W
+          <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-lg text-primary-foreground font-bold text-sm overflow-hidden">
+            <img src="/logo.png" alt="AT Supply Finder Logo" className="h-6 w-6" />
           </div>
           {!collapsed && (
             <div>
@@ -340,32 +338,9 @@ data-tooltip-position="right"
         </ScrollArea>
       )}
       
-      {/* Quick Actions - Improved for all sizes and themes */}
-      <div className="px-3 pb-4">
+      {/* User Profile Section */}
+      <div className="px-3 pb-2 pt-1">
         <Separator className="mb-3" />
-        <div className="space-y-2">
-          <Button 
-            variant="outline" 
-            className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
-            size="sm"
-          >
-            <Upload className="h-4 w-4 dark:text-white" />
-            <span>Import Data</span>
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            className="w-full justify-start gap-2 text-foreground hover:text-foreground dark:text-white" 
-            size="sm"
-          >
-            <Download className="h-4 w-4 dark:text-white" />
-            <span>Export Data</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className={cn("p-4 border-t border-border", collapsed && "px-2")}>
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/placeholder.svg" />
@@ -411,6 +386,9 @@ data-tooltip-position="right"
           </Button>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="p-2"></div>
     </div>
   );
 

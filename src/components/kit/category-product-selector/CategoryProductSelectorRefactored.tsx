@@ -6,7 +6,7 @@ import { ChevronUp, ChevronDown, Package, ArrowLeft } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types";
 import { databases } from '@/lib/appwrite';
-import { AT_SUPPLY_CATEGORIES, type ATSupplyCategory } from "../ATSupplyCategories";
+import { FIRST_AID_CATEGORIES, type FirstAidCategory } from "../FirstAidCategories";
 import ProductDetail from "../ProductDetail";
 import { CategoryProductSelectorProps } from "./types";
 import { Header } from "./Header";
@@ -31,7 +31,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { kit, addToKit, removeFromKit, updateQuantity, getProductQuantity } = useKit();
 
-  const category = AT_SUPPLY_CATEGORIES.find(cat => cat.id === categoryId);
+  const category = FIRST_AID_CATEGORIES.find(cat => cat.id === categoryId);
 
   // Format currency helper
   const formatCurrency = (price: number) => {
@@ -50,16 +50,14 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
       setLoading(true);
       
       const categoryMapping: Record<string, string> = {
-        "taping-bandaging": "Taping & Bandaging",
-        "first-aid-wound-care": "First Aid & Wound Care",
+        "wound-care-dressings": "First Aid & Wound Care",
+        "tapes-wraps": "Taping & Bandaging",
+        "antiseptics-ointments": "First Aid & Wound Care",
+        "pain-relief": "Over-the-Counter Medication",
         "instruments-tools": "Instruments & Tools",
-        "hot-cold-therapy": "Hot & Cold Therapy",
-        "injury-prevention-rehab": "Injury Prevention & Rehab",
-        "protective-equipment": "Protective Equipment",
-        "hydration-nutrition": "Hydration & Nutrition",
-        "cleaning-sanitization": "Cleaning & Sanitization",
-        "documentation-forms": "Documentation & Forms",
-        "emergency-equipment": "Emergency Equipment"
+        "trauma-emergency": "Emergency Care",
+        "ppe": "Personal Protection Equipment (PPE)",
+        "information-essentials": "Documentation & Communication"
       };
       
       const productCategory = categoryMapping[categoryId];

@@ -344,8 +344,8 @@ const Catalog = () => {
   return (
     <main className="container mx-auto py-6">
       <Helmet>
-        <title>Compare Athletic Tape & Bandage Prices | Save 20-40% | AT Supply Finder</title>
-        <meta name="description" content="Compare prices on athletic tape, bandages, pre-wrap & training supplies across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
+        <title>Compare Medical Supplies Prices | Save 20-40% | AT Supply Finder</title>
+        <meta name="description" content="Compare prices on medical supplies, bandages, tape & emergency equipment across Amazon and top vendors. Professional-grade products with instant price comparison. Save 20-40% on every order." />
         <link rel="canonical" href={canonical} />
       </Helmet>
 
@@ -362,7 +362,7 @@ const Catalog = () => {
           
           <div className="flex items-center gap-3">
             {/* View Mode Toggle */}
-            <div className="flex gap-1 border rounded-md p-1 bg-muted/50">
+            <div className="flex gap-1 border border-border rounded-md p-1 bg-muted/50">
               <Button
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"
@@ -425,8 +425,8 @@ const Catalog = () => {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Sidebar - Filters (Desktop) */}
         <aside className="lg:w-80 flex-shrink-0 hidden lg:block">
-          <div className="bg-card border rounded-lg sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
-            <div className="p-4 border-b flex-shrink-0">
+          <div className="bg-card border border-border rounded-lg sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-border flex-shrink-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Filters</h2>
                 {activeFilterCount > 0 && (
@@ -451,7 +451,7 @@ const Catalog = () => {
             </div>
             
             {/* Category Filters */}
-            <div className="p-4 border-b flex-shrink-0">
+            <div className="p-4 border-b border-border flex-shrink-0">
               <button
                 onClick={() => setCategoriesExpanded(!categoriesExpanded)}
                 className="flex items-center justify-between w-full text-sm font-semibold mb-3 hover:text-primary transition-colors"
@@ -564,7 +564,7 @@ const Catalog = () => {
                                 setBrands(brands.filter(b => b !== brand));
                               }
                             }}
-                            className="rounded"
+                            className="rounded border-border"
                           />
                           <span className="flex-1 truncate">{brand}</span>
                           <span className="text-xs text-muted-foreground">({productCount})</span>
@@ -602,7 +602,7 @@ const Catalog = () => {
         {/* Right Content - Products */}
         <div className="flex-1 min-w-0">
           {/* Top Bar - Search, Results, Mobile Filters */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-border">
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="flex-1 max-w-md">
                 <label htmlFor="catalog-search" className="sr-only">
@@ -744,7 +744,7 @@ const Catalog = () => {
                                     setBrands(brands.filter(b => b !== brand));
                                   }
                                 }}
-                                className="rounded"
+                                className="rounded border-border"
                               />
                               <span className="flex-1 truncate">{brand}</span>
                               <span className="text-xs text-muted-foreground">({productCount})</span>

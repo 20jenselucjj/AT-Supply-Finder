@@ -31,7 +31,12 @@ const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+// New pages
+const Contact = lazy(() => import("./pages/Contact"));
+const About = lazy(() => import("./pages/About"));
+const AffiliateDisclosure = lazy(() => import("./pages/AffiliateDisclosure"));
 
 import AdminRoute from "./components/layout/AdminRoute";
 import { Navigate } from "react-router-dom";
@@ -56,7 +61,7 @@ const App = () => {
               <KitProvider>
                 <TooltipProvider>
                 <BrowserRouter>
-                  <div className="min-h-screen flex flex-col">
+                  <div className="min-h-screen flex flex-col bg-background text-foreground">
                     <ScrollToTop />
                     <SiteHeader />
                     <main className="flex-1">
@@ -84,6 +89,11 @@ const App = () => {
                           </Route>
                           <Route path="/login" element={<Login />} />
                           <Route path="/forgot-password" element={<ForgotPassword />} />
+                          <Route path="/reset-password" element={<ResetPassword />} />
+                          {/* New routes */}
+                          <Route path="/contact" element={<Contact />} />
+                          <Route path="/about" element={<About />} />
+                          <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </Suspense>

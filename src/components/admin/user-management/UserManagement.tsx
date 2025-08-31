@@ -613,8 +613,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <p className="text-sm font-medium text-muted-foreground">Total Users</p>
                 <p className="text-2xl font-bold">{totalUsers}</p>
               </div>
-              <div className="p-2 bg-blue-100 rounded-full">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-primary/10 rounded-full">
+                <Users className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -627,8 +627,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <p className="text-sm font-medium text-muted-foreground">Active Users</p>
                 <p className="text-2xl font-bold">{activeUsers}</p>
               </div>
-              <div className="p-2 bg-green-100 rounded-full">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              <div className="p-2 bg-secondary/10 rounded-full">
+                <CheckCircle2 className="h-6 w-6 text-secondary" />
               </div>
             </div>
           </CardContent>
@@ -641,8 +641,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <p className="text-sm font-medium text-muted-foreground">Pending Users</p>
                 <p className="text-2xl font-bold">{pendingUsers}</p>
               </div>
-              <div className="p-2 bg-yellow-100 rounded-full">
-                <AlertCircle className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 bg-yellow-500/10 rounded-full">
+                <AlertCircle className="h-6 w-6 text-yellow-500" />
               </div>
             </div>
           </CardContent>
@@ -655,8 +655,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <p className="text-sm font-medium text-muted-foreground">Admin Users</p>
                 <p className="text-2xl font-bold">{adminUsers}</p>
               </div>
-              <div className="p-2 bg-purple-100 rounded-full">
-                <Shield className="h-6 w-6 text-purple-600" />
+              <div className="p-2 bg-accent/10 rounded-full">
+                <Shield className="h-6 w-6 text-accent" />
               </div>
             </div>
           </CardContent>

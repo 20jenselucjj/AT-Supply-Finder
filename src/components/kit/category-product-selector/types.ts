@@ -1,5 +1,5 @@
 import { Product } from "@/lib/types";
-import { ATSupplyCategory } from "../ATSupplyCategories";
+import { FirstAidCategory } from "../FirstAidCategories";
 
 export interface CategoryProductSelectorProps {
   categoryId: string;
@@ -84,7 +84,7 @@ export interface SortSelectProps {
 }
 
 export interface HeaderProps {
-  category: ATSupplyCategory;
+  category: FirstAidCategory;
   onBack: () => void;
   viewMode: "grid" | "table";
   setViewMode: (mode: "grid" | "table") => void;

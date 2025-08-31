@@ -43,25 +43,25 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
     const asin = "B0C6TP64FL";
     return (
       <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 h-full relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-full -translate-y-16 translate-x-16"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/10 rounded-full translate-y-24 -translate-x-24"></div>
+        <Card className="p-6 flex flex-col gap-5 border-4 border-yellow-400 shadow-lg bg-gradient-to-br from-yellow-100 via-white to-yellow-200 dark:from-yellow-900/30 dark:via-background dark:to-yellow-900/20 h-full relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 dark:bg-yellow-400/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/10 dark:bg-yellow-400/5 rounded-full translate-y-24 -translate-x-24"></div>
           
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-yellow-200/50 z-10"
+            className="absolute top-2 right-2 p-2 h-8 w-8 hover:bg-yellow-200/50 dark:hover:bg-yellow-900/30 z-10"
             onClick={handleToggleFavorite}
             aria-label={isProductFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
               className={`h-4 w-4 transition-colors ${
-                isProductFavorite ? 'fill-red-500 text-red-500' : 'text-yellow-600 hover:text-red-500'
+                isProductFavorite ? 'fill-red-500 text-red-500' : 'text-yellow-600 dark:text-yellow-400 hover:text-red-500'
               }`} 
             />
           </Button>
           
-          <div className="w-full h-44 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-md relative z-10">
+          <div className="w-full h-44 bg-white dark:bg-background rounded-xl flex items-center justify-center overflow-hidden shadow-md relative z-10">
             <img
               src="https://m.media-amazon.com/images/I/81MKOjzOdxL._AC_SX425_PIbundle-4,TopRight,0,0_SH20_.jpg"
               alt="OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards) - Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black"
@@ -76,20 +76,20 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           
           <div className="flex flex-col md:flex-row md:items-start justify-between flex-1 gap-4 relative z-10">
             <div className="flex-1">
-              <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
-              <p className="text-sm text-yellow-700 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
+              <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-yellow-900 dark:text-yellow-100 drop-shadow text-left">OK TAPE Pre Wrap Tape (4-Rolls, 120 Yards)</h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1 text-left">Athletic Foam Underwrap for Sports, Protect for Ankles Wrists Hands and Knees, 2.75 Inches - Black</p>
             </div>
             <div className="text-right md:min-w-[120px]">
               <div className="text-sm">From</div>
-              <div className="text-xl md:text-2xl font-bold text-yellow-800">$11.99</div>
+              <div className="text-xl md:text-2xl font-bold text-yellow-800 dark:text-yellow-200">$11.99</div>
               <div className="mt-1 flex flex-col items-end gap-1">
-                <Badge variant="secondary" className="bg-yellow-300 text-yellow-900 text-xs md:text-sm">Best price</Badge>
-                <Badge className="bg-yellow-500 text-white text-xs md:text-sm">Best on Amazon</Badge>
+                <Badge variant="secondary" className="bg-yellow-300 dark:bg-yellow-900/50 text-yellow-900 dark:text-yellow-100 text-xs md:text-sm">Best price</Badge>
+                <Badge className="bg-yellow-500 dark:bg-yellow-600 text-white text-xs md:text-sm">Best on Amazon</Badge>
               </div>
             </div>
           </div>
           
-          <ul className="text-base text-yellow-800 list-disc pl-5 flex-1 relative z-10">
+          <ul className="text-base text-yellow-800 dark:text-yellow-200 list-disc pl-5 flex-1 relative z-10">
             <li className="text-left">4 rolls, 120 yards total</li>
             <li className="text-left">Non-adhesive, high quality PU foam</li>
             <li className="text-left">Breathable, stretchable, comfortable</li>
@@ -121,7 +121,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             <Button
               asChild
               variant="outline"
-              className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 shadow-md flex-1 md:flex-none"
+              className="transition-transform duration-200 hover:scale-105 border-yellow-500 text-yellow-900 dark:text-yellow-100 shadow-md flex-1 md:flex-none"
             >
               <a
                 href={`https://www.amazon.com/dp/${asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
@@ -138,7 +138,6 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
     );
   }
 
-  // ...existing code...
   return (
     <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
       <Card className="p-5 flex flex-col gap-4 h-full relative overflow-hidden group">
@@ -194,7 +193,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
                       className={`w-4 h-4 ${
                         i < Math.floor(product.rating || 0)
                           ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
+                          : "text-gray-300 dark:text-gray-600"
                       }`}
                     />
                   ))}
@@ -213,7 +212,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             </div>
             <div className="mt-1 flex flex-col items-end gap-1">
               {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
-              {bestIsAmazon && !loading && <Badge className="text-xs bg-orange-100 text-orange-800">Best on Amazon</Badge>}
+              {bestIsAmazon && !loading && <Badge className="text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200">Best on Amazon</Badge>}
             </div>
           </div>
         </div>

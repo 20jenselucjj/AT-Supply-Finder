@@ -10,7 +10,7 @@ import { ArrowLeft, Search, Package, Star, Plus, Minus, Filter, Grid, List, Chev
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types";
 import { databases } from "@/lib/appwrite";
-import { AT_SUPPLY_CATEGORIES, type ATSupplyCategory } from "./ATSupplyCategories";
+import { FIRST_AID_CATEGORIES, type FirstAidCategory } from "./FirstAidCategories";
 import ProductSpecifications from "./ProductSpecifications";
 import VendorComparison from "./VendorComparison";
 import ProductDetail from "./ProductDetail";
@@ -35,7 +35,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { kit, addToKit, removeFromKit, updateQuantity, getProductQuantity } = useKit();
 
-  const category = AT_SUPPLY_CATEGORIES.find(cat => cat.id === categoryId);
+  const category = FIRST_AID_CATEGORIES.find(cat => cat.id === categoryId);
 
   // Format currency helper
   const formatCurrency = (price: number) => {
@@ -53,17 +53,16 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
     try {
       setLoading(true);
       
-      const categoryMapping: Record<string, string> = {
-        "taping-bandaging": "Taping & Bandaging",
-        "first-aid-wound-care": "First Aid & Wound Care",
+      // Category mapping for First Aid categories
+      const categoryMapping: Record<string, string | string[]> = {
+        "wound-care-dressings": "First Aid & Wound Care",
+        "tapes-wraps": "Taping & Bandaging",
+        "antiseptics-ointments": "First Aid & Wound Care",
+        "pain-relief": "Over-the-Counter Medication",
         "instruments-tools": "Instruments & Tools",
-        "hot-cold-therapy": "Hot & Cold Therapy",
-        "injury-prevention-rehab": "Injury Prevention & Rehab",
-        "protective-equipment": "Protective Equipment",
-        "hydration-nutrition": "Hydration & Nutrition",
-        "cleaning-sanitization": "Cleaning & Sanitization",
-        "documentation-forms": "Documentation & Forms",
-        "emergency-equipment": "Emergency Equipment"
+        "trauma-emergency": "Emergency Care",
+        "ppe": "Personal Protection Equipment (PPE)",
+        "information-essentials": "Documentation & Communication"
       };
       
       const productCategory = categoryMapping[categoryId];
@@ -74,20 +73,33 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
       }
 
       // Query products from Appwrite database
+      let queries = [];
+      if (Array.isArray(productCategory)) {
+        // Handle multiple categories
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: productCategory }));
+      } else {
+        // Handle single category
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] }));
+      }
+
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        [JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] })]
+        queries
       );
 
       if (response) {
         const transformedProducts: Product[] = (response.documents || []).map((product: any) => {
-          // Convert features string to array if needed
+          // Convert features to array if needed, with better handling
           let features: string[] = [];
           if (typeof product.features === 'string' && product.features.trim() !== '') {
-            features = product.features.split(',').map((f: string) => f.trim());
+            // Split by comma and clean up each feature
+            features = product.features.split(',')
+              .map((f: string) => f.trim())
+              .filter((f: string) => f.length > 0);
           } else if (Array.isArray(product.features)) {
-            features = product.features;
+            features = product.features.filter((f: any) => f && f.toString().trim().length > 0)
+              .map((f: any) => f.toString().trim());
           }
 
           return {
@@ -540,7 +552,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                           <TableCell className="py-2 max-w-[150px]">
                             <div>
                               <button 
-                                className="font-medium text-left hover:text-blue-600 hover:underline line-clamp-2 text-sm"
+                                className="font-medium text-left hover:text-primary hover:underline line-clamp-2 text-sm"
                                 onClick={() => setSelectedProduct(product)}
                               >
                                 {product.name}
@@ -559,7 +571,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                           <TableCell className="py-2">
                             {product.rating && product.rating > 0 ? (
                               <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="w-4 h-4 fill-primary text-primary" />
                                 <span>{product.rating.toFixed(1)}</span>
                               </div>
                             ) : (
@@ -585,7 +597,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                           <TableCell className="py-2">
                             {product.reviews && product.reviews.length > 0 ? (
                               <button 
-                                className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                                className="text-primary hover:text-primary/80 hover:underline text-sm"
                                 onClick={() => setSelectedProduct(product)}
                               >
                                 {product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''}
@@ -630,7 +642,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                     
                     <div className="space-y-2">
                       <button 
-                        className="font-semibold line-clamp-2 text-left hover:text-blue-600 hover:underline w-full"
+                        className="font-semibold line-clamp-2 text-left hover:text-primary hover:underline w-full"
                         onClick={() => setSelectedProduct(product)}
                       >
                         {product.name}
@@ -666,7 +678,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                             <span>{product.rating?.toFixed(1)}</span>
                           </div>
                           <button 
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                            className="text-primary hover:text-primary/80 hover:underline"
                             onClick={() => setSelectedProduct(product)}
                           >
                             ({product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''})
@@ -676,7 +688,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                       
                       {product.rating && (
                         <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <Star className="w-4 h-4 fill-primary text-primary" />
                           <span className="text-sm">{product.rating}</span>
                         </div>
                       )}

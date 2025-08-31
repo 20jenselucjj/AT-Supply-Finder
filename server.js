@@ -48,6 +48,49 @@ import amazonProductDetails from './functions/amazon-product-details.js';
 import amazonPricing from './functions/amazon-pricing.js';
 import scrapeAmazonProduct from './functions/scrape-amazon-product.js';
 
+// Contact form endpoint
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // Basic validation
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields are required' 
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide a valid email address' 
+      });
+    }
+
+    // For now, we'll just log the contact form submission
+    // In a production environment, you would send an email or store in a database
+    console.log('Contact form submission:', { name, email, subject, message });
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Respond with success
+    res.status(200).json({ 
+      success: true, 
+      message: 'Message received successfully! We will get back to you soon.' 
+    });
+  } catch (error) {
+    console.error('Error processing contact form:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to process your message. Please try again later.' 
+    });
+  }
+});
+
 // Add this new endpoint for listing users - implementing directly instead of using dynamic import
 app.get('/api/list-users', async (req, res) => {
   try {
@@ -157,6 +200,19 @@ app.post('/api/users', async (req, res) => {
   const { email, password, role, name } = req.body;
 
   try {
+    // Import the Appwrite SDK
+    const { Client, Users, Databases, ID } = await import('node-appwrite');
+    
+    // Initialize the Appwrite SDK
+    const client = new Client();
+    client
+      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
+      .setKey(process.env.VITE_APPWRITE_API_KEY);
+
+    const users = new Users(client);
+    const databases = new Databases(client);
+
     // Create user in Appwrite Auth
     const user = await users.create(
       ID.unique(),
@@ -201,235 +257,7 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Update User endpoint
-app.put('/api/users/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { email, name, role, status } = req.body;
-    
-    // Import the Appwrite SDK
-    const { Client, Users, Databases, Query } = await import('node-appwrite');
-    
-    // Initialize the Appwrite SDK
-    const client = new Client();
-    client
-      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
-      .setKey(process.env.VITE_APPWRITE_API_KEY);
-
-    const users = new Users(client);
-    const databases = new Databases(client);
-    
-    // Update user in Appwrite Auth
-    let updatedUser;
-    if (email || name) {
-      updatedUser = await users.update(userId, email, name);
-    } else {
-      // If no auth updates, get current user
-      updatedUser = await users.get(userId);
-    }
-    
-    // Update user status if provided
-    if (status !== undefined) {
-      await users.updateStatus(userId, status === 'active');
-    }
-    
-    // Update role in userRoles collection if provided
-    if (role) {
-      try {
-        // First, check if user role exists
-        const existingRoles = await databases.listDocuments(
-          process.env.VITE_APPWRITE_DATABASE_ID,
-          'userRoles',
-          [Query.equal('userId', userId)]
-        );
-
-        if (existingRoles.total > 0) {
-          // Update existing role
-          await databases.updateDocument(
-            process.env.VITE_APPWRITE_DATABASE_ID,
-            'userRoles',
-            existingRoles.documents[0].$id,
-            { role: role }
-          );
-        } else {
-          // Create new role entry
-          await databases.createDocument(
-            process.env.VITE_APPWRITE_DATABASE_ID,
-            'userRoles',
-            ID.unique(),
-            {
-              userId: userId,
-              role: role
-            }
-          );
-        }
-      } catch (roleError) {
-        console.error('Error updating role:', roleError);
-        // Don't fail the whole operation if role update fails
-      }
-    }
-    
-    res.json({
-      success: true,
-      user: {
-        id: updatedUser.$id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: role || 'user'
-      }
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to update user',
-      message: error.message 
-    });
-  }
-});
-
-// Update User Password endpoint
-app.put('/api/users/:userId/password', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { password } = req.body;
-    
-    if (!password) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Password is required' 
-      });
-    }
-    
-    // Import the Appwrite SDK
-    const { Client, Users } = await import('node-appwrite');
-    
-    // Initialize the Appwrite SDK
-    const client = new Client();
-    client
-      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
-      .setKey(process.env.VITE_APPWRITE_API_KEY);
-
-    const users = new Users(client);
-    
-    // Update user password
-    await users.updatePassword(userId, password);
-    
-    res.json({
-      success: true,
-      message: 'Password updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating user password:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to update password',
-      message: error.message 
-    });
-  }
-});
-
-// Delete User endpoint
-app.delete('/api/users/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    // Import the Appwrite SDK
-    const { Client, Users, Databases, Query } = await import('node-appwrite');
-    
-    // Initialize the Appwrite SDK
-    const client = new Client();
-    client
-      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
-      .setKey(process.env.VITE_APPWRITE_API_KEY);
-
-    const users = new Users(client);
-    const databases = new Databases(client);
-    
-    // Delete user role from userRoles collection if it exists
-    try {
-      const existingRoles = await databases.listDocuments(
-        process.env.VITE_APPWRITE_DATABASE_ID,
-        'userRoles',
-        [Query.equal('userId', userId)]
-      );
-
-      if (existingRoles.total > 0) {
-        await databases.deleteDocument(
-          process.env.VITE_APPWRITE_DATABASE_ID,
-          'userRoles',
-          existingRoles.documents[0].$id
-        );
-      }
-    } catch (roleError) {
-      console.error('Error deleting user role:', roleError);
-      // Continue with user deletion even if role deletion fails
-    }
-    
-    // Delete user from Appwrite Auth
-    await users.delete(userId);
-    
-    res.json({
-      success: true,
-      message: 'User deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to delete user',
-      message: error.message 
-    });
-  }
-});
-
-// Amazon Auth endpoint
-app.post('/api/amazon-auth', amazonAuth);
-
-// Amazon Catalog Search endpoint
-app.get('/api/amazon-catalog-search', amazonCatalogSearch);
-
-// Amazon Product Details endpoint
-app.get('/api/amazon-product-details/:asin', amazonProductDetails);
-
-// Amazon Pricing endpoint
-app.get('/api/amazon-pricing', amazonPricing);
-
-// Amazon Product Scraping endpoint
-app.post('/api/scrape-amazon-product', scrapeAmazonProduct);
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Amazon SP-API server is running' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  if (err.message === 'Not allowed by CORS') {
-    res.status(403).json({ error: 'CORS not allowed' });
-  } else {
-    console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
+// Start the server
 app.listen(PORT, () => {
-  console.log(`🚀 Amazon SP-API server running on http://localhost:${PORT}`);
-  console.log('📦 Available endpoints:');
-  console.log('  POST /api/amazon-auth');
-  console.log('  GET  /api/amazon-catalog-search');
-  console.log('  GET  /api/amazon-product-details/:asin');
-  console.log('  GET  /api/amazon-pricing');
-  console.log('  POST /api/scrape-amazon-product');
-  console.log('  GET  /api/list-users');
-  console.log('  POST /api/users');
-  console.log('  PUT  /api/users/:userId');
-  console.log('  PUT  /api/users/:userId/password');
-  console.log('  DELETE /api/users/:userId');
-  console.log('  GET  /api/health');
+  console.log(`Server running on port ${PORT}`);
 });
-
-export default app;

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Search, Filter, Upload, Download, Edit, Trash } from "lucide-react";
+import { ProductForm } from "./ProductForm";
 
 interface SearchAndActionsProps {
   searchTerm: string;
@@ -31,6 +32,11 @@ interface SearchAndActionsProps {
   isImportProductsOpen: boolean;
   setIsImportProductsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   handleCSVImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  productForm: any;
+  setProductForm: React.Dispatch<React.SetStateAction<any>>;
+  handleAffiliateLinkChange: (url: string) => void;
+  isLoadingProductInfo: boolean;
+  handleAddProduct: () => void;
 }
 
 export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
@@ -56,7 +62,12 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   setIsAddProductOpen,
   isImportProductsOpen,
   setIsImportProductsOpen,
-  handleCSVImport
+  handleCSVImport,
+  productForm,
+  setProductForm,
+  handleAffiliateLinkChange,
+  isLoadingProductInfo,
+  handleAddProduct
 }) => {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
@@ -107,8 +118,8 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="created_at-desc">Newest First</SelectItem>
-          <SelectItem value="created_at-asc">Oldest First</SelectItem>
+          <SelectItem value="$createdAt-desc">Newest First</SelectItem>
+          <SelectItem value="$createdAt-asc">Oldest First</SelectItem>
           <SelectItem value="name-asc">Name A-Z</SelectItem>
           <SelectItem value="name-desc">Name Z-A</SelectItem>
           <SelectItem value="price-asc">Price Low-High</SelectItem>
@@ -174,20 +185,20 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>
-              Create a new product manually.
+              Create a new product manually or use an Amazon affiliate link.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-center text-muted-foreground">
-              Product form will be rendered here
-            </p>
+            <ProductForm
+              productForm={productForm}
+              setProductForm={setProductForm}
+              handleAffiliateLinkChange={handleAffiliateLinkChange}
+              isLoadingProductInfo={isLoadingProductInfo}
+              handleSubmit={handleAddProduct}
+              onCancel={() => setIsAddProductOpen(false)}
+              isEditing={false}
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddProductOpen(false)}>
-              Cancel
-            </Button>
-            <Button>Save</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       

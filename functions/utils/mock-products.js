@@ -1,4 +1,4 @@
-// Mock athletic training products for sandbox environment
+// Mock first aid products for sandbox environment
 export const mockAthleticProducts = [
   {
     asin: 'B07MOCK001',

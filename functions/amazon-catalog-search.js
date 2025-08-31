@@ -45,11 +45,11 @@ export default async (req, res) => {
         return res.status(400).json({ error: 'Keywords are required' });
     }
 
-    // Since the sandbox has limited functionality, provide mock data for athletic training products
-    if (keywords.toLowerCase().includes('athletic') || keywords.toLowerCase().includes('training') || 
-        keywords.toLowerCase().includes('tape') || keywords.toLowerCase().includes('bandage')) {
+    // Since the sandbox has limited functionality, provide mock data for first aid products
+    if (keywords.toLowerCase().includes('first') || keywords.toLowerCase().includes('aid') || 
+        keywords.toLowerCase().includes('medical') || keywords.toLowerCase().includes('emergency')) {
         
-        console.log('Returning mock athletic training products for search:', keywords);
+        console.log('Returning mock first aid products for search:', keywords);
         
         const transformedItems = transformMockItems(mockAthleticProducts, maxResults);
 
@@ -193,13 +193,13 @@ export default async (req, res) => {
             console.warn('Fallback static sandbox call also failed:', fallbackError.response?.data || fallbackError.message);
         }
 
-        // Fallback 2: If everything fails, return the same mock athletic products as a last resort
+        // Fallback 2: If everything fails, return the same mock first aid products as a last resort
         const transformedItems = transformMockItems(mockAthleticProducts, maxResults);
 
         return res.status(200).json({
             items: transformedItems,
             pagination: { totalResults: mockAthleticProducts.length },
-            note: 'Returned mock athletic products due to sandbox/search failure'
+            note: 'Returned mock first aid products due to sandbox/search failure'
         });
     }
 };

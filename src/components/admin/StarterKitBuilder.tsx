@@ -523,8 +523,8 @@ export const StarterKitBuilder: React.FC = () => {
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="created_at-desc">Newest</SelectItem>
-                    <SelectItem value="created_at-asc">Oldest</SelectItem>
+                    <SelectItem value="$createdAt-desc">Newest</SelectItem>
+                    <SelectItem value="$createdAt-asc">Oldest</SelectItem>
                     <SelectItem value="name-asc">Name A-Z</SelectItem>
                     <SelectItem value="name-desc">Name Z-A</SelectItem>
                     <SelectItem value="estimated_cost-asc">Cost Low-High</SelectItem>
@@ -850,7 +850,7 @@ export const StarterKitBuilder: React.FC = () => {
                         </p>
                       </div>
                       <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary">
-                        <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+                        <span className="inline-block h-4 w-4 transform rounded-full bg-background translate-x-6" />
                       </div>
                     </div>
                   </div>

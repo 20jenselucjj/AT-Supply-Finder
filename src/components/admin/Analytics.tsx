@@ -462,52 +462,52 @@ export const Analytics: React.FC = () => {
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-l-4 border-l-blue-500">
+            <Card className="border-l-4 border-l-primary">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-blue-600" />
+                <Users className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{analytics.totalUsers}</div>
+                <div className="text-2xl font-bold text-primary">{analytics.totalUsers}</div>
                 <p className="text-xs text-muted-foreground">
                   +{analytics.newUsersThisWeek} this week
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-l-4 border-l-secondary">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">New Users Today</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-secondary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{analytics.newUsersToday}</div>
+                <div className="text-2xl font-bold text-secondary">{analytics.newUsersToday}</div>
                 <p className="text-xs text-muted-foreground">
                   Daily registrations
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-purple-500">
+            <Card className="border-l-4 border-l-accent">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                <Package className="h-4 w-4 text-purple-600" />
+                <Package className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-600">{analytics.totalProducts}</div>
+                <div className="text-2xl font-bold text-accent">{analytics.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
                   In catalog
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-orange-500">
+            <Card className="border-l-4 border-l-muted">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Response Time</CardTitle>
-                <Eye className="h-4 w-4 text-orange-600" />
+                <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{analytics.systemMetrics.responseTime}ms</div>
+                <div className="text-2xl font-bold text-muted-foreground">{analytics.systemMetrics.responseTime}ms</div>
                 <p className="text-xs text-muted-foreground">
                   Average response
                 </p>
@@ -639,7 +639,7 @@ export const Analytics: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Status</span>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <Badge className="bg-primary/10 text-primary border-primary/20">
                     Operational
                   </Badge>
                 </div>
@@ -895,7 +895,7 @@ export const Analytics: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Status</span>
-                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <Badge className="bg-primary/10 text-primary border-primary/20">
                         Operational
                       </Badge>
                     </div>

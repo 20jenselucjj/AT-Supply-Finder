@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Grid, List } from "lucide-react";
-import { ATSupplyCategory } from "../ATSupplyCategories";
+import { FirstAidCategory } from "../FirstAidCategories";
 import { ViewToggleProps } from "./types";
 
 interface HeaderProps {
-  category: ATSupplyCategory;
+  category: FirstAidCategory;
   onBack: () => void;
   viewMode: "grid" | "table";
   setViewMode: (mode: "grid" | "table") => void;

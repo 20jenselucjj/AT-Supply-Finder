@@ -18,18 +18,18 @@ interface RevenueChartProps {
 
 export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
   return (
-    <Card className="lg:col-span-2">
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <BarChart3 className="h-4 w-4" />
           Revenue Overview
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs">
           Weekly revenue trends
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -37,7 +37,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="revenue" fill="#8884d8" />
+              <Bar dataKey="revenue" fill="#8884d8" radius={[4, 4, 0, 0]} />
             </RechartsBarChart>
           </ResponsiveContainer>
         </div>

@@ -50,7 +50,7 @@ class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center space-y-6">
             <div className="space-y-4">
-              <AlertTriangle className="h-16 w-16 text-red-500 mx-auto" />
+              <AlertTriangle className="h-16 w-16 text-destructive mx-auto" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   Something went wrong
@@ -69,14 +69,14 @@ class ErrorBoundary extends Component<Props, State> {
                       </div>
                       <div>
                         <strong>Stack:</strong>
-                        <pre className="whitespace-pre-wrap text-xs mt-1 bg-white p-2 rounded border overflow-auto max-h-32">
+                        <pre className="whitespace-pre-wrap text-xs mt-1 bg-background p-2 rounded border overflow-auto max-h-32">
                           {this.state.error.stack}
                         </pre>
                       </div>
                       {this.state.errorInfo && (
                         <div>
                           <strong>Component Stack:</strong>
-                          <pre className="whitespace-pre-wrap text-xs mt-1 bg-white p-2 rounded border overflow-auto max-h-32">
+                          <pre className="whitespace-pre-wrap text-xs mt-1 bg-background p-2 rounded border overflow-auto max-h-32">
                             {this.state.errorInfo.componentStack}
                           </pre>
                         </div>

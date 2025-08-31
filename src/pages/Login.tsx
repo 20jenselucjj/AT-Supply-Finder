@@ -136,10 +136,10 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className={emailError ? 'border-red-500' : ''}
+                  className={emailError ? 'border-red-500 dark:border-red-400' : ''}
                 />
                 {emailError && (
-                  <p className="text-sm text-red-500 flex items-center">
+                  <p className="text-sm text-red-500 dark:text-red-400 flex items-center">
                     <X className="h-4 w-4 mr-1" />
                     {emailError}
                   </p>
@@ -164,6 +164,7 @@ const Login = () => {
                     required
                     minLength={isSignUp ? 8 : undefined}
                     aria-describedby={isSignUp ? "password-requirements" : undefined}
+                    className={passwordErrors.length > 0 && isSignUp ? 'border-red-500 dark:border-red-400' : ''}
                   />
                   <button
                     type="button"
@@ -185,19 +186,19 @@ const Login = () => {
                 <div className="space-y-2">
                   <Label>Password Requirements</Label>
                   <div className="text-sm space-y-1">
-                    <div className={`flex items-center ${password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <div className={`flex items-center ${password.length >= 8 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
                       {password.length >= 8 ? <Check className="h-4 w-4 mr-2" /> : <X className="h-4 w-4 mr-2" />}
                       At least 8 characters
                     </div>
-                    <div className={`flex items-center ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <div className={`flex items-center ${/[A-Z]/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
                       {/[A-Z]/.test(password) ? <Check className="h-4 w-4 mr-2" /> : <X className="h-4 w-4 mr-2" />}
                       One uppercase letter
                     </div>
-                    <div className={`flex items-center ${/[a-z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <div className={`flex items-center ${/[a-z]/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
                       {/[a-z]/.test(password) ? <Check className="h-4 w-4 mr-2" /> : <X className="h-4 w-4 mr-2" />}
                       One lowercase letter
                     </div>
-                    <div className={`flex items-center ${/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <div className={`flex items-center ${/\d/.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
                       {/\d/.test(password) ? <Check className="h-4 w-4 mr-2" /> : <X className="h-4 w-4 mr-2" />}
                       One number
                     </div>
@@ -210,7 +211,7 @@ const Login = () => {
               <Button className="w-full" type="submit" disabled={loading || !email || !password || emailError !== '' || (isSignUp && passwordErrors.length > 0)}>
                 {loading ? (
                   <span className="flex items-center">
-                    <span className="h-2 w-2 rounded-full bg-white animate-ping mr-2"></span>
+                    <span className="h-2 w-2 rounded-full bg-primary animate-ping mr-2"></span>
                     Processing...
                   </span>
                 ) : isSignUp ? 'Create Account' : 'Login'}
@@ -218,7 +219,7 @@ const Login = () => {
               
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+                  <span className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">

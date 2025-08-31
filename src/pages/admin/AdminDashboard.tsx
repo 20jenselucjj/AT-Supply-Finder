@@ -7,7 +7,7 @@ const AdminDashboard = () => {
     <>
       <Helmet>
         <title>Admin Dashboard | AT Supply Finder</title>
-        <meta name="description" content="Admin dashboard overview for AT Supply Finder Finder" />
+        <meta name="description" content="Admin dashboard overview for AT Supply Finder" />
       </Helmet>
       
       <DashboardOverview />
