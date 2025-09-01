@@ -9,20 +9,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { fetchAllSettings, updateAllSettings } from '@/lib/appwrite-system-settings';
-import { SystemHealth, SecuritySettings, NotificationSettings, AppearanceSettings, SystemConfiguration, DatabaseSettings } from './system-settings/types';
+import { SecuritySettings, NotificationSettings, AppearanceSettings, SystemConfiguration, DatabaseSettings } from './system-settings/types';
 import { SystemHealthCard } from './SystemHealthCard';
 
 export const SystemSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
+  const [systemHealth, setSystemHealth] = useState({
     status: 'healthy',
-    cpu: 45,
-    memory: 62,
-    storage: 78,
-    network: 98,
-    uptime: '15 days, 6 hours',
-    lastBackup: '2 hours ago'
+    uptime: '99.9%',
+    responseTime: 120,
+    dbConnections: 45,
+    errorRate: 0.02
   });
   
   const { userRole, loading: rbacLoading } = useRBAC();
@@ -194,7 +192,7 @@ export const SystemSettings: React.FC = () => {
         </Button>
       </div>
 
-      <SystemHealthCard health={systemHealth} />
+      <SystemHealthCard systemHealth={systemHealth} />
 
       <Tabs defaultValue="security" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
