@@ -5,11 +5,11 @@ export interface AuditLogEntry {
   id?: string;
   user_id?: string;
   action: string;
-  entity_type: string;
-  entity_id?: string;
+  entityType: string;  // Changed from entity_type to entityType
+  entityId?: string;   // Changed from entity_id to entityId
   details?: Record<string, any>;
-  ip_address?: string;
-  user_agent?: string;
+  ipAddress?: string;  // Changed from ip_address to ipAddress
+  userAgent?: string;  // Changed from user_agent to userAgent
   timestamp: string;
 }
 
@@ -44,12 +44,12 @@ class Logger {
     return levels.indexOf(level) >= levels.indexOf(this.minLevel);
   }
 
-  private async captureClientInfo(): Promise<{ ip_address: string; user_agent: string }> {
+  private async captureClientInfo(): Promise<{ ipAddress: string; userAgent: string }> {  // Updated property names
     // In a real implementation, you might use a service to get the client IP
     // For now, we'll use placeholder values
     return {
-      ip_address: '0.0.0.0',
-      user_agent: navigator.userAgent
+      ipAddress: '0.0.0.0',
+      userAgent: navigator.userAgent
     };
   }
 
@@ -78,12 +78,30 @@ class Logger {
     try {
       const clientInfo = await this.captureClientInfo();
       
+      // Convert details object to string if it exists
+      let detailsString: string | undefined;
+      if (entry.details) {
+        try {
+          detailsString = JSON.stringify(entry.details);
+          // Truncate if too long for Appwrite's 5000 character limit
+          if (detailsString.length > 5000) {
+            detailsString = detailsString.substring(0, 4997) + '...';
+          }
+        } catch (stringifyError) {
+          console.error('Error stringifying details:', stringifyError);
+          detailsString = 'Error converting details to string';
+        }
+      }
+      
       const auditEntry: any = {
-        ...entry,
         user_id: this.userId || undefined,
-        timestamp: new Date().toISOString(),
-        ip_address: clientInfo.ip_address,
-        user_agent: clientInfo.user_agent
+        action: entry.action,
+        entityType: entry.entityType,  // Fixed property name
+        entityId: entry.entityId,      // Fixed property name
+        details: detailsString,        // Use the stringified details
+        ipAddress: clientInfo.ipAddress,
+        userAgent: clientInfo.userAgent,
+        timestamp: new Date().toISOString()
       };
 
       // Insert audit log entry into Appwrite database

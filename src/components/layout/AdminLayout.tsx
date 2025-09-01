@@ -36,7 +36,6 @@ import {
   HelpCircle,
   UserCog,
   Home,
-  ShoppingCart,
   FileBarChart,
   CreditCard,
   Mail,
@@ -77,13 +76,6 @@ const sidebarItems: SidebarItem[] = [
     label: 'Products',
     icon: Package,
     href: '/admin/products',
-    requiredRole: 'editor'
-  },
-  {
-    id: 'orders',
-    label: 'Orders',
-    icon: ShoppingCart,
-    href: '/admin/orders',
     requiredRole: 'editor'
   },
   {
@@ -131,8 +123,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { userRole, loading: rbacLoading } = useRBAC();
@@ -153,15 +143,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to search results page
-      navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery('');
-    }
-  }, [searchQuery, navigate]);
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
@@ -309,38 +290,8 @@ data-tooltip-position="right"
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-card text-card-foreground">
-      {/* Header */}
-      <div className={cn("p-4 border-b border-border", collapsed && "px-2")}>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-lg text-primary-foreground font-bold text-sm overflow-hidden">
-            <img src="/logo.png" alt="AT Supply Finder Logo" className="h-6 w-6" />
-          </div>
-          {!collapsed && (
-            <div>
-              <h2 className="font-semibold text-sm text-foreground">AT Supply Finder</h2>
-              <p className="text-xs text-muted-foreground">Admin Panel</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Loading state for RBAC */}
-      {rbacLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        /* Navigation */
-        <ScrollArea className="flex-1 px-3 py-4">
-          <nav className="space-y-2">
-            {filteredSidebarItems.map(item => renderSidebarItem(item))}
-          </nav>
-        </ScrollArea>
-      )}
-      
-      {/* User Profile Section */}
-      <div className="px-3 pb-2 pt-1">
-        <Separator className="mb-3" />
+      {/* User Profile Section - Restored to original size */}
+      <div className="px-3 pt-2 pb-3">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src="/placeholder.svg" />
@@ -354,7 +305,7 @@ data-tooltip-position="right"
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-3">
           <Button variant="outline" size="sm" onClick={toggleTheme} className="flex-1 text-foreground">
             {theme === 'dark' ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
             <span className="ml-2">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
@@ -367,7 +318,7 @@ data-tooltip-position="right"
                 // Log the sign out action
                 await logger.auditLog({
                   action: 'ADMIN_SIGN_OUT',
-                  entity_type: 'USER',
+                  entityType: 'USER',
                   details: {
                     email: user?.email
                   }
@@ -385,9 +336,26 @@ data-tooltip-position="right"
             <span className="ml-2">Sign Out</span>
           </Button>
         </div>
+        <Separator className="mb-3" />
       </div>
 
-      {/* Footer */}
+      {/* Removed the AT Supply Finder Logo section */}
+
+      {/* Loading state for RBAC */}
+      {rbacLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        /* Navigation */
+        <ScrollArea className="flex-1 px-3 py-4">
+          <nav className="space-y-2">
+            {filteredSidebarItems.map(item => renderSidebarItem(item))}
+          </nav>
+        </ScrollArea>
+      )}
+      
+      {/* Footer - Removed user profile section */}
       <div className="p-2"></div>
     </div>
   );
@@ -509,21 +477,7 @@ data-tooltip-position="right"
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2">
-              {/* Search Bar */}
-              <form onSubmit={handleSearch} className="relative hidden md:block">
-                <div className={`relative transition-all duration-300 ${isSearchFocused ? 'w-64' : 'w-40'}`}>
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                    className="pl-9 pr-4 w-full"
-                  />
-                </div>
-              </form>
+              {/* Search Bar removed */}
               
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-4 w-4" />

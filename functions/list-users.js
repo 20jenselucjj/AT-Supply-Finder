@@ -1,6 +1,6 @@
 import { Client, Users, Databases, Query } from 'node-appwrite';
 
-export default async function (req, res) {
+export default async function ({ req, res, log, error }) {
   // Initialize the Appwrite SDK
   const client = new Client();
   
@@ -10,7 +10,7 @@ export default async function (req, res) {
   const apiKey = process.env.VITE_APPWRITE_API_KEY || process.env.APPWRITE_API_KEY;
   const databaseId = process.env.VITE_APPWRITE_DATABASE_ID || process.env.APPWRITE_FUNCTION_DATABASE_ID || 'atSupplyFinder';
   
-  console.log('Environment configuration:', {
+  log('Environment configuration:', {
     endpointExists: !!endpoint,
     projectIdExists: !!projectId,
     apiKeyExists: !!apiKey,
@@ -18,19 +18,19 @@ export default async function (req, res) {
   });
   
   if (!projectId) {
-    console.error('Missing VITE_APPWRITE_PROJECT_ID or APPWRITE_FUNCTION_PROJECT_ID');
-    return res.status(500).json({ 
+    error('Missing VITE_APPWRITE_PROJECT_ID or APPWRITE_FUNCTION_PROJECT_ID');
+    return res.json({ 
       success: false,
       error: 'Missing project ID configuration'
-    });
+    }, 500);
   }
   
   if (!apiKey) {
-    console.error('Missing VITE_APPWRITE_API_KEY or APPWRITE_API_KEY');
-    return res.status(500).json({ 
+    error('Missing VITE_APPWRITE_API_KEY or APPWRITE_API_KEY');
+    return res.json({ 
       success: false,
       error: 'Missing API key configuration'
-    });
+    }, 500);
   }
 
   // Set up the client with your Appwrite project credentials
@@ -44,26 +44,42 @@ export default async function (req, res) {
   
   try {
     // Parse query parameters
-    const search = req.query.search || '';
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 25;
+    // Handle both GET and POST requests
+    let requestData = {};
+    
+    // For POST requests, data is in the body
+    if (req.method === 'POST') {
+      try {
+        requestData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      } catch (e) {
+        log('Could not parse POST request body as JSON');
+      }
+    } 
+    // For GET requests, data is in query parameters
+    else if (req.method === 'GET') {
+      requestData = req.query || {};
+    }
+    
+    const search = requestData.search || '';
+    const page = parseInt(requestData.page) || 1;
+    const limit = parseInt(requestData.limit) || 25;
     const offset = (page - 1) * limit;
     
-    console.log('Search parameters:', { search, page, limit, offset });
+    log('Parsed request data:', { method: req.method, search, page, limit, offset });
     
+    // Build queries array - DO NOT use search query to avoid fulltext index requirement
     let queries = [];
     
-    // DO NOT add search query to avoid fulltext index requirement
-    // Just add pagination
+    // Add pagination queries
     queries.push(Query.limit(limit));
     queries.push(Query.offset(offset));
     
-    console.log('Appwrite queries:', queries);
+    log('Appwrite queries:', queries);
     
-    // List users using the server SDK
+    // List users using the server SDK - without search query
     const userList = await users.list(queries);
     
-    console.log('User list response:', {
+    log('User list response:', {
       total: userList.total,
       usersCount: userList.users.length
     });
@@ -84,7 +100,7 @@ export default async function (req, res) {
     let usersWithRoles = userList.users
       .filter(user => user.$id) // Filter out users without IDs
       .map(user => ({
-        $id: user.$id,
+        id: user.$id,
         email: user.email || 'No email',
         phone: user.phone,
         name: user.name,
@@ -104,13 +120,14 @@ export default async function (req, res) {
     if (search) {
       const searchLower = search.toLowerCase();
       usersWithRoles = usersWithRoles.filter(user => 
-        user.email && user.email.toLowerCase().includes(searchLower)
+        (user.email && user.email.toLowerCase().includes(searchLower)) ||
+        (user.name && user.name.toLowerCase().includes(searchLower))
       );
-      console.log(`Filtered users by email containing '${search}'. Found ${usersWithRoles.length} matches.`);
+      log(`Filtered users by email/name containing '${search}'. Found ${usersWithRoles.length} matches.`);
     }
     
     // Return the enhanced user data
-    res.json({
+    return res.json({
       success: true,
       data: {
         users: usersWithRoles,
@@ -119,19 +136,19 @@ export default async function (req, res) {
         limit: limit
       }
     });
-  } catch (error) {
-    console.error('Error listing users:', error);
+  } catch (err) {
+    error('Error listing users:', err);
     // Provide more detailed error information
-    res.status(500).json({ 
+    return res.json({ 
       success: false,
       error: 'Failed to list users',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      code: error.code,
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      code: err.code,
       data: {
         users: [],
         total: 0
       }
-    });
+    }, 500);
   }
 };

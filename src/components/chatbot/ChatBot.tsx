@@ -34,6 +34,7 @@ import { useNavigate } from 'react-router-dom';
 import { GeminiService, type GeneratedKit } from '@/lib/gemini-service';
 import { databases } from '@/lib/appwrite';
 import type { Product } from '@/lib/types';
+import { useTheme } from '@/context/theme-context';
 
 interface Message {
   id: string;
@@ -52,7 +53,6 @@ interface Message {
 
 interface ChatState {
   isOpen: boolean;
-  isMinimized: boolean;
   isTyping: boolean;
   connectionStatus: 'online' | 'offline' | 'connecting';
   unreadCount: number;
@@ -75,7 +75,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
   const [chatState, setChatState] = useState<ChatState>(() => {
     const defaultState = {
       isOpen: false,
-      isMinimized: false,
       isTyping: false,
       connectionStatus: 'online' as const,
       unreadCount: 0,
@@ -127,6 +126,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   const geminiService = new GeminiService({ apiKey });
 
@@ -199,7 +199,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
   useEffect(() => {
     try {
       const stateToSave = {
-        isMinimized: chatState.isMinimized,
+        isOpen: chatState.isOpen,
         unreadCount: chatState.unreadCount,
         hasNotification: chatState.hasNotification
       };
@@ -207,7 +207,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     } catch (error) {
       console.warn('Failed to save chat state:', error);
     }
-  }, [chatState.isMinimized, chatState.unreadCount, chatState.hasNotification]);
+  }, [chatState.isOpen, chatState.unreadCount, chatState.hasNotification]);
 
   const loadProducts = async () => {
     try {
@@ -340,10 +340,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     });
   };
 
-  const toggleMinimize = () => {
-    updateChatState({ isMinimized: !chatState.isMinimized });
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -415,11 +411,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
             p-0 gap-0 translate-x-0 translate-y-0 
             overflow-hidden [&>button]:hidden
             border-2 border-border/50 shadow-2xl
-            bg-background/95 backdrop-blur-md
+            bg-background/80 backdrop-blur-md
           "
         >
           {/* Enhanced Chat Header */}
-          <DialogHeader className="p-4 pb-3 border-b bg-muted/30 flex-shrink-0">
+          <DialogHeader className="p-4 pb-3 border-b bg-muted/50 flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-3 text-base font-semibold truncate">
                 <div className="relative">
@@ -453,15 +449,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={toggleMinimize}
-                  className="h-8 w-8 p-0 hover:bg-muted"
-                  title={chatState.isMinimized ? "Maximize" : "Minimize"}
-                >
-                  {chatState.isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
                   onClick={toggleChat}
                   className="h-8 w-8 p-0 hover:bg-muted"
                   title="Close"
@@ -472,59 +459,59 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
             </div>
           </DialogHeader>
 
-          {!chatState.isMinimized && (
-            <div className="flex flex-col h-full min-h-0">
-              {/* Quick Actions - Show when no messages or just welcome message */}
-              {messages.length <= 1 && (
-                <div className="p-4 pb-2">
-                  <div className="text-xs text-muted-foreground mb-2 font-medium">Quick Start:</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {QUICK_ACTIONS.map((action, index) => (
-                      <motion.button
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        onClick={() => handleQuickAction(action.query)}
-                        className="
-                          p-2 text-xs bg-muted hover:bg-muted/80 
-                          rounded-lg transition-colors text-left
-                          border border-border/50 hover:border-border
-                        "
-                        disabled={isLoading}
-                      >
-                        <div className="font-medium text-foreground">{action.label}</div>
-                      </motion.button>
-                    ))}
-                  </div>
-                  <Separator className="mt-4" />
+          {/* Removed the isMinimized conditional wrapper */}
+          <div className="flex flex-col h-full min-h-0">
+            {/* Quick Actions - Show when no messages or just welcome message */}
+            {messages.length <= 1 && (
+              <div className="p-4 pb-2">
+                <div className="text-xs text-muted-foreground mb-2 font-medium">Quick Start:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {QUICK_ACTIONS.map((action, index) => (
+                    <motion.button
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleQuickAction(action.query)}
+                      className="
+                        p-2 text-xs bg-background hover:bg-muted/80 
+                        rounded-lg transition-colors text-left
+                        border border-border hover:border-border/80
+                      "
+                      disabled={isLoading}
+                    >
+                      <div className="font-medium text-foreground">{action.label}</div>
+                    </motion.button>
+                  ))}
                 </div>
-              )}
+                <Separator className="mt-4" />
+              </div>
+            )}
 
-              {/* Enhanced Messages Area */}
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="p-4 space-y-4 pb-4">
-                  <AnimatePresence mode="popLayout">
-                    {messages.map((message) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className="flex items-start gap-2 max-w-[85%] min-w-0">
-                          {message.type === 'bot' && (
-                            <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                              <AvatarFallback className="bg-muted text-muted-foreground">
-                                <Bot className="h-3 w-3" />
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
+            {/* Enhanced Messages Area */}
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-4 space-y-4 pb-4">
+                <AnimatePresence mode="popLayout">
+                  {messages.map((message) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className="flex items-start gap-2 max-w-[85%] min-w-0">
+                        {message.type === 'bot' && (
+                          <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                            <AvatarFallback className="bg-muted text-muted-foreground">
+                              <Bot className="h-3 w-3" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                           
-                          <div
-                            className={`
+                        <div
+                          className={`
                               p-3 text-sm leading-relaxed
                               ${message.type === 'user' 
                                 ? 'chat-message-user text-primary-foreground' 
@@ -532,191 +519,190 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                               }
                               ${message.status === 'error' ? 'border-l-4 border-red-500' : ''}
                             `}
-                          >
-                            <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                              {message.content}
-                            </div>
+                        >
+                          <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                            {message.content}
+                          </div>
                             
-                            {/* Enhanced Kit Preview */}
-                            {message.kit && (
-                              <motion.div 
-                                className="mt-4 space-y-3"
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                transition={{ delay: 0.2 }}
-                              >
-                                <div className="bg-background/50 rounded-lg p-3 border border-border/50">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Package2 className="h-4 w-4 text-primary" />
-                                    <span className="font-medium text-sm">Medical Kit: {message.kit.name}</span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                                    <div className="flex items-center gap-1">
-                                      <Package className="h-3 w-3" />
-                                      <span>{message.kit.items.length} items</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <DollarSign className="h-3 w-3" />
-                                      <span>${message.kit.totalPrice.toFixed(2)}</span>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex flex-wrap gap-1 mb-3">
-                                    {message.kit.items.slice(0, 3).map((item, index) => (
-                                      <Badge 
-                                        key={index} 
-                                        variant="secondary" 
-                                        className="text-xs truncate max-w-[100px]" 
-                                        title={item.product_name}
-                                      >
-                                        {item.product_name}
-                                      </Badge>
-                                    ))}
-                                    {message.kit.items.length > 3 && (
-                                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                                        +{message.kit.items.length - 3} more
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleBuildKit(message.kit!)}
-                                    className="w-full text-xs h-8 bg-primary hover:bg-primary/90"
-                                  >
-                                    <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0" />
-                                    <span className="truncate">Build This Kit</span>
-                                  </Button>
+                          {/* Enhanced Kit Preview */}
+                          {message.kit && (
+                            <motion.div 
+                              className="mt-4 space-y-3"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              transition={{ delay: 0.2 }}
+                            >
+                              <div className="bg-muted/50 rounded-lg p-3 border border-border/80">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Package2 className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-sm">Medical Kit: {message.kit.name}</span>
                                 </div>
-                              </motion.div>
-                            )}
-                            
-                            {/* Message Metadata */}
-                            <div className="flex items-center justify-between mt-2 pt-1">
-                              <div className="text-xs opacity-60">
-                                {message.timestamp.toLocaleTimeString([], { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                })}
+                                  
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                                  <div className="flex items-center gap-1">
+                                    <Package className="h-3 w-3" />
+                                    <span>{message.kit.items.length} items</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3" />
+                                    <span>${message.kit.totalPrice.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                                  
+                                <div className="flex flex-wrap gap-1 mb-3">
+                                  {message.kit.items.slice(0, 3).map((item, index) => (
+                                    <Badge 
+                                      key={index} 
+                                      variant="secondary" 
+                                      className="text-xs truncate max-w-[100px]" 
+                                      title={item.product_name}
+                                    >
+                                      {item.product_name}
+                                    </Badge>
+                                  ))}
+                                  {message.kit.items.length > 3 && (
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      +{message.kit.items.length - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                                  
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleBuildKit(message.kit!)}
+                                  className="w-full text-xs h-8 bg-primary hover:bg-primary/90"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0" />
+                                  <span className="truncate">Build This Kit</span>
+                                </Button>
                               </div>
-                              
-                              <div className="flex items-center gap-1">
-                                {message.status === 'delivered' && message.type === 'user' && (
-                                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                                )}
-                                {message.status === 'error' && (
-                                  <AlertCircle className="h-3 w-3 text-destructive" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {message.type === 'user' && (
-                            <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                              <AvatarFallback className="bg-primary text-primary-foreground">
-                                <User className="h-3 w-3" />
-                              </AvatarFallback>
-                            </Avatar>
+                            </motion.div>
                           )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  
-                  {/* Enhanced Typing Indicator */}
-                  {(isLoading || chatState.isTyping) && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="flex justify-start"
-                    >
-                      <div className="flex items-start gap-2">
-                        <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                          <AvatarFallback className="bg-muted text-muted-foreground">
-                            <Bot className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="chat-message-bot p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="chat-typing">
-                              <div className="chat-typing-dot"></div>
-                              <div className="chat-typing-dot"></div>
-                              <div className="chat-typing-dot"></div>
+                            
+                          {/* Message Metadata */}
+                          <div className="flex items-center justify-between mt-2 pt-1">
+                            <div className="text-xs opacity-60">
+                              {message.timestamp.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              {isLoading ? 'Creating your first aid kit...' : 'Typing...'}
-                            </span>
+                              
+                            <div className="flex items-center gap-1">
+                              {message.status === 'delivered' && message.type === 'user' && (
+                                <CheckCircle2 className="h-3 w-3 text-primary" />
+                              )}
+                              {message.status === 'error' && (
+                                <AlertCircle className="h-3 w-3 text-destructive" />
+                              )}
+                            </div>
                           </div>
                         </div>
+                          
+                        {message.type === 'user' && (
+                          <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              <User className="h-3 w-3" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                       </div>
                     </motion.div>
-                  )}
+                  ))}
+                </AnimatePresence>
                   
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              {/* Enhanced Input Area */}
-              <div className="p-4 border-t bg-background/50 flex-shrink-0">
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 min-w-0">
-                    <Input
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Describe your first aid needs..."
-                      disabled={isLoading}
-                      className="
-                        text-sm resize-none border-border/50 
-                        focus:border-primary transition-colors
-                        bg-background/50
-                      "
-                      maxLength={500}
-                      aria-label="Chat input"
-                    />
-
-                  </div>
-                  
-                  <Button
-                    onClick={() => handleSendMessage()}
-                    disabled={!inputValue.trim() || isLoading}
-                    size="sm"
-                    className="h-10 w-10 p-0 flex-shrink-0 rounded-full"
-                    aria-label="Send message"
+                {/* Enhanced Typing Indicator */}
+                {(isLoading || chatState.isTyping) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex justify-start"
                   >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span>Powered by Gemini 2.5 Flash</span>
-                    <div className="flex items-center gap-1">
-                      {chatState.connectionStatus === 'online' && (
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      )}
-                      {chatState.connectionStatus === 'offline' && (
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                      {chatState.connectionStatus === 'connecting' && (
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                      )}
+                    <div className="flex items-start gap-2">
+                      <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                        <AvatarFallback className="bg-muted text-muted-foreground">
+                          <Bot className="h-3 w-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="chat-message-bot p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="chat-typing">
+                            <div className="chat-typing-dot"></div>
+                            <div className="chat-typing-dot"></div>
+                            <div className="chat-typing-dot"></div>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {isLoading ? 'Creating your first aid kit...' : 'Typing...'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <span className={inputValue.length > 450 ? 'text-yellow-500' : ''}>
-                    {inputValue.length}/500
-                  </span>
-                </div>
-
+                  </motion.div>
+                )}
+                  
+                <div ref={messagesEndRef} />
               </div>
+            </ScrollArea>
+
+            {/* Enhanced Input Area */}
+            <div className="p-4 border-t bg-muted/30 flex-shrink-0">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Describe your first aid needs..."
+                    disabled={isLoading}
+                    className="
+                      text-sm resize-none border-border/50 
+                      focus:border-primary transition-colors
+                      bg-background/50
+                    "
+                    maxLength={500}
+                    aria-label="Chat input"
+                  />
+
+                </div>
+                  
+                <Button
+                  onClick={() => handleSendMessage()}
+                  disabled={!inputValue.trim() || isLoading}
+                  size="sm"
+                  className="h-10 w-10 p-0 flex-shrink-0 rounded-full"
+                  aria-label="Send message"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+                
+              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span>Powered by Gemini 2.5 Flash</span>
+                  <div className="flex items-center gap-1">
+                    {chatState.connectionStatus === 'online' && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    )}
+                    {chatState.connectionStatus === 'offline' && (
+                      <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                    {chatState.connectionStatus === 'connecting' && (
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                    )}
+                  </div>
+                </div>
+                <span className={inputValue.length > 450 ? 'text-yellow-500' : ''}>
+                  {inputValue.length}/500
+                </span>
+              </div>
+
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

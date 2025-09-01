@@ -16,7 +16,7 @@ export const ProductRow = ({
   getProductQuantity
 }: ProductRowProps) => {
   return (
-    <TableRow key={product.id} className={inKit ? 'bg-primary/5' : ''}>
+    <TableRow key={product.id} className={inKit ? 'bg-primary/5 dark:bg-primary/10' : ''}>
       <TableCell>
         <div className="w-10 h-10 bg-muted rounded flex items-center justify-center overflow-hidden">
           <img 

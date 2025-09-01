@@ -4,19 +4,28 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Palette } from 'lucide-react';
 import { AppearanceSettings } from './types';
-import { useTheme } from '@/context/theme-context';
 
 interface AppearanceSettingsCardProps {
   appearanceSettings: AppearanceSettings;
   setAppearanceSettings: React.Dispatch<React.SetStateAction<AppearanceSettings>>;
+  theme: string;
+  setTheme: (theme: string) => void;
+  contrastMode: string;
+  setContrastMode: (contrastMode: string) => void;
+  colorScheme: string;
+  setColorScheme: (colorScheme: string) => void;
 }
 
 export const AppearanceSettingsCard: React.FC<AppearanceSettingsCardProps> = ({
   appearanceSettings,
-  setAppearanceSettings
+  setAppearanceSettings,
+  theme,
+  setTheme,
+  contrastMode,
+  setContrastMode,
+  colorScheme,
+  setColorScheme
 }) => {
-  const { theme, setTheme, contrastMode, setContrastMode, colorScheme, setColorScheme } = useTheme();
-
   return (
     <Card>
       <CardHeader>
@@ -32,7 +41,7 @@ export const AppearanceSettingsCard: React.FC<AppearanceSettingsCardProps> = ({
         <div className="space-y-4">
           <div>
             <Label htmlFor="theme-select">Theme</Label>
-            <Select value={theme} onValueChange={(value: any) => setTheme(value)}>
+            <Select value={theme} onValueChange={(value: string) => setTheme(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -46,7 +55,7 @@ export const AppearanceSettingsCard: React.FC<AppearanceSettingsCardProps> = ({
 
           <div>
             <Label htmlFor="contrast-select">Contrast Mode</Label>
-            <Select value={contrastMode} onValueChange={(value: any) => setContrastMode(value)}>
+            <Select value={contrastMode} onValueChange={(value: string) => setContrastMode(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -59,7 +68,7 @@ export const AppearanceSettingsCard: React.FC<AppearanceSettingsCardProps> = ({
 
           <div>
             <Label htmlFor="color-scheme">Color Scheme</Label>
-            <Select value={colorScheme} onValueChange={(value: any) => setColorScheme(value)}>
+            <Select value={colorScheme} onValueChange={(value: string) => setColorScheme(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

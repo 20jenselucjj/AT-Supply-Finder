@@ -112,6 +112,7 @@ export const UserGrid: React.FC<UserGridProps> = ({
                   <span className="truncate max-w-xs">{user.email}</span>
                 </div>
               </TableCell>
+
               <TableCell>
                 {/* Role Change Dropdown */}
                 <DropdownMenu>

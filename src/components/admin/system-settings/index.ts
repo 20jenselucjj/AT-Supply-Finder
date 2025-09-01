@@ -5,3 +5,4 @@ export * from './NotificationSettingsCard';
 export * from './AppearanceSettingsCard';
 export * from './SystemConfigurationCard';
 export * from './DatabaseSettingsCard';
+export * from './SystemSettingsRefactored';

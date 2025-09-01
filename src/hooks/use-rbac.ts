@@ -11,6 +11,7 @@ export const useRBAC = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user || !user.$id) {
+        console.log('No user or user ID, setting role to null');
         setUserRole(null);
         setLoading(false);
         return;
@@ -18,7 +19,9 @@ export const useRBAC = () => {
 
       try {
         setLoading(true);
+        console.log('Fetching role for user ID:', user.$id);
         const role = await getUserRole(user.$id);
+        console.log('Fetched user role:', role);
         setUserRole(role);
       } catch (err) {
         setError('Failed to fetch user role');

@@ -16,7 +16,7 @@ export const ProductCard = ({
   getProductQuantity
 }: ProductCardProps) => {
   return (
-    <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary' : ''}`}>
+    <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary bg-primary/5 dark:bg-primary/10' : ''}`}>
       <CardContent className="p-4">
         <div className="space-y-4">
           <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">

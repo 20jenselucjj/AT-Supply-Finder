@@ -15,7 +15,7 @@ interface AuditLogEntry {
   id: string;
   user_id: string | null;
   action: string;
-  entity_type: string;
+  entityType: string;
   entity_id: string | null;
   details: Record<string, any> | null;
   ip_address: string | null;
@@ -55,9 +55,9 @@ export const AuditLogViewer: React.FC = () => {
       // Apply search filter
       if (searchTerm) {
         // For Appwrite, we need to search in specific attributes
-        // We'll search in both action and entity_type
+        // We'll search in both action and entityType
         queries.push(Query.search('action', searchTerm));
-        queries.push(Query.search('entity_type', searchTerm));
+        queries.push(Query.search('entityType', searchTerm));
       }
 
       // Apply action filter
@@ -67,7 +67,7 @@ export const AuditLogViewer: React.FC = () => {
 
       // Apply entity type filter
       if (selectedEntityType !== 'all') {
-        queries.push(Query.equal('entity_type', selectedEntityType));
+        queries.push(Query.equal('entityType', selectedEntityType));
       }
 
       // Apply date range filter
@@ -98,7 +98,7 @@ export const AuditLogViewer: React.FC = () => {
         id: doc.$id,
         user_id: doc.user_id,
         action: doc.action,
-        entity_type: doc.entity_type,
+        entityType: doc.entityType,
         entity_id: doc.entity_id,
         details: doc.details,
         ip_address: doc.ip_address,
@@ -139,7 +139,7 @@ export const AuditLogViewer: React.FC = () => {
       );
 
       if (entityTypesResponse.documents) {
-        const uniqueEntityTypes = [...new Set(entityTypesResponse.documents.map((item: any) => item.entity_type).filter(Boolean))];
+        const uniqueEntityTypes = [...new Set(entityTypesResponse.documents.map((item: any) => item.entityType).filter(Boolean))];
         setEntityTypes(uniqueEntityTypes);
       }
     } catch (error) {
@@ -278,7 +278,7 @@ export const AuditLogViewer: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm font-medium">{log.entity_type}</div>
+                          <div className="text-sm font-medium">{log.entityType}</div>
                           {log.entity_id && (
                             <div className="text-xs text-muted-foreground font-mono">
                               {log.entity_id.substring(0, 8)}...

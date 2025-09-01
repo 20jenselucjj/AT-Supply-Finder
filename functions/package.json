@@ -1,0 +1,19 @@
+{
+  "name": "user-management-function",
+  "version": "1.0.0",
+  "description": "Appwrite function to handle user management operations",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-appwrite": "^14.0.0"
+  },
+  "keywords": [
+    "appwrite",
+    "function",
+    "user-management"
+  ],
+  "author": "AT-Supply-Finder",
+  "license": "MIT"
+}

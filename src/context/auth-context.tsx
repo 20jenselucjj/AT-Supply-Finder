@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  updateUser: (data: { name?: string; prefs?: any }) => Promise<{ error: Error | null }>;
   loading: boolean;
   isAdmin: boolean;
   hasCheckedAdmin: boolean;
@@ -90,11 +91,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Query the user_roles collection in Appwrite using the SDK
           try {
             console.log('Checking admin status for user ID:', authUser.$id);
+            console.log('Using database ID:', import.meta.env.VITE_APPWRITE_DATABASE_ID);
+            console.log('Querying userRoles collection with userId:', authUser.$id);
+            
             const response = await databases.listDocuments(
               import.meta.env.VITE_APPWRITE_DATABASE_ID,
               'userRoles',
               [Query.equal('userId', authUser.$id)]
             );
+            
+            console.log('Admin check query response:', response);
             
             if (response && response.documents && response.documents.length > 0) {
               const roleData = response.documents[0];
@@ -253,11 +259,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUser = async (data: { name?: string; prefs?: any }) => {
+    try {
+      let updatedUser = user;
+      let updated = false;
+      
+      // Update name if provided
+      if (data.name && user && data.name !== user.name) {
+        updatedUser = await account.updateName(data.name);
+        updated = true;
+      }
+      
+      // Update preferences if provided
+      if (data.prefs && user) {
+        // Only update if something actually changed
+        const prefsChanged = JSON.stringify(data.prefs) !== JSON.stringify(user.prefs);
+        
+        if (prefsChanged) {
+          updatedUser = await account.updatePrefs(data.prefs);
+          updated = true;
+        }
+      }
+      
+      // Only update state if something actually changed
+      if (updated) {
+        setUser(updatedUser);
+      }
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      return { error };
+    }
+  };
+
   const value = {
     user,
     signUp,
     signIn,
     signOut,
+    updateUser,
     loading,
     isAdmin,
     hasCheckedAdmin,

@@ -2,12 +2,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from './auth-context';
 import { databases } from '@/lib/appwrite';
 import { Query } from 'appwrite';
+import { Product } from '@/lib/types';
 
 interface FavoritesContextType {
   favorites: string[]; // Array of product IDs
+  favoriteProducts: Product[]; // Array of actual product objects
   toggleFavorite: (productId: string) => Promise<void>;
   isFavorite: (productId: string) => boolean;
   loading: boolean;
+  refreshFavorites: () => Promise<void>;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
@@ -26,6 +29,7 @@ interface FavoritesProviderProps {
 
 export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }) => {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
 
@@ -68,10 +72,46 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
 
       const favoriteIds = response.documents?.map((item: any) => item.productId) || [];
       setFavorites(favoriteIds);
+      
+      // Load actual product data for favorites
+      if (favoriteIds.length > 0) {
+        const productResponse = await databases.listDocuments(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          [Query.equal('$id', favoriteIds)]
+        );
+        
+        setFavoriteProducts(productResponse.documents.map(doc => ({
+          id: doc.$id,
+          name: doc.name,
+          category: doc.category,
+          brand: doc.brand,
+          rating: doc.rating,
+          price: doc.price,
+          dimensions: doc.dimensions,
+          weight: doc.weight,
+          material: doc.material,
+          features: doc.features ? doc.features.split(', ') : [],
+          imageUrl: doc.imageUrl,
+          asin: doc.asin,
+          affiliateLink: doc.affiliateLink,
+          description: doc.description,
+          offers: [] // We'll need to populate this separately
+        })));
+      } else {
+        setFavoriteProducts([]);
+      }
     } catch (error) {
       console.error('Error loading favorites:', error);
+      setFavoriteProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshFavorites = async () => {
+    if (user) {
+      await loadFavorites();
     }
   };
 
@@ -123,6 +163,9 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
         // Update local state
         setFavorites(prev => [...prev, productId]);
       }
+      
+      // Refresh the favorites list
+      await refreshFavorites();
     } catch (error) {
       console.error('Error toggling favorite:', error);
       throw error;
@@ -137,9 +180,11 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
     <FavoritesContext.Provider
       value={{
         favorites,
+        favoriteProducts,
         toggleFavorite,
         isFavorite,
-        loading
+        loading,
+        refreshFavorites
       }}
     >
       {children}

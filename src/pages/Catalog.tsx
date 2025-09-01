@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
+import { useFavorites } from "@/context/favorites-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sheet,
@@ -45,6 +46,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const Catalog = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const [params, setParams] = useSearchParams();
+  const { favorites } = useFavorites(); // Add this to access favorites
   const [products, setProducts] = useState<Product[]>(() => {
     // Initialize from cache if available and not expired
     try {
@@ -69,6 +71,7 @@ const Catalog = () => {
   const q = params.get("q") || "";
   const cat = params.get("cat") || "all";
   const sort = params.get("sort") || "relevance";
+  const showFavorites = params.get("favorites") === "true"; // Add this to check if we should show only favorites
 
   // Cache products data
   const cacheProducts = useCallback((productsData: Product[]) => {
@@ -268,6 +271,11 @@ const Catalog = () => {
   const filtered = useMemo(() => {
     let items = [...products];
     
+    // Filter by favorites if requested
+    if (showFavorites) {
+      items = items.filter((p) => favorites.includes(p.id));
+    }
+    
     // Filter by category (additional client-side filtering)
     if (cat !== "all") {
       items = items.filter((p) => p.category === cat);
@@ -306,10 +314,10 @@ const Catalog = () => {
     }
     
     console.log('Filtered products:', items.length, 'from', products.length, 'total');
-    console.log('Current filters - cat:', cat, 'q:', q, 'priceRange:', priceRange, 'brands:', brands, 'minRating:', minRating);
+    console.log('Current filters - cat:', cat, 'q:', q, 'priceRange:', priceRange, 'brands:', brands, 'minRating:', minRating, 'showFavorites:', showFavorites);
     
     return items;
-  }, [products, q, cat, sort, priceRange, brands, minRating]);
+  }, [products, q, cat, sort, priceRange, brands, minRating, showFavorites, favorites]); // Add showFavorites and favorites to dependencies
 
   const { kitCount } = useKit();
   const updateParam = (key: string, value: string) => {

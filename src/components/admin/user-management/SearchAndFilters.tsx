@@ -38,7 +38,7 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search users by email..."
-          className="pl-10"
+          className="pl-10 dark:text-slate-900 dark:bg-slate-100 dark:placeholder:text-slate-500"
           value={searchTerm}
           onChange={(e) => onSearchTermChange(e.target.value)}
           onKeyDown={handleKeyDown}

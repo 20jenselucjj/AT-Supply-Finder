@@ -1,5 +1,6 @@
 import React from 'react';
 import { account, databases } from './appwrite';
+import { Query } from 'appwrite'; // Import Query from appwrite
 
 export type UserRole = 'user' | 'editor' | 'admin';
 
@@ -75,22 +76,34 @@ export const getUserRole = async (userId: string): Promise<UserRole> => {
       return 'user';
     }
 
+    console.log('Getting user role for userId:', userId);
+    console.log('Using database ID:', import.meta.env.VITE_APPWRITE_DATABASE_ID);
+    console.log('Using collection ID: userRoles');
+
     // Check the user_roles collection in Appwrite
     try {
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'userRoles',
-        [JSON.stringify({ method: 'equal', attribute: 'userId', values: [userId] })]
+        [Query.equal('userId', userId)] // Use proper Appwrite SDK query syntax
       );
+      
+      console.log('User role query response:', response);
       
       if (response && response.documents && response.documents.length > 0) {
         const roleData = response.documents[0];
-        return (roleData.role as UserRole) || 'user';
+        console.log('Found role data:', roleData);
+        const role = (roleData.role as UserRole) || 'user';
+        console.log('Returning role:', role);
+        return role;
+      } else {
+        console.log('No role data found for user, returning user role');
       }
     } catch (error) {
       console.error('Error fetching user role from Appwrite:', error);
     }
     
+    console.log('Defaulting to user role');
     return 'user'; // Default to user role if error or no role found
   } catch (error) {
     console.error('Error determining user role:', error);

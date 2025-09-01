@@ -28,7 +28,7 @@ const AdminKits = lazy(() => import("./pages/admin/AdminKits"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
-const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+// Removed AdminOrders import
 const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -37,6 +37,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Contact = lazy(() => import("./pages/Contact"));
 const About = lazy(() => import("./pages/About"));
 const AffiliateDisclosure = lazy(() => import("./pages/AffiliateDisclosure"));
+const TestSystemSettings = lazy(() => import("./pages/TestSystemSettings"));
 
 import AdminRoute from "./components/layout/AdminRoute";
 import { Navigate } from "react-router-dom";
@@ -80,7 +81,7 @@ const App = () => {
                             <Route path="dashboard" element={<AdminDashboard />} />
                             <Route path="users" element={<AdminUsers />} />
                             <Route path="products" element={<AdminProducts />} />
-                            <Route path="orders" element={<AdminOrders />} />
+                            {/* Removed orders route */}
                             <Route path="analytics" element={<AdminAnalytics />} />
                             <Route path="reports" element={<AdminReports />} />
                             <Route path="marketing" element={<AdminMarketing />} />
@@ -94,6 +95,7 @@ const App = () => {
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
+                          <Route path="/test-system-settings" element={<TestSystemSettings />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </Suspense>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Product, VendorOffer } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { databases } from '@/lib/appwrite';
+import { Query } from 'appwrite';
 
 export interface KitItem {
   id: string;
@@ -77,27 +78,104 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   
   // Initialize kit from localStorage for anonymous users
+  // For authenticated users, we'll load the kit from Appwrite when needed
   useEffect(() => {
-    if (user === null && !authLoading) {
-      const savedKit = localStorage.getItem('wrap-wizard-kit');
-      if (savedKit) {
+    const loadUserKit = async () => {
+      if (user !== null && !authLoading) {
         try {
-          setKit(JSON.parse(savedKit));
-        } catch (e) {
-          console.error('Failed to parse saved kit', e);
+          // Try to load the user's current kit from Appwrite
+          const response = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'userKits',
+            [Query.equal('userId', user.$id)]
+          );
+          
+          if (response.documents && response.documents.length > 0) {
+            const userKitDoc = response.documents[0];
+            if (userKitDoc.kitData) {
+              setKit(JSON.parse(userKitDoc.kitData));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user kit:', error);
+          // Fall back to localStorage if Appwrite fails
+          const savedKit = localStorage.getItem('wrap-wizard-kit');
+          if (savedKit) {
+            try {
+              setKit(JSON.parse(savedKit));
+            } catch (e) {
+              console.error('Failed to parse saved kit', e);
+            }
+          }
         }
+        setLoading(false);
+      } else if (user === null && !authLoading) {
+        const savedKit = localStorage.getItem('wrap-wizard-kit');
+        if (savedKit) {
+          try {
+            setKit(JSON.parse(savedKit));
+          } catch (e) {
+            console.error('Failed to parse saved kit', e);
+          }
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    } else if (user !== null && !authLoading) {
-      setLoading(false);
-    }
+    };
+    
+    loadUserKit();
   }, [user, authLoading]);
-
-  // Save kit to localStorage whenever it changes for anonymous users
+  
+  // Save kit to localStorage for anonymous users or to Appwrite for authenticated users
   useEffect(() => {
-    if (user === null && !authLoading) {
-      localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
-    }
+    const saveKitData = async () => {
+      if (user !== null && !authLoading) {
+        try {
+          // Save to Appwrite for authenticated users
+          const response = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'userKits',
+            [Query.equal('userId', user.$id)]
+          );
+          
+          const kitDataString = JSON.stringify(kit);
+          
+          if (response.documents && response.documents.length > 0) {
+            // Update existing kit document
+            const kitDocId = response.documents[0].$id;
+            await databases.updateDocument(
+              import.meta.env.VITE_APPWRITE_DATABASE_ID,
+              'userKits',
+              kitDocId,
+              {
+                kitData: kitDataString
+              }
+            );
+          } else {
+            // Create new kit document
+            await databases.createDocument(
+              import.meta.env.VITE_APPWRITE_DATABASE_ID,
+              'userKits',
+              'unique()',
+              {
+                userId: user.$id,
+                kitData: kitDataString
+              }
+            );
+          }
+        } catch (error) {
+          console.error('Error saving user kit to Appwrite:', error);
+          // Fall back to localStorage if Appwrite fails
+          localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
+        }
+      } else if (user === null && !authLoading) {
+        // Save to localStorage for anonymous users
+        localStorage.setItem('wrap-wizard-kit', JSON.stringify(kit));
+      }
+    };
+    
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveKitData, 1000);
+    return () => clearTimeout(timeoutId);
   }, [kit, user, authLoading]);
 
   const addToKit = (product: Product, quantity: number = 1) => {
@@ -273,11 +351,7 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'userKits',
         [
-          JSON.stringify({
-            method: 'equal',
-            attribute: 'userId',
-            values: [user.$id]
-          })
+          Query.equal('userId', user.$id)
         ]
       );
       
