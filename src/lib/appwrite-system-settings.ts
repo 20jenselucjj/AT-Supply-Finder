@@ -227,19 +227,8 @@ export const updateSettings = async (
       })
     );
 
-    // Check if response is valid
-    if (!response || !response.responseBody) {
-      throw new Error('Empty response from system settings function');
-    }
-
     // Parse the response
-    let result;
-    try {
-      result = JSON.parse(response.responseBody);
-    } catch (parseError) {
-      console.error('Error parsing response body:', response.responseBody);
-      throw new Error('Invalid JSON response from system settings function');
-    }
+    const result = JSON.parse(response.responseBody);
     
     if (!result.success) {
       throw new Error(result.error || 'Failed to update system settings');
