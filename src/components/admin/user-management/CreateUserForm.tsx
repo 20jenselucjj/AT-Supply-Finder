@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { UserPlus, Mail, Shield } from 'lucide-react';
+import { UserPlus, Mail, Shield, Eye, EyeOff } from 'lucide-react';
 import { CreateUserFormProps } from './types';
 
 export const CreateUserForm: React.FC<CreateUserFormProps> = ({
@@ -22,6 +22,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   inviteMode,
   setInviteMode
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -91,14 +92,28 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               <Label htmlFor="password" className="text-right">
                 Password
               </Label>
-              <div className="col-span-3">
+              <div className="col-span-3 relative">
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={newUserPassword}
                   onChange={(e) => setNewUserPassword(e.target.value)}
                   placeholder="Enter password"
+                  className="pr-10"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
               </div>
             </div>
           )}

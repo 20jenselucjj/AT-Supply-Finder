@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { databases, account } from '@/lib/appwrite';
+import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
 import { 
   User, 
@@ -43,6 +44,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   totalUsers, 
   onUserCountChange 
 }) => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -284,17 +286,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         return;
       }
 
+      if (!currentUser?.$id) {
+        throw new Error('You must be logged in to create users');
+      }
+
       // Create user using Appwrite function
       const { functions } = await import('@/lib/appwrite');
       
       const execution = await functions.createExecution(
         '68b211da003bfec2ae74', // user-management function ID
         JSON.stringify({
-          action: 'createUser',
+          action: 'add',
           email: newUserEmail,
           password: newUserPassword,
           name: newUserName,
-          role: newUserRole
+          role: newUserRole,
+          requestorId: currentUser.$id
         }),
         false // synchronous execution
       );
@@ -350,9 +357,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   const deleteUser = async (userId: string) => {
     try {
+      if (!currentUser?.$id) {
+        throw new Error('You must be logged in to delete users');
+      }
+
       const params = {
         action: 'delete',
-        userId: userId
+        userId: userId,
+        requestorId: currentUser.$id
       };
       
       console.log('Deleting user with params:', params);
@@ -396,13 +408,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   const updateUser = async (userId: string, updates: Partial<UserData>) => {
     try {
+      if (!currentUser?.$id) {
+        throw new Error('You must be logged in to update users');
+      }
+
       const params = {
         action: 'update',
         userId: userId,
         email: updates.email,
         // Remove name property since it doesn't exist in UserData type
         role: updates.role,
-        status: updates.is_active !== undefined ? (updates.is_active ? 'active' : 'inactive') : undefined
+        status: updates.is_active !== undefined ? (updates.is_active ? 'active' : 'inactive') : undefined,
+        requestorId: currentUser.$id
       };
       
       console.log('Updating user with params:', params);
@@ -446,10 +463,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   const changeUserPassword = async (userId: string, newPassword: string) => {
     try {
+      if (!currentUser?.$id) {
+        throw new Error('You must be logged in to change user passwords');
+      }
+
       const params = {
         action: 'changePassword',
         userId: userId,
-        newPassword: newPassword
+        newPassword: newPassword,
+        requestorId: currentUser.$id
       };
       
       console.log('Changing user password with params:', params);

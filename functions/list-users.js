@@ -60,13 +60,57 @@ export default async function ({ req, res, log, error }) {
       requestData = req.query || {};
     }
     
+    const action = requestData.action || 'list';
     const search = requestData.search || '';
     const page = parseInt(requestData.page) || 1;
     const limit = parseInt(requestData.limit) || 25;
     const offset = (page - 1) * limit;
     
-    log('Parsed request data:', { method: req.method, search, page, limit, offset });
+    log('Parsed request data:', { method: req.method, action, search, page, limit, offset });
     
+    // Handle different actions
+    if (action === 'delete') {
+      const userId = requestData.userId;
+      if (!userId) {
+        return res.json({
+          success: false,
+          error: 'Missing userId parameter for delete action'
+        }, 400);
+      }
+      
+      log(`Deleting user with ID: ${userId}`);
+      
+      // Delete user using Appwrite SDK
+      await users.delete(userId);
+      
+      // Also delete user role if exists
+      try {
+        const roleDocs = await databases.listDocuments(
+          databaseId,
+          'userRoles',
+          [Query.equal('userId', userId)]
+        );
+        
+        if (roleDocs.documents.length > 0) {
+          await databases.deleteDocument(
+            databaseId,
+            'userRoles',
+            roleDocs.documents[0].$id
+          );
+          log(`Deleted user role for user: ${userId}`);
+        }
+      } catch (roleError) {
+        log(`Note: Could not delete user role for ${userId} - ${roleError.message}`);
+        // Continue even if role deletion fails
+      }
+      
+      return res.json({
+        success: true,
+        message: 'User deleted successfully'
+      });
+    }
+    
+    // Default action: list users
     // Build queries array - DO NOT use search query to avoid fulltext index requirement
     let queries = [];
     
