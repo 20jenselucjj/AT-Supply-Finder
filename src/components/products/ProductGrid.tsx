@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
 import { Plus, Minus, Heart, Star } from 'lucide-react';
 import { useFavorites } from '@/context/favorites-context';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductGridProps {
   products: Product[];
@@ -29,6 +30,7 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
         const bestPrice = getBestPrice(product);
         const isProductFavorite = isFavorite(product.id);
         const hasMultipleOffers = product.offers && product.offers.length > 1;
+        const productQuantity = getProductQuantity(product.id);
         
         return (
           <motion.div
@@ -72,13 +74,13 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
               rel="noopener noreferrer"
               className="block cursor-pointer"
             >
-              <div className="bg-secondary/70 border border-border rounded-lg p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
+              <div className="bg-secondary/70 rounded-xl p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
                 <img
                   src={product.imageUrl || '/placeholder.svg'}
                   alt={product.name}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 rounded-xl"
                 />
                 {hasMultipleOffers && (
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
@@ -91,6 +93,19 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
             <div className="mb-3">
               <h3 className="font-semibold mb-1 line-clamp-2 leading-tight">{product.name}</h3>
               <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
+              
+              {/* Quantity/Weight display */}
+              <div className="flex flex-wrap gap-1 mb-2">
+                {productQuantity > 0 ? (
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    Qty: {productQuantity}
+                  </Badge>
+                ) : product.weight && product.weight !== 'N/A' ? (
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    Qty: {product.weight}
+                  </Badge>
+                ) : null}
+              </div>
               
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="text-lg font-bold text-primary">
@@ -122,7 +137,7 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <span className="font-medium text-sm px-2">
+                  <span className="font-medium text-sm px-3 py-1">
                     Qty: {getProductQuantity(product.id)}
                   </span>
                   <Button

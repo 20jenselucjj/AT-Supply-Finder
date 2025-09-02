@@ -31,7 +31,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { GeminiService, type GeneratedKit } from '@/lib/gemini-service';
+import { OpenRouterService, type GeneratedKit } from '@/lib/openrouter-service';
 import { databases } from '@/lib/appwrite';
 import type { Product } from '@/lib/types';
 import { useTheme } from '@/context/theme-context';
@@ -128,7 +128,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
 
-  const geminiService = new GeminiService({ apiKey });
+  const openRouterService = new OpenRouterService({ 
+    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+    model: 'deepseek/deepseek-chat-v3.1:free'
+  });
 
   // Utility functions
   const updateChatState = useCallback((updates: Partial<ChatState>) => {
@@ -265,10 +268,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       updateChatState({ connectionStatus: 'connecting' });
       
       // Search for relevant products using RAG
-      const relevantProducts = await geminiService.searchProducts(content, products);
+      const relevantProducts = await openRouterService.searchProducts(content, products);
       
-      // Generate kit using Gemini 2.5 Flash
-      const generatedKit = await geminiService.generateFirstAidKit({
+      // Generate kit using DeepSeek via OpenRouter
+      const generatedKit = await openRouterService.generateFirstAidKit({
         userQuery: content,
         availableProducts: relevantProducts.slice(0, 50) // Limit for API efficiency
       });
@@ -683,7 +686,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                 
               <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <span>Powered by Gemini 2.5 Flash</span>
+                  <span>Powered by AI</span>
                   <div className="flex items-center gap-1">
                     {chatState.connectionStatus === 'online' && (
                       <div className="w-2 h-2 bg-green-500 rounded-full" />

@@ -102,7 +102,7 @@ const App = () => {
                     </main>
                     <SiteFooter />
                   </div>
-                  <ChatBot apiKey={import.meta.env.VITE_GEMINI_API_KEY || ''} />
+                  <ChatBot apiKey={import.meta.env.VITE_OPENROUTER_API_KEY || ''} />
                   <Toaster />
                   <Sonner />
                 </BrowserRouter>

@@ -217,7 +217,7 @@ export const StarterKitBuilder: React.FC = () => {
       // Log successful template creation
       await logger.auditLog({
         action: 'CREATE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
+        entityType: 'STARTER_KIT_TEMPLATE',
         details: {
           template_id: response.$id,
           template_name: templateForm.name
@@ -231,7 +231,7 @@ export const StarterKitBuilder: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'CREATE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
+        entityType: 'STARTER_KIT_TEMPLATE',
         details: {
           template_name: templateForm.name,
           error: error.message
@@ -264,8 +264,8 @@ export const StarterKitBuilder: React.FC = () => {
       // Log successful template update
       await logger.auditLog({
         action: 'UPDATE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: editingTemplate.id,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: editingTemplate.id,
         details: {
           template_name: templateForm.name,
           category: templateForm.category
@@ -281,8 +281,8 @@ export const StarterKitBuilder: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'UPDATE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: editingTemplate.id,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: editingTemplate.id,
         details: {
           template_name: templateForm.name,
           error: error.message
@@ -304,8 +304,8 @@ export const StarterKitBuilder: React.FC = () => {
       // Log successful template deletion
       await logger.auditLog({
         action: 'DELETE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: templateId
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: templateId
       });
 
       toast.success('Starter kit template deleted successfully');
@@ -313,8 +313,8 @@ export const StarterKitBuilder: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'DELETE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: templateId,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: templateId,
         details: {
           error: error.message
         }

@@ -158,7 +158,10 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
               'unique()',
               {
                 userId: user.$id,
-                kitData: kitDataString
+                name: 'Current Kit', // Default name for auto-saved kit
+                description: 'Auto-saved current kit',
+                kitData: kitDataString,
+                isPublic: false
               }
             );
           }

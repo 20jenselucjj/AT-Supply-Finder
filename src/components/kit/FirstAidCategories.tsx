@@ -138,6 +138,48 @@ export const FIRST_AID_CATEGORIES: FirstAidCategory[] = [
     ],
     required: false,
     estimatedItems: 4
+  },
+  {
+    id: "hot-cold-therapy",
+    name: "Hot & Cold Therapy",
+    description: "Products for treating injuries with heat and cold therapy",
+    icon: "🧊",
+    subcategories: [
+      "Instant cold compress",
+      "Reusable hot/cold gel packs",
+      "Topical analgesic creams",
+      "Heat wraps"
+    ],
+    required: false,
+    estimatedItems: 4
+  },
+  {
+    id: "hydration-nutrition",
+    name: "Hydration & Nutrition",
+    description: "Emergency hydration and nutrition supplies",
+    icon: "💧",
+    subcategories: [
+      "Electrolyte powder packets",
+      "Energy gel packets",
+      "Emergency water tablets",
+      "Glucose tablets"
+    ],
+    required: false,
+    estimatedItems: 4
+  },
+  {
+    id: "miscellaneous",
+    name: "Miscellaneous & General",
+    description: "Additional supplies and storage solutions",
+    icon: "📦",
+    subcategories: [
+      "Athletic training kit bag",
+      "Disposable towels",
+      "Plastic bags for waste",
+      "Emergency whistle"
+    ],
+    required: false,
+    estimatedItems: 4
   }
 ];
 

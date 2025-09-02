@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { enhanceProductWithAI } from './utils/ai-product-enhancer.js';
 
 // Helper function to extract ASIN from Amazon URL
 function extractASINFromURL(url) {
@@ -33,7 +34,7 @@ function createConciseName(title, brand) {
   // Remove brand name if it's at the beginning
   let conciseTitle = title;
   if (brand) {
-    const brandRegex = new RegExp('^' + brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\s*', 'i');
+    const brandRegex = new RegExp('^' + brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i');
     conciseTitle = title.replace(brandRegex, '');
   }
   
@@ -91,7 +92,6 @@ function createConciseName(title, brand) {
   // Remove extra spaces and trim
   conciseTitle = conciseTitle.replace(/\s+/g, ' ').trim();
   
-  
   // If the title is still long, try to extract the core product name
   if (conciseTitle.length > 50) {
     // Try to find the main product type
@@ -106,21 +106,43 @@ function createConciseName(title, brand) {
       'Medical Tape', 'Athletic Tape', 'Elastic Bandage', 'Compression Bandage'
     ];
     
+    let bestTitle = conciseTitle; // Default to original if no better option found
+    let foundProductType = false;
+    
     for (const type of productTypes) {
       const typeIndex = conciseTitle.toLowerCase().indexOf(type.toLowerCase());
       if (typeIndex !== -1) {
-        // Take a substring around the product type
-        const start = Math.max(0, typeIndex - 20);
-        const end = Math.min(conciseTitle.length, typeIndex + type.length + 20);
-        conciseTitle = conciseTitle.substring(start, end).trim();
+        foundProductType = true;
+        
+        // If product type is near the beginning, preserve the beginning
+        if (typeIndex <= 30) {
+          // Take a substring starting from the beginning
+          const end = Math.min(conciseTitle.length, 57);
+          bestTitle = conciseTitle.substring(0, end).trim() + (end < conciseTitle.length ? '...' : '');
+        } else {
+          // Product type is further in, so extract context around it
+          // But make sure we don't start too far in
+          const start = Math.max(0, typeIndex - 20);
+          // Don't start too far in as we want to preserve meaningful content
+          if (start > 20) {
+            // If we're starting too far in, prefer the beginning of the title
+            const end = Math.min(conciseTitle.length, 57);
+            bestTitle = conciseTitle.substring(0, end).trim() + (end < conciseTitle.length ? '...' : '');
+          } else {
+            const end = Math.min(conciseTitle.length, start + 57);
+            bestTitle = conciseTitle.substring(start, end).trim() + (end < conciseTitle.length ? '...' : '');
+          }
+        }
         break;
       }
     }
     
-    // If still too long, truncate and add ellipsis
-    if (conciseTitle.length > 60) {
-      conciseTitle = conciseTitle.substring(0, 57) + '...';
+    // If no product type was found, just truncate from the beginning
+    if (!foundProductType) {
+      bestTitle = conciseTitle.substring(0, 57) + '...';
     }
+    
+    conciseTitle = bestTitle;
   }
   
   // Add brand back if it was removed and the title is very short
@@ -408,8 +430,71 @@ export default async function scrapeAmazonProduct(req, res) {
         productData.material = value;
       }
     });
-
+    
+    // Additional material extraction from product description and features
+    if (!productData.material) {
+      // Look for material information in features
+      const featuresText = Array.isArray(productData.features) ? productData.features.join(' ') : '';
+      
+      // Common material terms to look for
+      const materialTerms = [
+        'adhesive', 'latex-free', 'latex free', 'sterile', 'foam', 'gel', 'plastic',
+        'fabric', 'cotton', 'polyester', 'silicone', 'rubber', 'vinyl', 'metal',
+        'aluminum', 'steel', 'nylon', 'neoprene', 'microfiber', 'gauze'
+      ];
+      
+      for (const term of materialTerms) {
+        if (fullTitle.toLowerCase().includes(term) || featuresText.toLowerCase().includes(term)) {
+          // Capitalize the first letter
+          productData.material = term.charAt(0).toUpperCase() + term.slice(1);
+          break;
+        }
+      }
+      
+      // If still no material found, check for more specific combinations
+      if (!productData.material) {
+        const materialCombinations = [
+          'latex-free adhesive',
+          'sterile gauze',
+          'medical grade',
+          'non-woven',
+          'non woven'
+        ];
+        
+        for (const combination of materialCombinations) {
+          if (fullTitle.toLowerCase().includes(combination) || featuresText.toLowerCase().includes(combination)) {
+            productData.material = combination.split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+            break;
+          }
+        }
+      }
+    }
+    
     console.log('Extracted product data:', productData);
+
+    // Enhance product data with AI if API key is available
+    const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+    if (openRouterApiKey) {
+      try {
+        console.log('Enhancing product data with AI...');
+        const enhancedProductData = await enhanceProductWithAI({
+          ...productData,
+          title: fullTitle, // Pass the full title for better AI processing
+          features: productData.features, // Ensure features are passed correctly
+          dimensions: productData.dimensions, // Pass dimensions for sizing information
+          weight: productData.weight // Pass weight information
+        }, openRouterApiKey);
+        
+        // Merge enhanced data with original data
+        Object.assign(productData, enhancedProductData);
+        console.log('Product data enhanced with AI:', productData);
+      } catch (enhanceError) {
+        console.error('Error enhancing product with AI:', enhanceError.message);
+        // Continue with original data if AI enhancement fails
+      }
+    }
 
     // Validate required fields
     if (!productData.name || productData.name.trim() === '') {

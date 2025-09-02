@@ -58,13 +58,13 @@ export const ProductGrid = ({ products, onProductSelect }: ProductGridProps) => 
               onClick={() => onProductSelect(product)}
               className="block cursor-pointer"
             >
-              <div className="bg-secondary/70 border border-border rounded-lg p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
+              <div className="bg-secondary/70 rounded-xl p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
                 <img
                   src={product.imageUrl || '/placeholder.svg'}
                   alt={product.name}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 rounded-xl"
                 />
                 {hasMultipleOffers && (
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
@@ -88,13 +88,10 @@ export const ProductGrid = ({ products, onProductSelect }: ProductGridProps) => 
                   ${bestPrice.toFixed(2)}
                 </span>
                 
-                {product.rating && product.rating > 0 ? (
-                  <div className="flex items-center bg-secondary/60 px-2 py-1 rounded-full text-xs">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                    <span className="font-medium">{product.rating.toFixed(1)}</span>
+                {product.weight && (
+                  <div className="bg-primary/10 px-3 py-1 rounded text-xs font-medium">
+                    Qty: {product.weight}
                   </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No ratings</span>
                 )}
               </div>
             </div>

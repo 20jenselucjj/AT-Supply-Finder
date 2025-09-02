@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Package, Plus, Minus, Check } from "lucide-react";
+import { ArrowLeft, Star, Plus, Minus, Check, ExternalLink } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types";
 import ProductSpecifications from "./ProductSpecifications";
@@ -48,6 +48,16 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
     ));
   };
 
+  // Get the best price from offers
+  const bestPrice = product.offers && product.offers.length > 0 
+    ? Math.min(...product.offers.map(o => o.price))
+    : null;
+
+  // Get the best offer URL for the product link
+  const bestOfferUrl = product.offers && product.offers.length > 0 
+    ? product.offers.find(o => o.price === bestPrice)?.url || product.offers[0]?.url
+    : '#';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,89 +69,120 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
       </div>
 
       {/* Product Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Product Image and Basic Info */}
-        <Card>
-          <CardContent className="p-6">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4">
             <div className="space-y-4">
-              {/* Product Image Placeholder */}
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Package className="w-16 h-16 text-muted-foreground" />
+              {/* Product Image - Made smaller */}
+              <div className="aspect-square bg-secondary/70 rounded-lg flex items-center justify-center overflow-hidden border max-w-md mx-auto w-full">
+                <img
+                  src={product.imageUrl || '/placeholder.svg'}
+                  alt={product.name}
+                  className="w-full h-full object-contain p-4"
+                />
               </div>
               
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold">{product.name}</h1>
-                <p className="text-muted-foreground">{product.description}</p>
+              <div className="space-y-3">
+                {/* Product Title with Link */}
+                <div>
+                  <a 
+                    href={bestOfferUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xl font-bold hover:text-primary transition-colors inline-flex items-center gap-1"
+                  >
+                    {product.name}
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  </a>
+                  {product.description && (
+                    <p className="text-muted-foreground mt-1 text-sm">{product.description}</p>
+                  )}
+                </div>
+                
+                {/* Product Features as Description */}
+                {product.features && product.features.length > 0 && (
+                  <div>
+                    <h3 className="font-medium text-sm mb-1">Features:</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {product.features.join('. ') + '.'}
+                    </p>
+                  </div>
+                )}
                 
                 <div className="flex items-center gap-2">
                   <div className="flex items-center">
-                    {renderStars(product.rating)}
+                    {renderStars(product.rating || 0)}
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {product.rating.toFixed(1)} ({product.reviews?.length || 0} reviews)
+                  <span className="text-xs text-muted-foreground">
+                    {product.rating ? product.rating.toFixed(1) : 'No rating'} 
+                    {product.reviews && product.reviews.length > 0 ? ` (${product.reviews.length} reviews)` : ''}
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{product.brand}</Badge>
-                  <Badge variant="outline">{product.category}</Badge>
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge variant="secondary" className="text-xs">{product.brand}</Badge>
+                  <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                  {product.subcategory && (
+                    <Badge variant="outline" className="text-xs">{product.subcategory}</Badge>
+                  )}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Purchase Options */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Add to Kit</CardTitle>
+        {/* Purchase Options - More compact */}
+        <Card className="h-fit">
+          <CardHeader className="p-4">
+            <CardTitle className="text-lg">Add to Kit</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-3xl font-bold">
-              {product.offers && product.offers.length > 0 
-                ? `$${Math.min(...product.offers.map(o => o.price)).toFixed(2)}` 
-                : 'Price not available'}
+          <CardContent className="p-4 pt-0">
+            <div className="text-2xl font-bold">
+              {bestPrice !== null ? `$${bestPrice.toFixed(2)}` : 'Price not available'}
             </div>
             {product.offers && product.offers.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Best price from {product.offers.find(o => o.price === Math.min(...product.offers.map(p => p.price)))?.name}
+              <div className="text-xs text-muted-foreground mt-1">
+                Best price from {product.offers.find(o => o.price === bestPrice)?.name || product.offers[0]?.name}
               </div>
             )}
             
             {!isInKit ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Quantity:</span>
+              <div className="space-y-4 mt-3">
+                <div className="space-y-2">
+                  <div className="text-xs font-medium">Quantity:</div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={() => adjustQuantity(-1)}
                       disabled={quantity <= 1}
                     >
-                      <Minus className="w-4 h-4" />
+                      <Minus className="w-3 h-3" />
                     </Button>
-                    <span className="w-8 text-center">{quantity}</span>
+                    <span className="w-8 text-center text-sm font-medium">{quantity}</span>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={() => adjustQuantity(1)}
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
                 
-                <Button onClick={handleAddToKit} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button onClick={handleAddToKit} className="w-full text-sm h-9">
+                  <Plus className="w-3 h-3 mr-1" />
                   Add to Kit
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-green-600">
+              <div className="space-y-3 mt-3">
+                <div className="flex items-center gap-1 text-green-600 bg-green-50 p-2 rounded">
                   <Check className="w-4 h-4" />
-                  <span className="text-sm font-medium">
+                  <span className="text-xs font-medium">
                     In kit (Quantity: {kitItem?.quantity})
                   </span>
                 </div>
@@ -149,9 +190,9 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
                 <Button
                   onClick={handleRemoveFromKit}
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm h-9"
                 >
-                  <Minus className="w-4 h-4 mr-2" />
+                  <Minus className="w-3 h-3 mr-1" />
                   Remove from Kit
                 </Button>
               </div>
@@ -161,13 +202,31 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
       </div>
 
       {/* Product Specifications */}
-      <ProductSpecifications product={product} />
+      <Card>
+        <CardHeader className="p-4">
+          <CardTitle className="text-lg">Specifications</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <ProductSpecifications product={product} />
+        </CardContent>
+      </Card>
 
       {/* Vendor Comparison */}
-      <VendorComparison product={product} />
+      {product.offers && product.offers.length > 0 && (
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-lg">Vendor Comparison</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <VendorComparison offers={product.offers} productName={product.name} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Product Reviews */}
-      <ProductReviews product={product} />
+      {product.reviews && product.reviews.length > 0 && (
+        <ProductReviews reviews={product.reviews} averageRating={product.rating} />
+      )}
     </div>
   );
 };

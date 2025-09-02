@@ -90,12 +90,15 @@ export const ProductListMobile = ({ products, onProductSelect }: ProductListMobi
                     ) : (
                       <span className="text-[10px] text-muted-foreground">No ratings</span>
                     )}
+                  </div>
+                  
+                  <div className="mb-2">
                     <span className="font-bold text-primary">${bestPrice.toFixed(2)}</span>
                   </div>
                   
                   {product.features?.length && (
                     <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5 mb-3">
-                      {product.features.slice(0,2).map(f => <li key={f} className="truncate">{f}</li>)}
+                      {product.features.slice(0,2).map(f => <li key={f}>{f}</li>)}
                     </ul>
                   )}
                   

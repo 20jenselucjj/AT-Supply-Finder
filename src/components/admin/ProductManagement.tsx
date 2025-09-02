@@ -1,73 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { databases, account } from '@/lib/appwrite';
-import { Query } from 'appwrite';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { logger } from '@/lib/logger';
 import { Package, Plus, Trash2, Edit, Star, DollarSign, ExternalLink, Trash, Upload, Download, Filter, Search, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { fuzzySearch, generateSuggestions } from '@/lib/fuzzy-search';
-import { ProductData, VendorOffer, ProductManagementProps, AdvancedFilters } from './types';
+import { ProductData, ProductManagementProps, AdvancedFilters } from './types';
+import { ProductTable } from './ProductTable';
+import { ProductCard } from './ProductCard';
 import { ProductForm } from './ProductForm';
-
-// Helper function to map Appwrite product data to frontend format
-const mapAppwriteProductToFrontend = (product: any): ProductData => ({
-  id: product.$id,
-  name: product.name || 'No name',
-  category: product.category || 'Uncategorized',
-  brand: product.brand || 'Unknown',
-  rating: product.rating,
-  price: product.price,
-  dimensions: product.dimensions,
-  weight: product.weight,
-  material: product.material,
-  // Fix the features parsing to handle both string and array formats properly
-  features: product.features ? 
-    (Array.isArray(product.features) ? 
-      product.features : 
-      (typeof product.features === 'string' ? 
-        product.features.split(',').map(f => f.trim()).filter(f => f.length > 0) : 
-        [])
-    ) : [],
-  imageUrl: product.imageUrl,
-  asin: product.asin,
-  affiliateLink: product.affiliateLink,
-  createdAt: product.$createdAt,
-  updatedAt: product.$updatedAt,
-  vendor_offers: product.vendor_offers || []
-});
-
-// Helper function to map frontend product data to Appwrite format
-const mapFrontendProductToAppwrite = (product: any) => ({
-  name: product.name,
-  category: product.category,
-  brand: product.brand,
-  rating: product.rating ? parseFloat(product.rating) : null,
-  price: product.price ? parseFloat(product.price) : null,
-  dimensions: product.dimensions || null,
-  weight: product.weight || null,
-  material: product.material || null,
-  // Ensure features is a string with max 1000 characters
-  features: product.features ? 
-    (Array.isArray(product.features) ? 
-      product.features.join(', ').substring(0, 1000) : 
-      product.features.toString().substring(0, 1000)
-    ) : null,
-  imageUrl: product.imageUrl || null,
-  asin: product.asin || null,
-  affiliateLink: product.affiliateLink || null
-});
+import { Filters } from './Filters';
+import { SearchAndActions } from './SearchAndActions';
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
   const [products, setProducts] = useState<ProductData[]>([]);
@@ -81,8 +31,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [brands, setBrands] = useState<string[]>([]); // New state for brands
-  const [materials, setMaterials] = useState<string[]>([]); // New state for materials
+  const [brands, setBrands] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -111,9 +61,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     weight: '',
     material: '',
     features: '',
-    imageUrl: '',
+    image_url: '',
     asin: '',
-    affiliateLink: ''
+    affiliate_link: ''
   });
   
   // Bulk update state
@@ -140,13 +90,16 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         const searchTerms = search.split(' ').filter(term => term.length > 0);
         
         if (searchTerms.length > 0) {
-          // For multiple terms, we'll search in name, brand, category, and material
-          // Appwrite doesn't support OR queries directly, so we'll search each field separately
-          // and combine results on the client side
-          queries.push(JSON.stringify({ method: 'search', attribute: 'name', values: [search] }));
+          // For multiple terms, create search conditions
+          const searchConditions = searchTerms.map(term => 
+            `name LIKE '%${term}%' OR brand LIKE '%${term}%' OR category LIKE '%${term}%' OR material LIKE '%${term}%'`
+          ).join(' OR ');
+          
+          queries.push(JSON.stringify({ method: 'search', values: [searchConditions] }));
         } else {
           // For single term, use broader matching
-          queries.push(JSON.stringify({ method: 'search', attribute: 'name', values: [search] }));
+          const searchCondition = `name LIKE '%${search}%' OR brand LIKE '%${search}%' OR category LIKE '%${search}%' OR material LIKE '%${search}%'`;
+          queries.push(JSON.stringify({ method: 'search', values: [searchCondition] }));
         }
       }
 
@@ -173,23 +126,24 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       }
       
       if (advancedFilters.brand) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'brand', values: [advancedFilters.brand] }));
+        queries.push(JSON.stringify({ method: 'search', attribute: 'brand', values: [`%${advancedFilters.brand}%`] }));
       }
       
       if (advancedFilters.material) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'material', values: [advancedFilters.material] }));
+        queries.push(JSON.stringify({ method: 'search', attribute: 'material', values: [`%${advancedFilters.material}%`] }));
       }
       
       if (advancedFilters.weight) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'weight', values: [advancedFilters.weight] }));
+        queries.push(JSON.stringify({ method: 'search', attribute: 'weight', values: [`%${advancedFilters.weight}%`] }));
       }
 
-      // Apply sorting
-      if (sortBy) {
+      // Apply sorting - map frontend sortBy values to Appwrite attributes
+      const appwriteSortAttribute = sortBy === '$createdAt' ? '$createdAt' : sortBy;
+      if (appwriteSortAttribute) {
         if (sortOrder === 'asc') {
-          queries.push(JSON.stringify({ method: 'orderAsc', attribute: sortBy }));
+          queries.push(JSON.stringify({ method: 'orderAsc', attribute: appwriteSortAttribute }));
         } else {
-          queries.push(JSON.stringify({ method: 'orderDesc', attribute: sortBy }));
+          queries.push(JSON.stringify({ method: 'orderDesc', attribute: appwriteSortAttribute }));
         }
       }
 
@@ -205,12 +159,38 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         queries
       );
 
-      // Transform the data to match our ProductData interface
-      const transformedProducts = response.documents?.map(mapAppwriteProductToFrontend) || [];
+      // Also get total count for pagination
+      const countResponse = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        []
+      );
 
-      setProducts(transformedProducts);
-      setTotalPages(Math.ceil((response.total || 0) / productsPerPage));
-      onProductCountChange(response.total || 0);
+      const transformedProducts = response.documents?.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        rating: product.rating,
+        price: product.price,
+        dimensions: product.dimensions,
+        weight: product.weight,
+        material: product.material,
+        features: product.features,
+        image_url: product.imageUrl,
+        asin: product.asin,
+        affiliate_link: product.affiliateLink,
+        created_at: product.$createdAt,
+        updated_at: product.$updatedAt
+      })) || [];
+
+      setProducts(transformedProducts.map(product => ({
+        ...product,
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      })));
+      setTotalPages(Math.ceil((countResponse.total || 0) / productsPerPage));
+      onProductCountChange(countResponse.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to fetch products');
@@ -225,15 +205,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
+        []
       );
       
-      if (response.documents) {
-        const uniqueCategories = [...new Set(response.documents
-          .map((item: any) => item.category)
-          .filter(Boolean))] as string[];
-        setCategories(uniqueCategories);
-      }
+      const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
+      setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -246,15 +222,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
+        []
       );
       
-      if (response.documents) {
-        const uniqueBrands = [...new Set(response.documents
-          .map((item: any) => item.brand)
-          .filter(Boolean))] as string[];
-        setBrands(uniqueBrands);
-      }
+      const uniqueBrands = [...new Set(response.documents.map((item: any) => item.brand).filter(Boolean))];
+      setBrands(uniqueBrands);
     } catch (error) {
       console.error('Error fetching brands:', error);
     }
@@ -267,15 +239,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
+        []
       );
       
-      if (response.documents) {
-        const uniqueMaterials = [...new Set(response.documents
-          .map((item: any) => item.material)
-          .filter(Boolean))] as string[];
-        setMaterials(uniqueMaterials);
-      }
+      const uniqueMaterials = [...new Set(response.documents.map((item: any) => item.material).filter(Boolean))];
+      setMaterials(uniqueMaterials);
     } catch (error) {
       console.error('Error fetching materials:', error);
     }
@@ -292,9 +260,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       weight: '',
       material: '',
       features: '',
-      imageUrl: '',
+      image_url: '',
       asin: '',
-      affiliateLink: ''
+      affiliate_link: ''
     });
   };
 
@@ -327,8 +295,28 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       setIsDeleting(true);
       const productIds = Array.from(selectedProducts);
       
-      // Delete products from Appwrite
-      const deletePromises = productIds.map(productId => 
+      // Fetch product names before deletion for audit logging
+      const productData = [];
+      for (const productId of productIds) {
+        try {
+          const product = await databases.getDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            productId
+          );
+          productData.push({
+            id: product.$id,
+            name: product.name,
+            category: product.category,
+            brand: product.brand
+          });
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
+      }
+
+      // Delete products
+      const deletePromises = productIds.map(productId =>
         databases.deleteDocument(
           import.meta.env.VITE_APPWRITE_DATABASE_ID,
           'products',
@@ -341,18 +329,27 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       // Log successful bulk deletion
       await logger.auditLog({
         action: 'BULK_DELETE_PRODUCTS',
-        entity_type: 'PRODUCT',
+        entityType: 'PRODUCT',
         details: {
-          count: productIds.length
+          count: productIds.length,
+          products: productData
         }
       });
 
       toast.success(`Successfully deleted ${productIds.length} product${productIds.length > 1 ? 's' : ''}`);
       setSelectedProducts(new Set());
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'BULK_DELETE_PRODUCTS_FAILED',
+        entityType: 'PRODUCT',
+        details: {
+          count: selectedProducts.size,
+          error: error.message
+        }
+      });
       console.error('Error deleting products:', error);
-      toast.error('Failed to delete products');
+      toast.error(`Failed to delete products: ${error.message}`);
     } finally {
       setIsDeleting(false);
     }
@@ -361,25 +358,39 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   const handleExportProducts = async () => {
     try {
       // Fetch all products for export
-      // Fetch all products for export
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        [JSON.stringify({ method: 'limit', values: [1000] })]
+        []
       );
       
-      const data = response.documents || [];
-      const error = response.total === 0 ? { message: 'No products found' } : null;
-      
-      if (error) {
+      const data = response.documents.map((product: any) => ({
+        id: product.$id,
+        name: product.name,
+        category: product.category,
+        brand: product.brand,
+        rating: product.rating,
+        price: product.price,
+        dimensions: product.dimensions,
+        weight: product.weight,
+        material: product.material,
+        features: product.features,
+        image_url: product.imageUrl,
+        asin: product.asin,
+        affiliate_link: product.affiliateLink,
+        created_at: product.$createdAt,
+        updated_at: product.$updatedAt
+      }));
+
+      if (data.length === 0) {
         await logger.auditLog({
           action: 'EXPORT_ALL_PRODUCTS_FAILED',
-          entity_type: 'PRODUCT',
+          entityType: 'PRODUCT',
           details: {
-            error: error.message
+            error: 'No products found'
           }
         });
-        toast.error('Failed to fetch products for export');
+        toast.error('No products found for export');
         return;
       }
 
@@ -407,16 +418,23 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       // Log successful export
       await logger.auditLog({
         action: 'EXPORT_ALL_PRODUCTS',
-        entity_type: 'PRODUCT',
+        entityType: 'PRODUCT',
         details: {
           count: data.length
         }
       });
       
       toast.success('Products exported successfully');
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'EXPORT_ALL_PRODUCTS_FAILED',
+        entityType: 'PRODUCT',
+        details: {
+          error: error.message
+        }
+      });
       console.error('Error exporting products:', error);
-      toast.error('Failed to export products');
+      toast.error(`Failed to export products: ${error.message}`);
     }
   };
 
@@ -428,30 +446,49 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
     try {
       // Fetch selected products for export
-      const queries = [
-        JSON.stringify({ method: 'contains', attribute: '$id', values: Array.from(selectedProducts) }),
-        JSON.stringify({ method: 'limit', values: [selectedProducts.size] })
-      ];
+      const productIds = Array.from(selectedProducts);
+      const data = [];
       
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        'products',
-        queries
-      );
+      for (const productId of productIds) {
+        try {
+          const product = await databases.getDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            productId
+          );
+          
+          data.push({
+            id: product.$id,
+            name: product.name,
+            category: product.category,
+            brand: product.brand,
+            rating: product.rating,
+            price: product.price,
+            dimensions: product.dimensions,
+            weight: product.weight,
+            material: product.material,
+            features: product.features,
+            image_url: product.imageUrl,
+            asin: product.asin,
+            affiliate_link: product.affiliateLink,
+            created_at: product.$createdAt,
+            updated_at: product.$updatedAt
+          });
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
+      }
       
-      const data = response.documents || [];
-      const error = response.total === 0 ? { message: 'No products found' } : null;
-      
-      if (error) {
+      if (data.length === 0) {
         await logger.auditLog({
           action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
-          entity_type: 'PRODUCT',
+          entityType: 'PRODUCT',
           details: {
             count: selectedProducts.size,
-            error: error.message
+            error: 'No products found'
           }
         });
-        toast.error('Failed to fetch selected products for export');
+        toast.error('No products found for export');
         return;
       }
 
@@ -466,7 +503,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       // Log successful export
       await logger.auditLog({
         action: 'EXPORT_SELECTED_PRODUCTS',
-        entity_type: 'PRODUCT',
+        entityType: 'PRODUCT',
         details: {
           count: data.length
         }
@@ -486,9 +523,17 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       URL.revokeObjectURL(url);
       
       toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} exported successfully`);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
+        entityType: 'PRODUCT',
+        details: {
+          count: selectedProducts.size,
+          error: error.message
+        }
+      });
       console.error('Error exporting selected products:', error);
-      toast.error('Failed to export selected products');
+      toast.error(`Failed to export selected products: ${error.message}`);
     }
   };
 
@@ -508,27 +553,20 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const updateData: any = {};
       if (bulkUpdateData.category) updateData.category = bulkUpdateData.category;
       if (bulkUpdateData.brand) updateData.brand = bulkUpdateData.brand;
+      updateData.updatedAt = new Date().toISOString();
 
       // Update selected products
-      let error = null;
-      for (const productId of Array.from(selectedProducts)) {
-        try {
-          await databases.updateDocument(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
-            'products',
-            productId,
-            updateData
-          );
-        } catch (updateError) {
-          error = updateError;
-          break;
-        }
-      }
+      const productIds = Array.from(selectedProducts);
+      const updatePromises = productIds.map(productId =>
+        databases.updateDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          productId,
+          updateData
+        )
+      );
       
-      if (error) {
-        toast.error('Failed to update products');
-        return;
-      }
+      await Promise.all(updatePromises);
 
       toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} updated successfully`);
       
@@ -537,9 +575,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       
       // Refresh product list
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating products:', error);
-      toast.error('Failed to update products');
+      toast.error(`Failed to update products: ${error.message}`);
     }
   };
 
@@ -575,8 +613,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             const numValue = parseFloat(value);
             product[header] = isNaN(numValue) ? null : numValue;
           } else if (header === 'features') {
-            // Ensure features is a string with max 1000 characters
-            product[header] = value ? value.substring(0, 1000) : null;
+            product[header] = value ? value.split(';').map(f => f.trim()) : [];
           } else {
             product[header] = value || null;
           }
@@ -594,24 +631,29 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       }
 
       // Insert products
-      let error = null;
-      try {
-        for (const product of productsToImport) {
-          await databases.createDocument(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
-            'products',
-            'unique()',
-            product
-          );
-        }
-      } catch (insertError) {
-        error = insertError;
-      }
+      const insertPromises = productsToImport.map(product =>
+        databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          'products',
+          'unique()',
+          {
+            name: product.name,
+            category: product.category,
+            brand: product.brand,
+            rating: product.rating,
+            price: product.price,
+            dimensions: product.dimensions,
+            weight: product.weight,
+            material: product.material,
+            features: product.features,
+            imageUrl: product.image_url,
+            asin: product.asin,
+            affiliateLink: product.affiliate_link
+          }
+        )
+      );
       
-      if (error) {
-        toast.error(`Failed to import products: ${error.message}`);
-        return;
-      }
+      await Promise.all(insertPromises);
 
       toast.success(`Successfully imported ${productsToImport.length} product${productsToImport.length > 1 ? 's' : ''}`);
       
@@ -623,9 +665,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       
       // Reset file input
       event.target.value = '';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error importing CSV:', error);
-      toast.error('Failed to import products from CSV');
+      toast.error(`Failed to import products from CSV: ${error.message}`);
     }
   };
 
@@ -696,7 +738,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
   // Auto-populate product information from affiliate link
   const handleAffiliateLinkChange = async (url: string) => {
-    setProductForm(prev => ({ ...prev, affiliateLink: url }));
+    setProductForm(prev => ({ ...prev, affiliate_link: url }));
     
     if (!url.trim()) return;
     
@@ -709,7 +751,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     setIsLoadingProductInfo(true);
     
     try {
-      console.log('Processing affiliate link:', url);
       // Call our scraping API to get product information
       const response = await fetch('http://localhost:3001/api/scrape-amazon-product', {
         method: 'POST',
@@ -719,11 +760,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         body: JSON.stringify({ url }),
       });
       
-      console.log('Scraping API response status:', response.status);
-      
       const result = await response.json();
-      
-      console.log('Scraping API response:', result);
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to scrape product information');
@@ -732,15 +769,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       if (result.success && result.data) {
         const productData = result.data;
         
-        console.log('Scraped product data:', productData);
-        
         // Auto-populate the form with scraped data
         setProductForm(prev => ({
           ...prev,
           name: productData.name || prev.name,
           brand: productData.brand || prev.brand,
           category: productData.category || prev.category,
-          imageUrl: productData.image_url || prev.imageUrl,
+          image_url: productData.image_url || prev.image_url,
           asin: productData.asin || prev.asin,
           rating: productData.rating ? productData.rating.toString() : prev.rating,
           price: productData.price ? productData.price.toString() : prev.price,
@@ -767,6 +802,160 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     }
   };
 
+  // Enhance product information using AI
+  const handleEnhanceWithAI = async () => {
+    setIsLoadingProductInfo(true);
+    
+    try {
+      // Get OpenRouter API key from environment
+      const openRouterApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      
+      if (!openRouterApiKey) {
+        toast.error('OpenRouter API key not configured');
+        return;
+      }
+      
+      // Prepare product data for AI enhancement
+      const productData = {
+        title: productForm.name,
+        brand: productForm.brand,
+        category: productForm.category,
+        features: productForm.features ? productForm.features.split('\n') : [],
+        dimensions: productForm.dimensions,
+        weight: productForm.weight,
+        material: productForm.material
+      };
+      
+      // Create a more detailed prompt for OpenRouter to enhance the product data
+      const prompt = `
+You are an expert product data analyst specializing in medical and first aid supplies. 
+Your task is to enhance the product data by:
+1. Creating a concise, descriptive product name (max 50 characters) - make it appealing to medical professionals, never use "..." or other truncation symbols
+2. Improving the feature descriptions to be more informative and professional while preserving ALL factual information, technical specifications, sizing details (like "1-inch by 10 yard-roll"), and measurements from the original listing - focus on benefits for medical use
+3. Classifying the product into the most appropriate category from these options: First Aid & Wound Care, Taping & Bandaging, Over-the-Counter Medication, Instruments & Tools, Emergency Care, Personal Protection Equipment (PPE), Documentation & Communication, Hot & Cold Therapy, Hydration & Nutrition, Miscellaneous & General
+4. Extracting quantity information when available (e.g., "100 ct", "12 pack", "50 sheets") - look in title, features, dimensions
+5. Identifying the main material when relevant (e.g., "sterile gauze", "nitrile", "latex-free", "adhesive", "foam", "plastic") - look in title, features, description
+
+Product Data:
+- Title: ${productData.title}
+- Brand: ${productData.brand || 'Not specified'}
+- Features: ${productData.features.join(', ') || 'Not specified'}
+- Category: ${productData.category || 'Not specified'}
+- Dimensions: ${productData.dimensions || 'Not specified'}
+- Weight: ${productData.weight || 'Not specified'}
+
+Please respond in the following JSON format:
+{
+  "name": "Enhanced product name (max 50 characters, no truncation symbols like ..., complete words only)",
+  "features": ["Professional feature description 1. Preserves all original facts, technical details, and sizing information like 1-inch by 10 yard-roll.", "Professional feature description 2. Maintains all specifications, measurements, and product dimensions.", "Professional feature description 3. Highlights medical benefits, applications, and includes all sizing details."],
+  "category": "Most appropriate category",
+  "quantity": "Quantity information if available (e.g., '100 ct', '12 pack')",
+  "material": "Main material if identifiable (e.g., 'adhesive', 'foam', 'latex-free', 'sterile gauze')"
+}
+
+Guidelines:
+- Keep product names concise but descriptive (max 50 characters)
+- Never use "..." or other truncation symbols in product names
+- Complete words only, no partial words
+- For features, focus on medical benefits and use cases while preserving ALL original facts and technical details:
+  * Highlight sterility, safety, and medical compliance
+  * Emphasize ease of use for medical professionals
+  * Mention specific applications in medical settings
+  * Focus on quality, durability, and performance
+  * Preserve ALL technical specifications, measurements, materials, sizing information (e.g., "1-inch by 10 yard-roll"), and factual information from the original listing
+  * Never omit, summarize away, or lose important details including specific measurements and sizing
+  * Present facts in a more professional and readable format without losing any information
+  * Convert technical jargon into clear, professional language while keeping all specifications
+  * Ensure all sizing, dimensions, and measurement details are explicitly included in the features
+  * Features can be longer if needed to include every aspect of the product
+- Use standard first aid/medical supply categories
+- Extract quantity from title, features, or dimensions when possible
+- Identify materials by looking for terms like: adhesive, foam, latex-free, sterile gauze, plastic, fabric, metal, cotton, polyester, silicone, rubber, vinyl, etc.
+- Look for material terms in the product title and features
+- If no clear material is identifiable, leave this field empty
+- Only include fields that can be meaningfully enhanced
+- If quantity is found, prefer it over weight in the response
+- Make sure features are clear, benefit-focused, and concise
+- Product names should be suitable for catalog listings but still informative
+`;
+
+      // Call OpenRouter API
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openRouterApiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'AT Supply Finder'
+        },
+        body: JSON.stringify({
+          model: 'deepseek/deepseek-chat-v3.1:free',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`AI enhancement failed: ${response.status}`);
+      }
+      
+      const aiResponse = await response.json();
+      const aiContent = aiResponse.choices[0]?.message?.content || '{}';
+      
+      // Extract JSON from the response (in case there's additional text)
+      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        
+        // Clean up the product name to remove any truncation symbols
+        let cleanedName = parsed.name || productForm.name;
+        if (cleanedName) {
+          // Remove any truncation symbols like "..." or "…"
+          cleanedName = cleanedName.replace(/\.{3,}/g, '').trim();
+          // Ensure we don't end with a punctuation mark
+          cleanedName = cleanedName.replace(/[.,;:]$/g, '').trim();
+        }
+        
+        // Process features to ensure they are benefit-focused while preserving all facts
+        let processedFeatures = productForm.features;
+        if (parsed.features && Array.isArray(parsed.features)) {
+          // Join features with periods for better readability
+          // Filter out any empty features and ensure we have content
+          const validFeatures = parsed.features.filter(f => f && f.trim().length > 0);
+          if (validFeatures.length > 0) {
+            processedFeatures = validFeatures.join('. ') + '.';
+          }
+        }
+        
+        // Update form with AI-enhanced data
+        setProductForm(prev => ({
+          ...prev,
+          name: cleanedName,
+          category: parsed.category || prev.category,
+          material: parsed.material || prev.material,
+          // If quantity is found, we might want to use it instead of weight
+          weight: parsed.quantity || prev.weight,
+          features: processedFeatures
+        }));
+        
+        toast.success('Product information enhanced with AI successfully!');
+      } else {
+        throw new Error('Invalid AI response format');
+      }
+    } catch (error: any) {
+      console.error('Error enhancing product with AI:', error);
+      toast.error(`Failed to enhance product with AI: ${error.message}`);
+    } finally {
+      setIsLoadingProductInfo(false);
+    }
+  };
+
   const handleAddProduct = async () => {
     try {
       if (!productForm.name || !productForm.category || !productForm.brand) {
@@ -774,41 +963,33 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         return;
       }
 
-      const productData = mapFrontendProductToAppwrite(productForm);
+      const productData = {
+        name: productForm.name,
+        category: productForm.category,
+        brand: productForm.brand,
+        rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        price: productForm.price ? parseFloat(productForm.price) : null,
+        dimensions: productForm.dimensions || null,
+        weight: productForm.weight || null,
+        material: productForm.material || null,
+        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()).join('\n').substring(0, 1000) : null,
+        imageUrl: productForm.image_url || null,
+        asin: productForm.asin || null,
+        affiliateLink: productForm.affiliate_link || null
+      };
 
-      let data = null;
-      let error = null;
-      
-      try {
-        const response = await databases.createDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          'products',
-          'unique()',
-          productData
-        );
-        data = [response];
-      } catch (insertError) {
-        error = insertError;
-      }
-
-      if (error) {
-        await logger.auditLog({
-          action: 'CREATE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          details: {
-            product_name: productForm.name,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to create product: ${error.message}`);
-        return;
-      }
+      const response = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        'unique()',
+        productData
+      );
 
       // Log successful product creation
       await logger.auditLog({
         action: 'CREATE_PRODUCT',
-        entity_type: 'PRODUCT',
-        entity_id: data?.[0]?.$id,
+        entityType: 'PRODUCT',
+        entityId: response.$id,
         details: {
           product_name: productForm.name,
           category: productForm.category,
@@ -821,9 +1002,17 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'CREATE_PRODUCT_FAILED',
+        entityType: 'PRODUCT',
+        details: {
+          product_name: productForm.name,
+          error: error.message
+        }
+      });
       console.error('Error creating product:', error);
-      toast.error('Failed to create product');
+      toast.error(`Failed to create product: ${error.message}`);
     }
   };
 
@@ -831,39 +1020,34 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     if (!editingProduct) return;
 
     try {
-      const productData = mapFrontendProductToAppwrite(productForm);
+      const productData = {
+        name: productForm.name,
+        category: productForm.category,
+        brand: productForm.brand,
+        rating: productForm.rating ? parseFloat(productForm.rating) : null,
+        price: productForm.price ? parseFloat(productForm.price) : null,
+        dimensions: productForm.dimensions || null,
+        weight: productForm.weight || null,
+        material: productForm.material || null,
+        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
+        imageUrl: productForm.image_url || null,
+        asin: productForm.asin || null,
+        affiliateLink: productForm.affiliate_link || null,
+        updatedAt: new Date().toISOString()
+      };
 
-      let error = null;
-      try {
-        await databases.updateDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          'products',
-          editingProduct.id,
-          productData
-        );
-      } catch (updateError) {
-        error = updateError;
-      }
-
-      if (error) {
-        await logger.auditLog({
-          action: 'UPDATE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          entity_id: editingProduct.id,
-          details: {
-            product_name: productForm.name,
-            error: error.message
-          }
-        });
-        toast.error(`Failed to update product: ${error.message}`);
-        return;
-      }
+      await databases.updateDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        editingProduct.id,
+        productData
+      );
 
       // Log successful product update
       await logger.auditLog({
         action: 'UPDATE_PRODUCT',
-        entity_type: 'PRODUCT',
-        entity_id: editingProduct.id,
+        entityType: 'PRODUCT',
+        entityId: editingProduct.id,
         details: {
           product_name: productForm.name,
           category: productForm.category,
@@ -876,68 +1060,67 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'UPDATE_PRODUCT_FAILED',
+        entityType: 'PRODUCT',
+        entityId: editingProduct.id,
+        details: {
+          product_name: productForm.name,
+          error: error.message
+        }
+      });
       console.error('Error updating product:', error);
-      toast.error('Failed to update product');
+      toast.error(`Failed to update product: ${error.message}`);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      let productData = null;
-      let fetchError = null;
-      let error = null;
+      // Fetch product data before deletion for audit logging
+      const product = await databases.getDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        productId
+      );
       
-      try {
-        productData = await databases.getDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          'products',
-          productId
-        );
-      } catch (fetchErr) {
-        fetchError = fetchErr;
-      }
+      const productData = {
+        name: product.name,
+        category: product.category,
+        brand: product.brand
+      };
       
-      try {
-        await databases.deleteDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          'products',
-          productId
-        );
-      } catch (deleteError) {
-        error = deleteError;
-      }
-      
-      if (error) {
-        await logger.auditLog({
-          action: 'DELETE_PRODUCT_FAILED',
-          entity_type: 'PRODUCT',
-          entity_id: productId,
-          details: {
-            error: error.message
-          }
-        });
-        toast.error(`Failed to delete product: ${error.message}`);
-        return;
-      }
+      await databases.deleteDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        'products',
+        productId
+      );
 
       // Log successful product deletion
       await logger.auditLog({
         action: 'DELETE_PRODUCT',
-        entity_type: 'PRODUCT',
-        entity_id: productId,
+        entityType: 'PRODUCT',
+        entityId: productId,
         details: {
-          product_name: productData?.name,
-          category: productData?.category,
-          brand: productData?.brand
+          product_name: productData.name,
+          category: productData.category,
+          brand: productData.brand
         }
       });
 
       toast.success('Product deleted successfully');
       fetchProducts(currentPage, searchTerm, selectedCategory);
-    } catch (error) {
+    } catch (error: any) {
+      await logger.auditLog({
+        action: 'DELETE_PRODUCT_FAILED',
+        entityType: 'PRODUCT',
+        entityId: productId,
+        details: {
+          error: error.message
+        }
+      });
       console.error('Error deleting product:', error);
-      toast.error('Failed to delete product');
+      toast.error(`Failed to delete product: ${error.message}`);
     }
   };
 
@@ -953,13 +1136,13 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       weight: product.weight || '',
       material: product.material || '',
       features: product.features?.join('\n') || '',
-      imageUrl: product.imageUrl || '',
+      image_url: product.imageUrl || '',
       asin: product.asin || '',
-      affiliateLink: product.affiliateLink || ''
+      affiliate_link: product.affiliateLink || ''
     });
   };
 
-  const getMinPrice = (offers: VendorOffer[] = []) => {
+  const getMinPrice = (offers: any[] = []) => {
     if (offers.length === 0) return null;
     return Math.min(...offers.map(offer => offer.price));
   };
@@ -972,10 +1155,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     fetchCategories();
     fetchBrands();
     fetchMaterials();
-    
-    // Appwrite doesn't have the same real-time subscription model as Supabase
-    // We'll rely on manual refreshes for now
-    // TODO: Implement Appwrite real-time functionality if needed
   }, []);
 
   const handleSearch = () => {
@@ -1019,418 +1198,48 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-
-            </div>
-            <div className="flex gap-2">
-              <Dialog open={isImportProductsOpen} onOpenChange={setIsImportProductsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Import Products</DialogTitle>
-                    <DialogDescription>
-                      Upload a CSV file to import multiple products at once
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Upload a CSV file with product data
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Required columns: name, category, brand
-                      </p>
-                      <Button className="mt-4" variant="outline">
-                        Choose File
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              
-              <Button variant="outline" onClick={handleExportProducts}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              
-              <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add New Product</DialogTitle>
-                    <DialogDescription>
-                      Create a new product manually.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <ProductForm
-                    productForm={productForm}
-                    setProductForm={setProductForm}
-                    handleAffiliateLinkChange={handleAffiliateLinkChange}
-                    isLoadingProductInfo={isLoadingProductInfo}
-                    handleSubmit={handleAddProduct}
-                    onCancel={() => {
-                      setIsAddProductOpen(false);
-                      resetForm();
-                    }}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => handleSearchInput(e.target.value)}
-                onFocus={() => searchTerm && setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className="pl-9"
-              />
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-10">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      className="px-4 py-2 hover:bg-muted cursor-pointer text-sm"
-                      onMouseDown={() => selectSuggestion(suggestion)}
-                    >
-                      {suggestion}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleSearch} variant="outline">
-              Search
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {hasActiveFilters() && (
-                <span className="ml-2 h-2 w-2 rounded-full bg-primary"></span>
-              )}
-            </Button>
-            <Select 
-              value={`${sortBy}-${sortOrder}`} 
-              onValueChange={(value) => {
-                const [field, order] = value.split('-') as [typeof sortBy, typeof sortOrder];
-                setSortBy(field);
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="$createdAt-desc">Newest First</SelectItem>
-                <SelectItem value="$createdAt-asc">Oldest First</SelectItem>
-                <SelectItem value="name-asc">Name A-Z</SelectItem>
-                <SelectItem value="name-desc">Name Z-A</SelectItem>
-                <SelectItem value="price-asc">Price Low-High</SelectItem>
-                <SelectItem value="price-desc">Price High-Low</SelectItem>
-              </SelectContent>
-            </Select>
-            {selectedProducts.size > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={isDeleting}>
-                      <Trash className="h-4 w-4 mr-2" />
-                      Delete Selected ({selectedProducts.size})
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Products</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting}>
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                
-                <Button variant="outline" onClick={handleBulkExport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Selected
-                </Button>
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Bulk Update
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Bulk Update Products</DialogTitle>
-                      <DialogDescription>
-                        Update properties for {selectedProducts.size} selected product{selectedProducts.size > 1 ? 's' : ''}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div>
-                        <Label htmlFor="bulk-category">Category</Label>
-                        <Select onValueChange={(value) => setBulkUpdateData(prev => ({ ...prev, category: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map(category => (
-                              <SelectItem key={category} value={category}>{category}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="bulk-brand">Brand</Label>
-                        <Select onValueChange={(value) => setBulkUpdateData(prev => ({ ...prev, brand: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select brand" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {brands.map(brand => (
-                              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => console.log('Cancel bulk update')}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleBulkUpdate}>
-                        Apply Updates
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import CSV
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Import Products from CSV</DialogTitle>
-                      <DialogDescription>
-                        Upload a CSV file to import multiple products at once
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <div 
-                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => document.getElementById('csv-upload')?.click()}
-                      >
-                        <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Click to upload or drag and drop
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          CSV file with product data
-                        </p>
-                        <input
-                          id="csv-upload"
-                          type="file"
-                          accept=".csv"
-                          className="hidden"
-                          onChange={handleCSVImport}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => console.log('Cancel CSV import')}>
-                        Cancel
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            )}
-          </div>
-
+          <SearchAndActions
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            categories={categories}
+            handleSearch={handleSearch}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            hasActiveFilters={hasActiveFilters}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            setSortBy={setSortBy as any}
+            setSortOrder={setSortOrder as any}
+            selectedProducts={selectedProducts}
+            isDeleting={isDeleting}
+            handleBulkDelete={handleBulkDelete}
+            handleBulkExport={handleBulkExport}
+            handleExportProducts={handleExportProducts}
+            isAddProductOpen={isAddProductOpen}
+            setIsAddProductOpen={setIsAddProductOpen}
+            isImportProductsOpen={isImportProductsOpen}
+            setIsImportProductsOpen={setIsImportProductsOpen}
+            handleCSVImport={handleCSVImport}
+            productForm={productForm}
+            setProductForm={setProductForm}
+            handleAffiliateLinkChange={handleAffiliateLinkChange}
+            handleEnhanceWithAI={handleEnhanceWithAI}
+            isLoadingProductInfo={isLoadingProductInfo}
+            handleAddProduct={handleAddProduct}
+          />
+          
           {/* Advanced Filters Panel */}
           {showFilters && (
-            <Card className="mb-4 p-4 bg-muted/50">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Price Range */}
-                <div>
-                  <Label htmlFor="min-price">Min Price</Label>
-                  <Input
-                    id="min-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={advancedFilters.minPrice ?? ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      minPrice: e.target.value ? parseFloat(e.target.value) : undefined
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="max-price">Max Price</Label>
-                  <Input
-                    id="max-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="1000.00"
-                    value={advancedFilters.maxPrice ?? ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      maxPrice: e.target.value ? parseFloat(e.target.value) : undefined
-                    }))}
-                  />
-                </div>
-                
-                {/* Rating Range */}
-                <div>
-                  <Label htmlFor="min-rating">Min Rating</Label>
-                  <Input
-                    id="min-rating"
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    placeholder="0.0"
-                    value={advancedFilters.minRating ?? ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      minRating: e.target.value ? parseFloat(e.target.value) : undefined
-                    }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="max-rating">Max Rating</Label>
-                  <Input
-                    id="max-rating"
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="0.1"
-                    placeholder="5.0"
-                    value={advancedFilters.maxRating ?? ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      maxRating: e.target.value ? parseFloat(e.target.value) : undefined
-                    }))}
-                  />
-                </div>
-                
-                {/* Brand Filter */}
-                <div>
-                  <Label htmlFor="brand-filter">Brand</Label>
-                  <Select 
-                    value={advancedFilters.brand || ''} 
-                    onValueChange={(value) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      brand: value === 'all' ? '' : value
-                    }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Brands" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Brands</SelectItem>
-                      {brands.map(brand => (
-                        <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Material Filter */}
-                <div>
-                  <Label htmlFor="material-filter">Material</Label>
-                  <Input
-                    id="material-filter"
-                    placeholder="e.g., Cotton, Neoprene"
-                    value={advancedFilters.material || ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      material: e.target.value
-                    }))}
-                  />
-                </div>
-                
-                {/* Weight Filter */}
-                <div>
-                  <Label htmlFor="weight-filter">Weight</Label>
-                  <Input
-                    id="weight-filter"
-                    placeholder="e.g., 2 lbs, 500g"
-                    value={advancedFilters.weight || ''}
-                    onChange={(e) => setAdvancedFilters(prev => ({
-                      ...prev,
-                      weight: e.target.value
-                    }))}
-                  />
-                </div>
-                
-                {/* Filter Actions */}
-                <div className="flex items-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={resetFilters}
-                    className="w-full"
-                  >
-                    Reset
-                  </Button>
-                  <Button 
-                    onClick={applyFilters}
-                    className="w-full"
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            </Card>
+            <Filters
+              advancedFilters={advancedFilters}
+              setAdvancedFilters={setAdvancedFilters}
+              brands={brands}
+              resetFilters={resetFilters}
+              applyFilters={applyFilters}
+            />
           )}
 
           {loading ? (
@@ -1440,304 +1249,65 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           ) : (
             <>
               {/* Desktop Table View */}
-              <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={isAllSelected}
-                          onCheckedChange={handleSelectAll}
-                          ref={(el) => {
-                            if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
-                          }}
-                        />
-                      </TableHead>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead className="hidden lg:table-cell">Material</TableHead>
-                      <TableHead className="hidden xl:table-cell">Weight</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {products.map((product) => {
-                      const minPrice = getMinPrice(product.vendor_offers);
-                      return (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedProducts.has(product.id)}
-                              onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {product.imageUrl && (
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  className="w-12 h-12 object-cover rounded"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium">{product.name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {product.dimensions && `${product.dimensions} • `}
-                                  {product.weight}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline">{product.category}</Badge>
-                          </TableCell>
-                          <TableCell>{product.brand}</TableCell>
-                          <TableCell>
-                            {product.rating && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-primary text-primary" />
-                                {product.rating}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {product.vendor_offers && product.vendor_offers.length > 0
-                              ? `$${product.vendor_offers.reduce((min, p) => p.price < min ? p.price : min, product.vendor_offers[0].price).toFixed(2)}`
-                              : product.price ? `$${product.price.toFixed(2)}` : 'N/A'}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {product.material || 'N/A'}
-                          </TableCell>
-                          <TableCell className="hidden xl:table-cell">
-                            {product.weight || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openEditDialog(product)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Product</DialogTitle>
-                                  <DialogDescription>
-                                    Update product information.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <ProductForm
-                                  productForm={productForm}
-                                  setProductForm={setProductForm}
-                                  handleAffiliateLinkChange={handleAffiliateLinkChange}
-                                  isLoadingProductInfo={isLoadingProductInfo}
-                                  handleSubmit={handleUpdateProduct}
-                                  onCancel={() => {
-                                    setEditingProduct(null);
-                                    resetForm();
-                                  }}
-                                  isEditing={true}
-                                />
-                              </DialogContent>
-                            </Dialog>
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{product.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteProduct(product.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+              <ProductTable
+                products={products}
+                selectedProducts={selectedProducts}
+                handleSelectProduct={handleSelectProduct}
+                isAllSelected={isAllSelected}
+                isIndeterminate={isIndeterminate}
+                handleSelectAll={handleSelectAll}
+                openEditDialog={openEditDialog}
+                handleDeleteProduct={handleDeleteProduct}
+                getMinPrice={getMinPrice}
+                productForm={productForm}
+                setProductForm={setProductForm}
+                handleUpdateProduct={handleUpdateProduct}
+                handleAffiliateLinkChange={handleAffiliateLinkChange}
+                isLoadingProductInfo={isLoadingProductInfo}
+                categories={categories}
+                brands={brands}
+              />
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {/* Mobile Select All */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                    ref={(el) => {
-                      if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
-                    }}
-                  />
-                  <Label className="text-sm font-medium">Select All</Label>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {/* Mobile Select All */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      ref={(el) => {
+                        if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
+                      }}
+                    />
+                    <Label className="text-sm font-medium">Select All</Label>
+                  </div>
+                  {selectedProducts.size > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedProducts.size} selected
+                    </span>
+                  )}
                 </div>
-                {selectedProducts.size > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {selectedProducts.size} selected
-                  </span>
-                )}
+
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isSelected={selectedProducts.has(product.id)}
+                    handleSelectProduct={handleSelectProduct}
+                    openEditDialog={openEditDialog}
+                    handleDeleteProduct={handleDeleteProduct}
+                    getMinPrice={getMinPrice}
+                    productForm={productForm}
+                    setProductForm={setProductForm}
+                    handleUpdateProduct={handleUpdateProduct}
+                    handleAffiliateLinkChange={handleAffiliateLinkChange}
+                    isLoadingProductInfo={isLoadingProductInfo}
+                  />
+                ))}
               </div>
 
-              {products.map((product) => {
-                const minPrice = getMinPrice(product.vendor_offers);
-                return (
-                  <Card key={product.id} className="p-4">
-                    <div className="space-y-3">
-                      {/* Header with checkbox and product info */}
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
-                          className="mt-1 flex-shrink-0"
-                        />
-                        {product.imageUrl && (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="w-16 h-16 object-cover rounded flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
-                          <div className="flex flex-wrap gap-2 items-center text-xs text-muted-foreground">
-                            <Badge variant="outline" className="text-xs">{product.category}</Badge>
-                            <span>{product.brand}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Product details */}
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Price</Label>
-                          <div className="font-medium">
-                            {product.vendor_offers && product.vendor_offers.length > 0
-                              ? `$${product.vendor_offers.reduce((min, p) => p.price < min ? p.price : min, product.vendor_offers[0].price).toFixed(2)}`
-                              : product.price ? `$${product.price.toFixed(2)}` : 'N/A'}
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Rating</Label>
-                          <div className="flex items-center gap-1">
-                            {product.rating ? (
-                              <>
-                                <Star className="h-3 w-3 fill-primary text-primary" />
-                                <span className="text-xs font-medium">{product.rating}</span>
-                              </>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">N/A</span>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Material</Label>
-                          <div className="font-medium">
-                            {product.material || 'N/A'}
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Weight</Label>
-                          <div className="font-medium">
-                            {product.weight || 'N/A'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dimensions */}
-                      {product.dimensions && (
-                        <div className="text-xs text-muted-foreground">
-                          Dimensions: {product.dimensions}
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 h-9"
-                              onClick={() => openEditDialog(product)}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              <span className="text-xs">Edit</span>
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Edit Product</DialogTitle>
-                              <DialogDescription>
-                                Update product information.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <ProductForm
-                              productForm={productForm}
-                              setProductForm={setProductForm}
-                              handleAffiliateLinkChange={handleAffiliateLinkChange}
-                              isLoadingProductInfo={isLoadingProductInfo}
-                              handleSubmit={handleUpdateProduct}
-                              onCancel={() => setEditingProduct(null)}
-                              isEditing={true}
-                            />
-                          </DialogContent>
-                        </Dialog>
-
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex-1 h-9">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              <span className="text-xs">Delete</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{product.name}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
+              {/* Pagination */}
               <div className="flex justify-between items-center mt-4">
                 <div className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}

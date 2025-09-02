@@ -11,25 +11,25 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Light mode - Red Cross theme */
-    --background: 0 0% 93%; /* Softer off-white */
-    --foreground: 0 0% 20%; /* Softer black */
+    --background: 0 0% 90%; /* Even softer off-white instead of 93% */
+    --foreground: 0 0% 25%; /* Even softer black */
     
-    --card: 0 0% 95%; /* Light card background */
-    --card-foreground: 0 0% 20%; /* Softer black for card text */
+    --card: 0 0% 92%; /* Slightly darker off-white for cards */
+    --card-foreground: 0 0% 25%; /* Softer black for card text */
     
-    --popover: 0 0% 95%; /* Light popover background */
-    --popover-foreground: 0 0% 20%; /* Softer black for popover text */
+    --popover: 0 0% 92%; /* Slightly darker off-white for popovers */
+    --popover-foreground: 0 0% 25%; /* Softer black for popover text */
 
     /* Red Cross palette */
     --primary: 0 84% 42%; /* Red (#dc2626) */
     --primary-foreground: 0 0% 100%; /* White */
     --primary-2: 0 75% 50%; /* Slightly lighter red */
 
-    --secondary: 0 0% 88%; /* Light grey */
-    --secondary-foreground: 0 0% 20%; /* Darker text for better contrast */
+    --secondary: 0 0% 85%; /* Light grey */
+    --secondary-foreground: 0 0% 25%; /* Darker text for better contrast */
 
-    --muted: 0 0% 90%; /* Lighter grey for subtle elements */
-    --muted-foreground: 0 0% 50%; /* Medium grey, more readable */
+    --muted: 0 0% 85%; /* Light grey */
+    --muted-foreground: 0 0% 55%; /* Medium grey, more readable */
 
     --accent: 0 84% 42%; /* Red */
     --accent-foreground: 0 0% 100%; /* White */
@@ -37,20 +37,20 @@ All colors MUST be HSL.
     --destructive: 0 84% 42%; /* Red */
     --destructive-foreground: 0 0% 100%; /* White */
 
-    --border: 0 0% 85%; /* Softer light grey */
-    --input: 0 0% 88%; /* Light input background */
+    --border: 0 0% 80%; /* Light grey */
+    --input: 0 0% 80%; /* Light grey */
     --ring: 0 84% 42%; /* Red */
 
     --radius: 0.5rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 88%; /* More comfortable background */
-    --sidebar-foreground: 0 0% 20%; /* Darker text for better contrast */
+    --sidebar-foreground: 0 0% 25%; /* Darker text for better contrast */
     --sidebar-primary: 0 84% 42%; /* Red */
     --sidebar-primary-foreground: 0 0% 100%; /* White */
     --sidebar-accent: 0 0% 82%; /* Softer accent */
-    --sidebar-accent-foreground: 0 0% 20%; /* Dark text */
-    --sidebar-border: 0 0% 85%; /* Softer border */
+    --sidebar-accent-foreground: 0 0% 25%; /* Dark text */
+    --sidebar-border: 0 0% 80%; /* Softer border */
     --sidebar-ring: 0 84% 40%;
 
     /* Professional design tokens */
@@ -63,13 +63,13 @@ All colors MUST be HSL.
 
     /* Enhanced chatbot-specific variables */
     --chat-bubble-user: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-2)));
-    --chat-bubble-bot: hsl(0 0% 92%); /* Softer background for bot messages */
+    --chat-bubble-bot: hsl(var(--muted));
     --chat-accent: 0 84% 42%; /* Red */
     --chat-success: 142 76% 36%;
     --chat-warning: 38 92% 50%;
     --chat-glow: 0 0 20px hsl(var(--primary) / 0.3);
     --chat-button-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.4);
-    --chat-message-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.08);
+    --chat-message-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1);
     --chat-transition-fast: 150ms ease-out;
     --chat-transition-medium: 250ms ease-in-out;
     --chat-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -116,9 +116,6 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 25%;
     --sidebar-ring: 0 84% 45%;
-
-    /* Enhanced chatbot-specific variables for dark mode */
-    --chat-bubble-bot: hsl(0 0% 25%); /* Darker background for bot messages in dark mode */
   }
 }
 
@@ -186,7 +183,6 @@ All colors MUST be HSL.
     background: var(--chat-bubble-user);
     box-shadow: var(--chat-button-shadow);
     transition: var(--chat-transition-medium);
-    border: 2px solid hsl(var(--primary-foreground) / 0.2);
   }
   
   .chat-button:hover {
@@ -229,13 +225,6 @@ All colors MUST be HSL.
     color: hsl(var(--foreground));
     border-radius: var(--chat-border-radius) var(--chat-border-radius) var(--chat-border-radius) 4px;
     box-shadow: var(--chat-message-shadow);
-    border: 1px solid hsl(var(--border));
-  }
-  
-  .dark .chat-message-bot {
-    background: var(--chat-bubble-bot);
-    color: hsl(var(--foreground));
-    border: 1px solid hsl(var(--border));
   }
   
   .chat-typing {
@@ -260,9 +249,5 @@ All colors MUST be HSL.
       opacity: 1;
       transform: scale(1);
     }
-  }
-  
-  .dark .chat-message-bot .text-muted-foreground {
-    color: hsl(var(--muted-foreground));
   }
 }

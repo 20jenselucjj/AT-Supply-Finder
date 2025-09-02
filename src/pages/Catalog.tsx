@@ -112,10 +112,11 @@ const Catalog = () => {
       // Build query for products
       let queries = [];
       
-      // Apply search filter
+      // Apply search filter - using client-side filtering instead of database search to avoid fulltext index requirement
+      // We'll fetch all products and filter them in memory
       if (q) {
-        // For Appwrite, we'll search in name, brand, and category
-        queries.push(JSON.stringify({ method: 'search', attribute: 'name', values: [q] }));
+        // For Appwrite, we'll get all documents and filter client-side to avoid fulltext index requirement
+        console.log('Search term provided, will filter client-side:', q);
       }
 
       // Apply category filter
@@ -123,13 +124,11 @@ const Catalog = () => {
         queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [cat] }));
       }
       
-      // Order by creation date (descending) - should be last
-      if (queries.length > 0) {
-        queries.push(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }));
-      } else {
-        // If no other queries, just order by creation date
-        queries.push(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }));
-      }
+      // Add limit to prevent loading too many documents
+      queries.push(JSON.stringify({ method: 'limit', values: [100] }));
+      
+      // Order by creation date (descending)
+      queries.push(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }));
 
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
@@ -150,7 +149,7 @@ const Catalog = () => {
       setError(null); // Clear any previous errors
 
       // Transform Appwrite documents to match Product interface
-      const transformedProducts: Product[] = (response.documents || []).map((product: any) => {
+      let transformedProducts: Product[] = (response.documents || []).map((product: any) => {
         // Convert features string to array if needed
         let features: string[] = [];
         if (typeof product.features === 'string' && product.features.trim() !== '') {
@@ -181,6 +180,18 @@ const Catalog = () => {
           }] : [])
         };
       });
+      
+      // Apply client-side search filtering if search term is provided
+      if (q) {
+        const searchTerm = q.toLowerCase();
+        transformedProducts = transformedProducts.filter(product => 
+          product.name.toLowerCase().includes(searchTerm) ||
+          (product.brand && product.brand.toLowerCase().includes(searchTerm)) ||
+          (product.category && product.category.toLowerCase().includes(searchTerm)) ||
+          (product.features && product.features.some(feature => feature.toLowerCase().includes(searchTerm)))
+        );
+        console.log(`Filtered ${transformedProducts.length} products based on search term: ${q}`);
+      }
         
       console.log('Loaded products from database:', transformedProducts.length);
       console.log('Sample product:', transformedProducts[0]);

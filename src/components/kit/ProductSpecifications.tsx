@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Info, Award, Ruler, Weight, Palette, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Award, Ruler, Weight, Palette, Zap, Package } from "lucide-react";
 import { Product, ProductSpecifications as ProductSpecsType } from "@/lib/types";
 
 interface ProductSpecificationsProps {
@@ -10,13 +10,15 @@ interface ProductSpecificationsProps {
   isExpanded?: boolean;
   onToggle?: () => void;
   compact?: boolean; // Add compact prop
+  showMaterial?: boolean; // Add showMaterial prop
 }
 
 const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({ 
   product, 
   isExpanded = false, 
   onToggle,
-  compact = false // Default to false
+  compact = false, // Default to false
+  showMaterial = false // Default to false
 }) => {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const expanded = onToggle ? isExpanded : internalExpanded;
@@ -34,6 +36,11 @@ const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({
         return <Weight className="w-4 h-4" />;
       case 'color':
         return <Palette className="w-4 h-4" />;
+      case 'material':
+      case 'materials':
+        return <Palette className="w-4 h-4" />; // Use Palette icon for material
+      case 'quantity':
+        return <Package className="w-4 h-4" />; // Use Package icon for quantity
       case 'powerSource':
       case 'batteryLife':
         return <Zap className="w-4 h-4" />;
@@ -46,10 +53,23 @@ const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({
   };
 
   const formatSpecKey = (key: string): string => {
+    // Special handling for materials to show as "Material"
+    if (key === 'materials') {
+      return 'Material:';
+    }
+    // Special handling for weight to show as "Qty"
+    if (key === 'weight') {
+      return 'Qty:';
+    }
+    // Special handling for quantity to show as "Qty"
+    if (key === 'quantity') {
+      return 'Qty:';
+    }
+    // Add colon to the formatted key
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
-      .trim();
+      .trim() + ":";
   };
 
   const renderSpecValue = (key: string, value: any) => {
@@ -64,14 +84,63 @@ const ProductSpecifications: React.FC<ProductSpecificationsProps> = ({
         </div>
       );
     }
+    // Handle N/A values
+    if (value === 'N/A' || value === null || value === undefined || value === '') {
+      return <span className="text-sm text-muted-foreground">N/A</span>;
+    }
     return <span className="text-sm">{value}</span>;
   };
 
-  const specEntries = Object.entries(specs).filter(([_, value]) => 
-    value !== undefined && value !== null && value !== ''
-  );
+  // Filter out dimensions and weight for compact mode, but show material if requested
+  const specEntries = Object.entries(specs)
+    .filter(([key, value]) => 
+      value !== undefined && value !== null && value !== '' && 
+      !(compact && !showMaterial && (key === 'dimensions' || key === 'weight')) &&
+      // Don't filter out material, materials, or quantity even in compact mode when showMaterial is true
+      !(compact && showMaterial && key !== 'material' && key !== 'materials' && key !== 'quantity' && (key === 'dimensions' || key === 'weight'))
+    );
 
-  const keySpecs = compact ? specEntries.slice(0, 2) : specEntries.slice(0, 3);
+  // If showing material in compact mode, prioritize it
+  let keySpecs;
+  if (compact && showMaterial) {
+    // Create a list with only material/materials
+    const materialSpecs = [];
+    
+    // Add material or materials first if available
+    if (specs.material && specs.material !== 'N/A') {
+      materialSpecs.push(['material', specs.material]);
+    } else if (specs.materials && specs.materials !== 'N/A') {
+      materialSpecs.push(['materials', specs.materials]);
+    }
+    
+    keySpecs = materialSpecs;
+  } else {
+    keySpecs = compact ? specEntries.slice(0, 2) : specEntries.slice(0, 3);
+  }
+  
+  // Make sure we show material in the key specs when requested
+  if (compact && showMaterial) {
+    // Check if material or quantity is already included
+    const hasMaterial = keySpecs.some(([key]) => key === 'material' || key === 'materials');
+    const hasQuantity = keySpecs.some(([key]) => key === 'quantity');
+    
+    // If we don't have material but have space, try to add it
+    if (!hasMaterial && keySpecs.length < 2) {
+      if (specs.material && specs.material !== 'N/A') {
+        keySpecs.push(['material', specs.material]);
+      } else if (specs.materials && specs.materials !== 'N/A') {
+        keySpecs.push(['materials', specs.materials]);
+      }
+    }
+    
+    // If we don't have quantity but have space, try to add it
+    if (!hasQuantity && keySpecs.length < 2) {
+      if (specs.quantity && specs.quantity !== 'N/A') {
+        keySpecs.push(['quantity', specs.quantity]);
+      }
+    }
+  }
+  
   const allSpecs = specEntries; // Define allSpecs variable
   
   if (specEntries.length === 0) return null;

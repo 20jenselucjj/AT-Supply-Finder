@@ -114,7 +114,16 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         updated_at: template.$updatedAt
       })) || [];
 
-      setTemplates(transformedTemplates);
+      setTemplates(transformedTemplates.map(template => ({
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        isActive: template.is_active,
+        estimatedCost: template.estimated_cost,
+        createdAt: template.created_at,
+        updatedAt: template.updated_at
+      })));
       setTotalPages(Math.ceil((countResponse.total || 0) / templatesPerPage));
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -300,8 +309,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       // Log successful template deletion
       await logger.auditLog({
         action: 'DELETE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: templateId,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: templateId,
         details: {
           template_name: templateData.name,
           category: templateData.category
@@ -313,8 +322,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'DELETE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: templateId,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: templateId,
         details: {
           error: error.message
         }

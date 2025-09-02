@@ -22,7 +22,7 @@ const cardVariants = {
 };
 
 const ProductCard = ({ product, price, loading = false }: { product: Product, price?: number, loading?: boolean }) => {
-  const { addToKit } = useKit();
+  const { addToKit, getProductQuantity } = useKit();
   const { toggleFavorite, isFavorite } = useFavorites();
   const bestOffer = product.offers.slice().sort((a, b) => a.price - b.price)[0];
   const bestIsAmazon = bestOffer?.name.toLowerCase().includes("amazon");
@@ -158,14 +158,14 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
           />
         </Button>
         
-        <div className="w-full h-40 bg-secondary/70 border border-border rounded-md p-2 flex items-center justify-center overflow-hidden shadow-sm relative z-10">
+        <div className="w-full h-40 bg-secondary/70 rounded-xl p-2 flex items-center justify-center overflow-hidden shadow-sm relative z-10">
           {loading ? (
             <Skeleton className="h-full w-full" />
           ) : (
             <img
               src={product.imageUrl || "/placeholder.svg"}
               alt={`${product.name} product image`}
-              className="h-full object-contain transition-transform duration-300 hover:scale-105"
+              className="h-full object-contain transition-transform duration-300 hover:scale-105 rounded-xl"
               loading="lazy"
               width="320"
               height="160"
@@ -183,6 +183,19 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             <p className="text-xs text-muted-foreground mt-1 text-left">
               {loading ? <Skeleton className="h-3 w-20" /> : product.category}
             </p>
+            
+            <div className="flex items-center mt-1 text-xs text-muted-foreground">
+              {getProductQuantity(product.id) > 0 && (
+                <span className="ml-auto bg-primary/10 px-3 py-1 rounded text-xs font-medium">
+                  Qty: {getProductQuantity(product.id)}
+                </span>
+              )}
+              {!getProductQuantity(product.id) && product.weight && (
+                <span className="ml-auto bg-primary/10 px-3 py-1 rounded text-xs font-medium">
+                  Qty: {product.weight}
+                </span>
+              )}
+            </div>
             
             {product.rating && product.rating > 0 && !loading && (
               <div className="flex items-center mt-2">
@@ -211,8 +224,8 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               {loading ? <Skeleton className="h-6 w-16" /> : price ? currency(price) : currency(bestOffer.price)}
             </div>
             <div className="mt-1 flex flex-col items-end gap-1">
-              {loading ? <Skeleton className="h-5 w-20" /> : <Badge variant="secondary" className="text-xs">Best price</Badge>}
-              {bestIsAmazon && !loading && <Badge className="text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200">Best on Amazon</Badge>}
+              {loading ? <Skeleton className="h-5 w-20" /> : null}
+              {bestIsAmazon && !loading && <Badge className="text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200">Amazon</Badge>}
             </div>
           </div>
         </div>

@@ -236,36 +236,32 @@ const Profile = () => {
       
       <div className="py-6 sm:py-8 md:py-10">
         <PageContainer className="max-w-6xl">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Profile</h1>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            <div className="text-center lg:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Profile</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Manage your account and preferences</p>
             </div>
-            <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
-              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-2">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2 text-xs sm:text-sm">
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden sm:inline">Dashboard</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center gap-2">
+              <TabsTrigger value="profile" className="flex items-center gap-2 text-xs sm:text-sm">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Profile</span>
               </TabsTrigger>
-              <TabsTrigger value="kits" className="flex items-center gap-2">
+              <TabsTrigger value="kits" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline">My Kits</span>
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="flex items-center gap-2">
+              <TabsTrigger value="favorites" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Heart className="h-4 w-4" />
                 <span className="hidden sm:inline">Favorites</span>
               </TabsTrigger>
-              <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <TabsTrigger value="preferences" className="flex items-center gap-2 text-xs sm:text-sm">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Preferences</span>
               </TabsTrigger>
@@ -445,11 +441,11 @@ const Profile = () => {
             <TabsContent value="profile" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                     <User className="h-5 w-5" />
                     Profile Information
                   </CardTitle>
-                  <CardDescription>Update your personal information and profile settings</CardDescription>
+                  <CardDescription className="text-sm sm:text-base">Update your personal information and profile settings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col sm:flex-row gap-6">
@@ -467,36 +463,39 @@ const Profile = () => {
                     </div>
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name" className="text-sm sm:text-base">Full Name</Label>
                         <Input
                           id="name"
                           value={profileForm.name}
                           onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                          className="text-sm sm:text-base"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
                         <Input
                           id="email"
                           type="email"
                           value={profileForm.email}
                           onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
                           disabled
+                          className="text-sm sm:text-base"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="company">Company</Label>
+                        <Label htmlFor="company" className="text-sm sm:text-base">Company</Label>
                         <Input
                           id="company"
                           value={profileForm.company}
                           onChange={(e) => setProfileForm({...profileForm, company: e.target.value})}
                           placeholder="Your company name"
+                          className="text-sm sm:text-base"
                         />
                       </div>
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <Button onClick={handleProfileUpdate}>
+                    <Button onClick={handleProfileUpdate} className="w-full sm:w-auto">
                       Update Profile
                     </Button>
                   </div>
@@ -637,10 +636,10 @@ const Profile = () => {
                                   <img 
                                     src={product.imageUrl} 
                                     alt={product.name} 
-                                    className="w-16 h-16 object-cover rounded-md"
+                                    className="w-16 h-16 object-cover rounded-xl"
                                   />
                                 ) : (
-                                  <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+                                  <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center">
                                     <Package className="h-8 w-8 text-muted-foreground" />
                                   </div>
                                 )}
@@ -763,31 +762,31 @@ const Profile = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                     <Bell className="h-5 w-5" />
                     Notifications
                   </CardTitle>
-                  <CardDescription>Manage your notification preferences</CardDescription>
+                  <CardDescription className="text-sm sm:text-base">Manage your notification preferences</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Email Notifications</h4>
-                      <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                      <h4 className="font-medium text-sm sm:text-base">Email Notifications</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Receive updates via email</p>
                     </div>
                     <Switch />
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Kit Updates</h4>
-                      <p className="text-sm text-muted-foreground">Notify me about kit changes</p>
+                      <h4 className="font-medium text-sm sm:text-base">Kit Updates</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Notify me about kit changes</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Product Updates</h4>
-                      <p className="text-sm text-muted-foreground">Notify me about product changes</p>
+                      <h4 className="font-medium text-sm sm:text-base">Product Updates</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Notify me about product changes</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -796,31 +795,31 @@ const Profile = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                     <Eye className="h-5 w-5" />
                     Privacy
                   </CardTitle>
-                  <CardDescription>Control your privacy settings</CardDescription>
+                  <CardDescription className="text-sm sm:text-base">Control your privacy settings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Profile Visibility</h4>
-                      <p className="text-sm text-muted-foreground">Make your profile visible to others</p>
+                      <h4 className="font-medium text-sm sm:text-base">Profile Visibility</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Make your profile visible to others</p>
                     </div>
                     <Switch />
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Kit Sharing</h4>
-                      <p className="text-sm text-muted-foreground">Allow others to view your public kits</p>
+                      <h4 className="font-medium text-sm sm:text-base">Kit Sharing</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Allow others to view your public kits</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg">
                     <div>
-                      <h4 className="font-medium">Activity Tracking</h4>
-                      <p className="text-sm text-muted-foreground">Track your activity for analytics</p>
+                      <h4 className="font-medium text-sm sm:text-base">Activity Tracking</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Track your activity for analytics</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -840,71 +839,71 @@ const Profile = () => {
                 <CardDescription>Access administrative tools and settings</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/dashboard">
-                      <LayoutDashboard className="h-6 w-6" />
+                      <LayoutDashboard className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>Dashboard</span>
                     </Link>
                   </Button>
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/users">
-                      <Users className="h-6 w-6" />
+                      <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>User Management</span>
                     </Link>
                   </Button>
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/products">
-                      <Package className="h-6 w-6" />
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>Product Management</span>
                     </Link>
                   </Button>
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/analytics">
-                      <BarChart3 className="h-6 w-6" />
+                      <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>Analytics</span>
                     </Link>
                   </Button>
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/templates">
-                      <Wrench className="h-6 w-6" />
+                      <Wrench className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>Starter Kits</span>
                     </Link>
                   </Button>
                   <Button 
                     asChild 
                     variant="outline" 
-                    className="h-auto p-4 flex flex-col items-center justify-center gap-2 hover:border-primary"
+                    className="h-auto p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-primary text-xs sm:text-sm"
                   >
                     <Link to="/admin/reports">
-                      <FileBarChart className="h-6 w-6" />
+                      <FileBarChart className="h-5 w-5 sm:h-6 sm:w-6" />
                       <span>Reports</span>
                     </Link>
                   </Button>
                 </div>
                 
                 <div className="mt-6 pt-6 border-t border-border">
-                  <Button asChild variant="default" className="w-full">
+                  <Button asChild variant="default" className="w-full text-sm sm:text-base">
                     <Link to="/admin" className="flex items-center justify-center gap-2">
                       <Settings className="h-4 w-4" />
                       Access Full Admin Dashboard
@@ -914,6 +913,16 @@ const Profile = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Sign Out Button at Bottom Center */}
+          <div className="mt-12 pt-8 border-t border-border">
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
         </PageContainer>
       </div>
     </>

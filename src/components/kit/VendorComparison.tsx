@@ -35,30 +35,32 @@ const VendorComparison = ({ offers, productName, onVendorSelect, compact = false
           >
             <div className="flex items-center gap-2">
               <span className={compact ? "text-xs font-medium" : "text-sm font-medium"}>{offer.name}</span>
-              {isBest && (
+              {!compact && isBest && (
                 <Badge variant="default" className={compact ? "text-xs px-1 py-0" : "text-xs"}>
                   Best
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-1">
-              <span className={compact ? "text-xs font-semibold" : "text-sm font-semibold"}>
-                {formatCurrency(offer.price)}
-              </span>
-              <Button
-                variant="outline"
-                size={compact ? "icon" : "sm"}
-                onClick={() => {
-                  if (onVendorSelect) {
-                    onVendorSelect(offer);
-                  }
-                  window.open(offer.url, '_blank', 'noopener,noreferrer');
-                }}
-                className={compact ? "h-6 w-6 p-1" : "h-7 px-2"}
-              >
-                <ExternalLink className={compact ? "w-2 h-2" : "w-3 h-3"} />
-              </Button>
-            </div>
+            {!compact && (
+              <div className="flex items-center gap-1">
+                <span className={compact ? "text-xs font-semibold" : "text-sm font-semibold"}>
+                  {formatCurrency(offer.price)}
+                </span>
+                <Button
+                  variant="outline"
+                  size={compact ? "icon" : "sm"}
+                  onClick={() => {
+                    if (onVendorSelect) {
+                      onVendorSelect(offer);
+                    }
+                    window.open(offer.url, '_blank', 'noopener,noreferrer');
+                  }}
+                  className={compact ? "h-6 w-6 p-1" : "h-7 px-2"}
+                >
+                  <ExternalLink className={compact ? "w-2 h-2" : "w-3 h-3"} />
+                </Button>
+              </div>
+            )}
           </div>
         );
       })}

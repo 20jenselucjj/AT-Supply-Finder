@@ -69,7 +69,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
             <TableHead>Rating</TableHead>
             <TableHead>Price</TableHead>
             <TableHead className="hidden lg:table-cell">Material</TableHead>
-            <TableHead className="hidden xl:table-cell">Weight</TableHead>
+            <TableHead className="hidden xl:table-cell">Qty</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -86,9 +86,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    {product.image_url && (
+                    {product.imageUrl && (
                       <img
-                        src={product.image_url}
+                        src={product.imageUrl}
                         alt={product.name}
                         className="w-12 h-12 object-cover rounded"
                       />
@@ -222,7 +222,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                             />
                           </div>
                           <div>
-                            <Label htmlFor="edit-weight">Weight</Label>
+                            <Label htmlFor="edit-weight">Qty</Label>
                             <Input
                               id="edit-weight"
                               value={productForm.weight}

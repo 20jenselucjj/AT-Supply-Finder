@@ -4,26 +4,60 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Zap } from "lucide-react";
 
 interface ProductFormProps {
   productForm: any;
   setProductForm: React.Dispatch<React.SetStateAction<any>>;
   handleAffiliateLinkChange: (url: string) => void;
+  handleEnhanceWithAI?: () => void;
   isLoadingProductInfo: boolean;
   handleSubmit: () => void;
   onCancel: () => void;
   isEditing?: boolean;
 }
 
+// Define the list of valid first aid categories with their icons
+const FIRST_AID_CATEGORIES = [
+  { id: "wound-care-dressings", name: "Wound Care & Dressings", icon: "🩹" },
+  { id: "tapes-wraps", name: "Tapes & Wraps", icon: "🧵" },
+  { id: "antiseptics-ointments", name: "Antiseptics & Ointments", icon: "🧴" },
+  { id: "pain-relief", name: "Pain & Symptom Relief", icon: "💊" },
+  { id: "instruments-tools", name: "Instruments & Tools", icon: "🛠️" },
+  { id: "trauma-emergency", name: "Trauma & Emergency", icon: "🚨" },
+  { id: "ppe", name: "Personal Protection Equipment (PPE)", icon: "🛡️" },
+  { id: "information-essentials", name: "First Aid Information & Essentials", icon: "📋" },
+  { id: "hot-cold-therapy", name: "Hot & Cold Therapy", icon: "🧊" },
+  { id: "hydration-nutrition", name: "Hydration & Nutrition", icon: "💧" },
+  { id: "miscellaneous", name: "Miscellaneous & General", icon: "📦" }
+];
+
+// Map category IDs to their display names
+const getCategoryNameById = (id: string): string => {
+  const category = FIRST_AID_CATEGORIES.find(cat => cat.id === id);
+  return category ? category.name : id;
+};
+
+// Map category names to their IDs
+const getCategoryIdByName = (name: string): string => {
+  const category = FIRST_AID_CATEGORIES.find(cat => cat.name === name);
+  return category ? category.id : name;
+};
+
 export const ProductForm: React.FC<ProductFormProps> = ({
   productForm,
   setProductForm,
   handleAffiliateLinkChange,
+  handleEnhanceWithAI,
   isLoadingProductInfo,
   handleSubmit,
   onCancel,
   isEditing = false
 }) => {
+  // Get the category ID for the current category name
+  const currentCategoryId = getCategoryIdByName(productForm.category || "");
+  
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -46,6 +80,30 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           <p className="text-sm text-muted-foreground mt-1">
             Paste an Amazon product link to automatically extract the ASIN and help populate product details
           </p>
+          {handleEnhanceWithAI && (
+            <div className="mt-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full"
+                onClick={handleEnhanceWithAI}
+                disabled={isLoadingProductInfo}
+              >
+                <Zap className="mr-2 h-4 w-4" />
+                {isLoadingProductInfo ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                    Enhancing with AI...
+                  </>
+                ) : (
+                  'Enhance with AI'
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">
+                AI will optimize product name, features, category, and extract quantity/material
+              </p>
+            </div>
+          )}
         </div>
         <div className="col-span-2">
           <Label htmlFor="name">Product Name *</Label>
@@ -58,12 +116,36 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         </div>
         <div>
           <Label htmlFor="category">Category *</Label>
-          <Input
-            id="category"
-            value={productForm.category}
-            onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-            placeholder="e.g., Athletic Tape"
-          />
+          <Select 
+            value={currentCategoryId} 
+            onValueChange={(value) => {
+              const categoryName = getCategoryNameById(value);
+              setProductForm(prev => ({ ...prev, category: categoryName }));
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a category">
+                {productForm.category && (
+                  <div className="flex items-center">
+                    <span className="mr-2">
+                      {FIRST_AID_CATEGORIES.find(cat => cat.name === productForm.category)?.icon}
+                    </span>
+                    <span>{productForm.category}</span>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {FIRST_AID_CATEGORIES.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  <div className="flex items-center">
+                    <span className="mr-2">{category.icon}</span>
+                    <span>{category.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="brand">Brand *</Label>
@@ -109,12 +191,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           />
         </div>
         <div>
-          <Label htmlFor="weight">Weight</Label>
+          <Label htmlFor="weight">Qty</Label>
           <Input
             id="weight"
             value={productForm.weight}
             onChange={(e) => setProductForm(prev => ({ ...prev, weight: e.target.value }))}
-            placeholder="e.g., 3.2 lbs"
+            placeholder="e.g., 100 ct"
           />
         </div>
         <div>

@@ -35,6 +35,7 @@ interface SearchAndActionsProps {
   productForm: any;
   setProductForm: React.Dispatch<React.SetStateAction<any>>;
   handleAffiliateLinkChange: (url: string) => void;
+  handleEnhanceWithAI?: () => void;
   isLoadingProductInfo: boolean;
   handleAddProduct: () => void;
 }
@@ -66,6 +67,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   productForm,
   setProductForm,
   handleAffiliateLinkChange,
+  handleEnhanceWithAI,
   isLoadingProductInfo,
   handleAddProduct
 }) => {
@@ -193,6 +195,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
               productForm={productForm}
               setProductForm={setProductForm}
               handleAffiliateLinkChange={handleAffiliateLinkChange}
+              handleEnhanceWithAI={handleEnhanceWithAI}
               isLoadingProductInfo={isLoadingProductInfo}
               handleSubmit={handleAddProduct}
               onCancel={() => setIsAddProductOpen(false)}

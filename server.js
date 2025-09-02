@@ -194,6 +194,9 @@ app.get('/api/list-users', async (req, res) => {
   }
 });
 
+// Amazon Product Scraping endpoint
+app.post('/api/scrape-amazon-product', scrapeAmazonProduct);
+
 // User Management Endpoints
 // Create User endpoint
 app.post('/api/users', async (req, res) => {

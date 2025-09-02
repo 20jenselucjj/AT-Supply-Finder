@@ -29,7 +29,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [ratingFilter, setRatingFilter] = useState<string>("any");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -56,13 +56,16 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
       // Category mapping for First Aid categories
       const categoryMapping: Record<string, string | string[]> = {
         "wound-care-dressings": "First Aid & Wound Care",
-        "tapes-wraps": "Taping & Bandaging",
+        "tapes-wraps": ["Taping & Bandaging", "Injury Prevention & Rehab"],
         "antiseptics-ointments": "First Aid & Wound Care",
         "pain-relief": "Over-the-Counter Medication",
         "instruments-tools": "Instruments & Tools",
         "trauma-emergency": "Emergency Care",
         "ppe": "Personal Protection Equipment (PPE)",
-        "information-essentials": "Documentation & Communication"
+        "information-essentials": "Documentation & Communication",
+        "hot-cold-therapy": "Hot & Cold Therapy",
+        "hydration-nutrition": "Hydration & Nutrition",
+        "miscellaneous": "Miscellaneous & General"
       };
       
       const productCategory = categoryMapping[categoryId];
@@ -102,6 +105,21 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
               .map((f: any) => f.toString().trim());
           }
 
+          // Create vendor offers from product price data
+          const offers = [];
+          if (product.price && product.price > 0) {
+            offers.push({
+              id: `${product.$id}-primary`,
+              name: product.brand || 'Direct',
+              vendorName: product.brand || 'Direct',
+              price: product.price,
+              url: product.affiliate_link || '#',
+              shipping: 'Standard',
+              availability: 'In Stock',
+              lastUpdated: product.updated_at || new Date().toISOString()
+            });
+          }
+
           return {
             id: product.$id,
             name: product.name,
@@ -110,10 +128,16 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
             subcategory: product.subcategory,
             description: product.description || '',
             features: features,
-            imageUrl: product.imageUrl,
+            imageUrl: product.image_url || product.imageUrl,
             rating: product.rating || 0,
-            offers: product.offers || [],
-            lastUpdated: product.updatedAt || new Date().toISOString()
+            offers: offers,
+            specifications: {
+              dimensions: product.dimensions || 'N/A',
+              weight: product.weight || 'N/A',
+              material: product.material || 'N/A',
+              quantity: product.quantity || 'N/A'
+            },
+            lastUpdated: product.updated_at || new Date().toISOString()
           };
         });
         setProducts(transformedProducts);
@@ -476,15 +500,14 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-20 text-left">Quantity</TableHead>
+                      <TableHead className="w-20 text-left">Add/Remove</TableHead>
                       <TableHead className="w-12"></TableHead>
                       <TableHead className="w-40">Product</TableHead>
                       <TableHead className="w-24">Brand</TableHead>
                       <TableHead className="w-20">Price</TableHead>
                       <TableHead className="w-20">Rating</TableHead>
                       <TableHead className="w-32">Vendors</TableHead>
-                      <TableHead className="w-20">Reviews</TableHead>
-                      <TableHead className="w-32">Specifications</TableHead>
+                      <TableHead className="w-20">Qty</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -595,20 +618,21 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                             </div>
                           </TableCell>
                           <TableCell className="py-2">
-                            {product.reviews && product.reviews.length > 0 ? (
-                              <button 
-                                className="text-primary hover:text-primary/80 hover:underline text-sm"
-                                onClick={() => setSelectedProduct(product)}
-                              >
-                                {product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''}
-                              </button>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">No reviews</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-2 max-w-[120px]">
-                            <div className="max-w-[120px]">
-                              <ProductSpecifications product={product} compact={true} />
+                            <div className="space-y-1">
+                              {product.specifications?.weight && product.specifications.weight !== 'N/A' && (
+                                <div className="text-xs">
+                                  {product.specifications.weight}
+                                </div>
+                              )}
+                              {product.specifications?.quantity && product.specifications.quantity !== 'N/A' && (
+                                <div className="text-xs">
+                                  {product.specifications.quantity}
+                                </div>
+                              )}
+                              {(!product.specifications?.weight || product.specifications.weight === 'N/A') && 
+                               (!product.specifications?.quantity || product.specifications.quantity === 'N/A') && (
+                                <span className="text-muted-foreground text-xs">N/A</span>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -619,121 +643,125 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div 
+              className="grid gap-6"
+              style={{ 
+                gridTemplateColumns: kit.length > 0 
+                  ? 'repeat(auto-fill, minmax(200px, 1fr))' 
+                  : 'repeat(auto-fill, minmax(240px, 1fr))'
+              }}
+            >
               {filteredAndSortedProducts.map((product) => {
                 const isInKit = isProductInKit(product.id);
                 const bestOffer = product.offers[0];
                 
                 return (
-                  <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary' : ''}`}>
-                    <CardContent className="p-4">
-                  <div className="space-y-4">
-                    <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-                      {product.imageUrl ? (
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Package className="w-12 h-12 text-muted-foreground" />
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <button 
-                        className="font-semibold line-clamp-2 text-left hover:text-primary hover:underline w-full"
-                        onClick={() => setSelectedProduct(product)}
-                      >
-                        {product.name}
-                      </button>
-                      <p className="text-sm text-muted-foreground">{product.brand}</p>
-                      
-                      {product.features && product.features.length > 0 && (
-                        <div className="text-xs text-muted-foreground">
-                          {product.features.slice(0, 3).join(", ")}
-                          {product.features.length > 3 && "..."}
+                  <Card key={product.id} className={`transition-all hover:shadow-lg h-full flex flex-col ${isInKit ? 'ring-2 ring-primary' : ''}`}>
+                    <CardContent className="p-4 flex flex-col flex-grow">
+                      <div className="space-y-3 flex flex-col h-full">
+                        {/* Product Image */}
+                        <div className="bg-secondary/70 rounded-xl p-3 flex items-center justify-center aspect-square relative overflow-hidden flex-grow">
+                          <img
+                            src={product.imageUrl || '/placeholder.svg'}
+                            alt={product.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 rounded-xl"
+                          />
+                          {isInKit && (
+                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                              In Kit
+                            </div>
+                          )}
                         </div>
-                      )}
-                      
-                      {/* Product Specifications */}
-                      <ProductSpecifications product={product} />
-                      
-                      {/* Vendor Comparison */}
-                      {product.offers && product.offers.length > 0 && (
-                        <VendorComparison 
-                          offers={product.offers} 
-                          productName={product.name}
-                          onVendorSelect={(offer) => {
-                            console.log('Selected vendor:', offer.name, 'for', product.name);
-                          }}
-                        />
-                      )}
-                      
-                      {/* Reviews Summary */}
-                      {product.reviews && product.reviews.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span>{product.rating?.toFixed(1)}</span>
-                          </div>
+                        
+                        {/* Product Info */}
+                        <div className="space-y-2 flex-grow">
                           <button 
-                            className="text-primary hover:text-primary/80 hover:underline"
+                            className="font-semibold line-clamp-2 text-left hover:text-primary hover:underline w-full text-sm"
                             onClick={() => setSelectedProduct(product)}
                           >
-                            ({product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''})
+                            {product.name}
                           </button>
+                          <p className="text-xs text-muted-foreground">{product.brand}</p>
+                          
+                          {/* Add weight/quantity in grid view */}
+                          <div className="flex flex-wrap gap-1 text-xs">
+                            {(product.specifications?.quantity && product.specifications.quantity !== 'N/A') ? (
+                              <Badge variant="outline" className="text-xs px-2 py-1">
+                                Qty: {product.specifications.quantity}
+                              </Badge>
+                            ) : (
+                              (product.specifications?.weight && product.specifications.weight !== 'N/A') && (
+                                <Badge variant="outline" className="text-xs px-2 py-1">
+                                  Qty: {product.specifications.weight}
+                                </Badge>
+                              )
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-wrap justify-between items-center gap-2">
+                            {bestOffer && (
+                              <span className="text-lg font-bold text-primary">
+                                ${bestOffer.price.toFixed(2)}
+                              </span>
+                            )}
+                            
+                            {product.rating && product.rating > 0 ? (
+                              <div className="flex items-center bg-secondary/60 px-2 py-1 rounded-full text-xs">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                <span className="font-medium">{product.rating.toFixed(1)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No ratings</span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      
-                      {product.rating && (
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-primary text-primary" />
-                          <span className="text-sm">{product.rating}</span>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          {isInKit ? (
+                            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 flex-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuantityChange(product, -1)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="font-medium text-xs px-1">
+                                {getProductQuantity(product.id)}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleQuantityChange(product, 1)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => handleProductToggle(product)}
+                              size="sm"
+                              className="flex-1"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProduct(product)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Package className="w-4 h-4" />
+                          </Button>
                         </div>
-                      )}
-                      
-                      {bestOffer && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold">{formatCurrency(bestOffer.price)}</span>
-                          <Badge variant="outline">{bestOffer.name}</Badge>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {isInKit ? (
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          onClick={() => handleQuantityChange(product, -1)}
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="min-w-[3rem] text-center text-sm font-medium">
-                          Qty: {getProductQuantity(product.id)}
-                        </span>
-                        <Button 
-                          onClick={() => handleQuantityChange(product, 1)}
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
                       </div>
-                    ) : (
-                      <Button 
-                        onClick={() => handleProductToggle(product)}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add to Kit
-                      </Button>
-                    )}
-                  </div>
                     </CardContent>
                   </Card>
                 );

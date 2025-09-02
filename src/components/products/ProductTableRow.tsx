@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { TableCell } from '@/components/ui/table';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,11 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
     ? Math.min(...product.offers.map(o => o.price))
     : undefined;
 
+  // Find Amazon offer, if exists
+  const amazonOffer = product.offers.find(offer => offer.name === "Amazon");
+
   return (
-    <TableRow variants={rowVariants} className="align-top">
+    <TableRow variants={rowVariants} className="align-top product-row-fixed">
       <TableCell>
         <Checkbox
           checked={selectedForCompare.includes(product.id)}
@@ -38,10 +41,10 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
       <TableCell className="font-medium">
         <div className="flex items-center">
           <a
-            href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url}
+            href={amazonOffer?.url || product.offers[0]?.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="cursor-pointer"
+            className="cursor-pointer flex-shrink-0" 
           >
             <div className="bg-secondary/70 border border-border rounded-md p-1 mr-4 flex items-center justify-center w-12 h-12 shadow-sm">
               <img
@@ -51,9 +54,10 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
               />
             </div>
           </a>
-          <div>
-            <div className="text-sm md:text-base">{product.name}</div>
-            <div className="text-xs md:text-sm text-muted-foreground">{product.category}</div>
+          <div className="min-w-0">
+            <div className="text-sm md:text-base truncate">{product.name}</div>
+            <div className="text-xs md:text-sm text-muted-foreground truncate">{product.brand}</div>
+            <div className="text-xs text-muted-foreground truncate">{product.category}</div>
           </div>
         </div>
       </TableCell>
@@ -69,7 +73,7 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
       </TableCell>
       <TableCell className="hidden md:table-cell">
         <div className="flex flex-wrap gap-1">
-          {product.offers.slice(0, 3).map((offer) => (
+          {product.offers.slice(0, 2).map((offer) => (
             <Button variant="outline" size="sm" key={offer.name} asChild className="text-xs px-2 py-1 h-auto">
               <a href={offer.url} target="_blank" rel="noopener noreferrer">
                 {offer.name}
@@ -77,6 +81,13 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
             </Button>
           ))}
         </div>
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        {product.weight && (
+          <div className="text-xs">
+            {product.weight}
+          </div>
+        )}
       </TableCell>
       <TableCell>
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
@@ -88,8 +99,8 @@ export const ProductTableRow: React.FC<ProductTableRowProps> = ({ product, selec
               Add
             </Button>
             {getProductQuantity(product.id) > 0 && (
-              <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium min-w-[20px] text-center">
-                {getProductQuantity(product.id)}
+              <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-medium min-w-[20px] text-center">
+                Qty: {getProductQuantity(product.id)}
               </span>
             )}
           </div>

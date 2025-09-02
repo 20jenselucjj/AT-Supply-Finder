@@ -21,6 +21,7 @@ export interface Review {
 export interface ProductSpecifications {
   dimensions?: string;
   weight?: string;
+  quantity?: string;
   material?: string;
   materials?: string;
   color?: string;

@@ -49,11 +49,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
             className="mt-1 flex-shrink-0"
           />
-          {product.image_url && (
+          {product.imageUrl && (
             <img
-              src={product.image_url}
+              src={product.imageUrl}
               alt={product.name}
-              className="w-16 h-16 object-cover rounded flex-shrink-0"
+              className="w-16 h-16 object-cover rounded-xl flex-shrink-0"
             />
           )}
           <div className="flex-1 min-w-0">
@@ -95,7 +95,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Weight</Label>
+            <Label className="text-xs text-muted-foreground">Qty</Label>
             <div className="font-medium">
               {product.weight || 'N/A'}
             </div>

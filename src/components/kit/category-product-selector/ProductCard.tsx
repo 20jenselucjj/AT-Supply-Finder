@@ -19,12 +19,12 @@ export const ProductCard = ({
     <Card key={product.id} className={`transition-all ${isInKit ? 'ring-2 ring-primary bg-primary/5 dark:bg-primary/10' : ''}`}>
       <CardContent className="p-4">
         <div className="space-y-4">
-          <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+          <div className="aspect-square bg-muted rounded-xl flex items-center justify-center overflow-hidden">
             {product.imageUrl ? (
               <img 
                 src={product.imageUrl} 
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-xl"
               />
             ) : (
               <Package className="w-12 h-12 text-muted-foreground" />
@@ -87,7 +87,7 @@ export const ProductCard = ({
             {bestOffer && (
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold">{formatCurrency(bestOffer.price)}</span>
-                <Badge variant="outline">{bestOffer.name}</Badge>
+                <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">{bestOffer.name}</span>
               </div>
             )}
           </div>
@@ -102,7 +102,7 @@ export const ProductCard = ({
               >
                 <Minus className="w-4 h-4" />
               </Button>
-              <span className="min-w-[3rem] text-center text-sm font-medium">
+              <span className="min-w-[3rem] text-center text-sm font-medium px-2">
                 Qty: {getProductQuantity(product.id)}
               </span>
               <Button 

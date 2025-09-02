@@ -128,7 +128,7 @@ export const Filters: React.FC<FiltersProps> = ({
         
         {/* Weight Filter */}
         <div>
-          <Label htmlFor="weight-filter">Weight</Label>
+          <Label htmlFor="weight-filter">Qty</Label>
           <Input
             id="weight-filter"
             placeholder="e.g., 2 lbs, 500g"

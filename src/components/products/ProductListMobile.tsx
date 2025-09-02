@@ -39,7 +39,7 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                   href={product.offers.find(o => o.name === 'Amazon')?.url || product.offers[0]?.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 w-24 h-24 rounded-lg bg-muted flex items-center justify-center overflow-hidden border"
+                  className="shrink-0 w-24 h-24 rounded-xl bg-muted flex items-center justify-center overflow-hidden"
                 >
                   <img
                     src={product.imageUrl || '/placeholder.svg'}
@@ -48,7 +48,7 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                     decoding="async"
                     width={160}
                     height={160}
-                    className="object-contain w-full h-full"
+                    className="object-contain w-full h-full rounded-xl"
                   />
                 </a>
                 
@@ -83,14 +83,17 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                     ) : (
                       <span className="text-[10px] text-muted-foreground">No ratings</span>
                     )}
-                    <span className="font-bold text-primary">${minPrice.toFixed(2)}</span>
                   </div>
                   
-                  {product.features?.length && (
+                  <div className="mb-2">
+                    <span className="font-bold text-primary text-sm">${minPrice.toFixed(2)}</span>
+                  </div>
+                  
+                  {product.features?.length ? (
                     <ul className="text-xs text-muted-foreground list-disc list-inside space-y-0.5 mb-3">
                       {product.features.slice(0,2).map(f => <li key={f} className="truncate">{f}</li>)}
                     </ul>
-                  )}
+                  ) : null}
                   
                   <div className="flex flex-wrap gap-1 mb-3">
                     {product.offers.slice(0,2).map(o => (
@@ -118,7 +121,7 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="font-medium text-xs px-2 min-w-[40px] text-center">
-                            {qty}
+                            Qty: {qty}
                           </span>
                           <Button
                             variant="outline"
