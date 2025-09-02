@@ -44,10 +44,10 @@ const Hero = () => {
             Trusted by Medical Professionals
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item" style={{ fontFamily: 'var(--font-heading)' }}>
-            Build Your <span className="text-primary">Professional Kit</span>
+            Build Your <span className="text-primary">First Aid Kit</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
-            Find essential medical supplies for any emergency. Compare prices across <strong className="font-semibold">trusted vendors</strong> instantly and build your professional kit with premium quality supplies at competitive prices.
+            Find essential medical supplies for any emergency. Compare prices across <strong className="font-semibold">trusted vendors</strong> instantly and build your first aid kit with essential medical supplies at competitive prices.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm font-medium stagger-item">
@@ -55,13 +55,13 @@ const Hero = () => {
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </span>
-              <span>Premium Quality</span>
+              <span>Medical Grade Quality</span>
             </div>
             <div className="flex items-center gap-2 bg-secondary/80 px-4 py-2 rounded-full border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </span>
-              <span>Expert Curated</span>
+              <span>First Aid Expert Curated</span>
             </div>
             <div className="flex items-center gap-2 bg-secondary/80 px-4 py-2 rounded-full border border-border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shadow-inner">

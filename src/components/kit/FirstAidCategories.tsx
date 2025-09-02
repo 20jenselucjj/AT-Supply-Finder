@@ -224,9 +224,9 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
   return (
     <div className="space-y-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Build Your Professional Kit</h2>
+        <h2 className="text-2xl font-bold mb-2">Build Your First Aid Kit</h2>
         <p className="text-muted-foreground">
-          Select components for each category to build a comprehensive professional kit.
+          Select components for each category to build a comprehensive first aid kit.
         </p>
       </div>
 
