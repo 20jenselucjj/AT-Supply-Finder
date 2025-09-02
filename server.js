@@ -19,6 +19,7 @@ const allowedOrigins = [
   'http://localhost:5173', // Local development
   'http://localhost:3000', // Alternative local development port
   'https://wrap-wizard-finder-bmxeumvee-20jenselucjjs-projects.vercel.app', // Your Vercel deployment
+  'https://at-supply-finder.appwrite.network', // Appwrite network deployment
   // Add any other domains you want to allow
 ];
 
