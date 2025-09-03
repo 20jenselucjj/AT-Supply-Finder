@@ -18,8 +18,10 @@ import { ProductCard } from './ProductCard';
 import { ProductForm } from './ProductForm';
 import { Filters } from './Filters';
 import { SearchAndActions } from './SearchAndActions';
+import { useProductRefresh } from '@/context/product-refresh-context';
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
+  const { triggerProductRefresh } = useProductRefresh();
   const [products, setProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -410,6 +412,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       toast.success(`Successfully deleted ${productIds.length} product${productIds.length > 1 ? 's' : ''}`);
       setSelectedProducts(new Set());
       fetchProducts(currentPage, searchTerm, selectedCategory);
+      triggerProductRefresh();
     } catch (error: any) {
       await logger.auditLog({
         action: 'BULK_DELETE_PRODUCTS_FAILED',
@@ -1036,6 +1039,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
+      triggerProductRefresh();
     } catch (error: any) {
       await logger.auditLog({
         action: 'CREATE_PRODUCT_FAILED',
@@ -1108,6 +1112,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       resetForm();
       fetchProducts(currentPage, searchTerm, selectedCategory);
       fetchCategories();
+      triggerProductRefresh();
     } catch (error: any) {
       await logger.auditLog({
         action: 'UPDATE_PRODUCT_FAILED',
@@ -1172,6 +1177,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
 
       toast.success('Product deleted successfully');
       fetchProducts(currentPage, searchTerm, selectedCategory);
+      triggerProductRefresh();
     } catch (error: any) {
       await logger.auditLog({
         action: 'DELETE_PRODUCT_FAILED',

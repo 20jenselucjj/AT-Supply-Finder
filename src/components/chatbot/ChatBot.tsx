@@ -36,6 +36,7 @@ import { databases } from '@/lib/appwrite';
 import type { Product } from '@/lib/types';
 import { useTheme } from '@/context/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useProductRefresh } from '@/context/product-refresh-context';
 import {
   Tooltip,
   TooltipContent,
@@ -83,6 +84,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const isMobile = useIsMobile();
+  const { refreshTrigger } = useProductRefresh();
   
   // Initialize chat state from storage
   const [chatState, setChatState] = useState<ChatState>(() => {
@@ -192,7 +194,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     scrollToBottom();

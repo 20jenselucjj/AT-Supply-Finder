@@ -8,6 +8,7 @@ import { KitProvider } from "@/context/kit-context";
 import { AuthProvider } from "@/context/auth-context";
 import { ThemeProvider } from "@/context/theme-context";
 import { FavoritesProvider } from "@/context/favorites-context";
+import { ProductRefreshProvider } from "@/context/product-refresh-context";
 import ScrollToTop from "@/components/ScrollToTop";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
@@ -58,8 +59,9 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <FavoritesProvider>
-              <KitProvider>
+            <ProductRefreshProvider>
+              <FavoritesProvider>
+                <KitProvider>
                 <TooltipProvider>
                 <BrowserRouter>
                   <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -107,8 +109,9 @@ const App = () => {
                   <Sonner />
                 </BrowserRouter>
                 </TooltipProvider>
-              </KitProvider>
-            </FavoritesProvider>
+                </KitProvider>
+              </FavoritesProvider>
+            </ProductRefreshProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

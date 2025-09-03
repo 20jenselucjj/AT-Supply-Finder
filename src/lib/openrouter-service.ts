@@ -200,6 +200,9 @@ IMPORTANT CATEGORY GUIDELINES:
 - "Wound Care & Dressings" includes bandages, gauze, dressings, and wound cleaning supplies
 - "Tapes & Wraps" includes medical tapes, elastic bandages, and athletic tape
 - "Instruments & Tools" includes scissors, tweezers, thermometers, and other medical tools
+- "Hydration & Nutrition" includes electrolyte powder packets, energy gels, emergency water tablets, and glucose tablets for dehydration and energy needs
+- "Hot & Cold Therapy" includes instant cold packs, reusable gel packs, and topical analgesic creams
+- "Trauma & Emergency" includes emergency blankets, tourniquets, splints, and supplies for serious injuries
 
 Available Products:
 ${JSON.stringify(productCatalog, null, 2)}
@@ -397,8 +400,11 @@ Guidelines:
     // Pass 1: Initial keyword filtering
     const keywordFiltered = this.initialKeywordFilter(query, products);
     
+    // Fallback: if no products match keywords, use all products for semantic scoring
+    const productsForScoring = keywordFiltered.length > 0 ? keywordFiltered : products;
+    
     // Pass 2: Semantic similarity scoring
-    const semanticallyScored = await this.semanticSimilarityScoring(query, keywordFiltered);
+    const semanticallyScored = await this.semanticSimilarityScoring(query, productsForScoring);
     
     // Pass 3: Category relevance boosting
     const categoryBoosted = this.categoryRelevanceBoosting(query, semanticallyScored);
@@ -414,7 +420,7 @@ Guidelines:
   }
 
   private initialKeywordFilter(query: string, products: Product[]): Product[] {
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 1); // Reduced from 2 to 1
     
     return products.filter(product => {
       const searchableFields = [
@@ -426,6 +432,7 @@ Guidelines:
         Array.isArray(product.specifications?.materials) ? product.specifications.materials.join(' ') : ''
       ].join(' ').toLowerCase();
       
+      // More flexible matching: check if any search term is found in the searchable fields
       return searchTerms.some(term => searchableFields.includes(term));
     });
   }
@@ -548,7 +555,10 @@ Guidelines:
       'wound': ['wound', 'cut', 'scrape', 'laceration', 'abrasion'],
       'burn': ['burn', 'scald', 'heat', 'fire'],
       'allergy': ['allergy', 'allergic', 'antihistamine', 'reaction'],
-      'pain': ['pain', 'ache', 'hurt', 'discomfort']
+      'pain': ['pain', 'ache', 'hurt', 'discomfort'],
+      'hydration': ['electrolyte', 'electrolytes', 'hydration', 'dehydration', 'rehydration', 'fluid', 'water', 'salt'],
+      'nutrition': ['nutrition', 'energy', 'glucose', 'sugar', 'food', 'supplement'],
+      'sports': ['sports', 'athletic', 'exercise', 'workout', 'training', 'performance']
     };
 
     const keywords: string[] = [];
@@ -574,6 +584,14 @@ Guidelines:
 
     // Enhanced category synonym matching with more comprehensive mappings
     const categorySynonyms: Record<string, string[]> = {
+      // Database category names (with hyphens)
+      'instruments-tools': ['scissors', 'tweezers', 'thermometer', 'gloves', 'tool', 'instrument', 'medical tools', 'surgical'],
+      'wound-care-dressings': ['bandage', 'gauze', 'dressing', 'wound', 'cut', 'scrape', 'laceration', 'first aid kit'],
+      'tapes-wraps': ['tape', 'wrap', 'elastic', 'adhesive', 'bandage', 'medical tape', 'waterproof'],
+      'antiseptics-ointments': ['antibiotic', 'ointment', 'antiseptic', 'gel', 'cream', 'burn', 'wound treatment', 'prep pad', 'alcohol', 'bzk'],
+      'pain-relief': ['pain', 'relief', 'medication', 'pill', 'tablet', 'fever', 'headache', 'allergy', 'antihistamine', 'antacid', 'tums', 'benadryl'],
+      'hydration-nutrition': ['electrolyte', 'electrolytes', 'hydration', 'dehydration', 'rehydration', 'fluid', 'water', 'salt', 'nutrition', 'energy', 'glucose', 'sugar', 'supplement', 'lmnt'],
+      // Legacy category names (with spaces and ampersands) for backward compatibility
       'antiseptics & ointments': ['antibiotic', 'ointment', 'antiseptic', 'gel', 'cream', 'burn', 'wound treatment'],
       'pain & symptom relief': ['pain', 'relief', 'medication', 'pill', 'tablet', 'fever', 'headache', 'allergy'],
       'wound care & dressings': ['bandage', 'gauze', 'dressing', 'wound', 'cut', 'scrape', 'laceration'],
@@ -581,7 +599,10 @@ Guidelines:
       'instruments & tools': ['scissors', 'tweezers', 'thermometer', 'gloves', 'tool', 'instrument'],
       'first aid': ['first aid', 'medical', 'emergency', 'treatment', 'health'],
       'ppe': ['protection', 'gloves', 'mask', 'safety', 'ppe'],
-      'emergency': ['emergency', 'urgent', 'critical', 'severe', 'rescue']
+      'emergency': ['emergency', 'urgent', 'critical', 'severe', 'rescue'],
+      'hydration & nutrition': ['electrolyte', 'electrolytes', 'hydration', 'dehydration', 'rehydration', 'fluid', 'water', 'salt', 'nutrition', 'energy', 'glucose', 'sugar', 'supplement'],
+      'hot & cold therapy': ['cold', 'hot', 'ice', 'heat', 'therapy', 'compress', 'pack'],
+      'trauma & emergency': ['trauma', 'emergency', 'severe', 'critical', 'tourniquet', 'splint', 'blanket']
     };
 
     // Find the best matching category
