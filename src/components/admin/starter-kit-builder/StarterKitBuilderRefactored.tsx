@@ -42,7 +42,7 @@ export const StarterKitBuilderRefactored: React.FC = () => {
   const [isEditTemplateOpen, setIsEditTemplateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<StarterKitTemplate | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'estimated_cost'>('$createdAt');
+  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'estimatedCost'>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeTab, setActiveTab] = useState('templates');
@@ -53,8 +53,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
     name: '',
     description: '',
     category: '',
-    is_active: true,
-    estimated_cost: 0
+    isActive: true,
+    estimatedCost: 0
   });
 
   const fetchTemplates = async (page = 1, search = '', category = 'all') => {
@@ -108,10 +108,10 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: template.name,
         description: template.description,
         category: template.category,
-        is_active: template.isActive,
-        estimated_cost: template.estimatedCost,
-        created_at: template.$createdAt,
-        updated_at: template.$updatedAt
+        isActive: template.isActive,
+        estimatedCost: template.estimatedCost,
+        createdAt: template.$createdAt,
+        updatedAt: template.$updatedAt
       })) || [];
 
       setTemplates(transformedTemplates.map(template => ({
@@ -119,10 +119,10 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: template.name,
         description: template.description,
         category: template.category,
-        isActive: template.is_active,
-        estimatedCost: template.estimated_cost,
-        createdAt: template.created_at,
-        updatedAt: template.updated_at
+        isActive: template.isActive,
+        estimatedCost: template.estimatedCost,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt
       })));
       setTotalPages(Math.ceil((countResponse.total || 0) / templatesPerPage));
     } catch (error) {
@@ -178,8 +178,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       name: '',
       description: '',
       category: '',
-      is_active: true,
-      estimated_cost: 0
+      isActive: true,
+      estimatedCost: 0
     });
   };
 
@@ -194,8 +194,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        isActive: templateForm.is_active,
-        estimatedCost: templateForm.estimated_cost || 0
+        isActive: templateForm.isActive,
+        estimatedCost: templateForm.estimatedCost || 0
       };
 
       const response = await databases.createDocument(
@@ -208,8 +208,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       // Log successful template creation
       await logger.auditLog({
         action: 'CREATE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: response.$id,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: response.$id,
         details: {
           template_name: templateForm.name,
           category: templateForm.category
@@ -224,7 +224,7 @@ export const StarterKitBuilderRefactored: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'CREATE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
+        entityType: 'STARTER_KIT_TEMPLATE',
         details: {
           template_name: templateForm.name,
           error: error.message
@@ -243,9 +243,9 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         name: templateForm.name,
         description: templateForm.description || null,
         category: templateForm.category,
-        isActive: templateForm.is_active,
-        estimatedCost: templateForm.estimated_cost || 0,
-        updatedAt: new Date().toISOString()
+        isActive: templateForm.isActive,
+        estimatedCost: templateForm.estimatedCost || 0
+        // Note: Appwrite automatically manages updatedAt with $updatedAt
       };
 
       await databases.updateDocument(
@@ -258,8 +258,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       // Log successful template update
       await logger.auditLog({
         action: 'UPDATE_TEMPLATE',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: editingTemplate.id,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: editingTemplate.id,
         details: {
           template_name: templateForm.name,
           category: templateForm.category
@@ -274,8 +274,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
     } catch (error: any) {
       await logger.auditLog({
         action: 'UPDATE_TEMPLATE_FAILED',
-        entity_type: 'STARTER_KIT_TEMPLATE',
-        entity_id: editingTemplate.id,
+        entityType: 'STARTER_KIT_TEMPLATE',
+        entityId: editingTemplate.id,
         details: {
           template_name: templateForm.name,
           error: error.message
@@ -339,8 +339,8 @@ export const StarterKitBuilderRefactored: React.FC = () => {
       name: template.name,
       description: template.description || '',
       category: template.category,
-      is_active: template.is_active,
-      estimated_cost: template.estimated_cost || 0
+      isActive: template.isActive,
+      estimatedCost: template.estimatedCost || 0
     });
     setIsEditTemplateOpen(true);
   };
@@ -352,7 +352,7 @@ export const StarterKitBuilderRefactored: React.FC = () => {
         description: template.description,
         category: template.category,
         isActive: false, // New duplicated templates are inactive by default
-        estimatedCost: template.estimated_cost
+        estimatedCost: template.estimatedCost
       };
 
       await databases.createDocument(

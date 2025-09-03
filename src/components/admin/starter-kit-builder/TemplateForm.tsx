@@ -78,29 +78,29 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="estimated_cost" className="text-right">
+            <Label htmlFor="estimatedCost" className="text-right">
               Est. Cost ($)
             </Label>
             <div className="col-span-3">
               <Input
-                id="estimated_cost"
+                id="estimatedCost"
                 type="number"
-                value={templateForm.estimated_cost}
-                onChange={(e) => setTemplateForm(prev => ({ ...prev, estimated_cost: parseFloat(e.target.value) || 0 }))}
+                value={templateForm.estimatedCost}
+                onChange={(e) => setTemplateForm(prev => ({ ...prev, estimatedCost: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.00"
               />
             </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="is_active" className="text-right">
+            <Label htmlFor="isActive" className="text-right">
               Active
             </Label>
             <div className="col-span-3">
               <Switch
-                id="is_active"
-                checked={templateForm.is_active}
-                onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, is_active: checked }))}
+                id="isActive"
+                checked={templateForm.isActive}
+                onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, isActive: checked }))}
               />
             </div>
           </div>

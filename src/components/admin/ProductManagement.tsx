@@ -652,7 +652,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const updateData: any = {};
       if (bulkUpdateData.category) updateData.category = bulkUpdateData.category;
       if (bulkUpdateData.brand) updateData.brand = bulkUpdateData.brand;
-      updateData.updatedAt = new Date().toISOString();
+      // Note: Appwrite automatically manages updatedAt with $updatedAt
 
       // Update selected products
       const productIds = Array.from(selectedProducts);
@@ -1080,8 +1080,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         features: productForm.features || null,
         imageUrl: productForm.image_url || null,
         asin: productForm.asin || null,
-        affiliateLink: productForm.affiliate_link || null,
-        updatedAt: new Date().toISOString()
+        affiliateLink: productForm.affiliate_link || null
+        // Note: Appwrite automatically manages updatedAt with $updatedAt
       };
 
       await databases.updateDocument(

@@ -22,8 +22,8 @@ export interface TemplateForm {
   name: string;
   description: string;
   category: string;
-  is_active: boolean;
-  estimated_cost: number;
+  isActive: boolean;
+  estimatedCost: number;
 }
 
 export interface TemplateListProps {

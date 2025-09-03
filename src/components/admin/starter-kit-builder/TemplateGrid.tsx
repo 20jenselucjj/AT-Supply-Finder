@@ -28,9 +28,9 @@ export const TemplateGrid: React.FC<TemplateGridProps> = ({
           <CardHeader>
             <div className="flex justify-between items-start">
               <CardTitle className="text-lg">{template.name}</CardTitle>
-              <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                {template.is_active ? 'Active' : 'Inactive'}
-              </Badge>
+              <Badge variant={template.isActive ? 'default' : 'secondary'}>
+              {template.isActive ? 'Active' : 'Inactive'}
+            </Badge>
             </div>
             <CardDescription className="line-clamp-2">
               {template.description || 'No description provided'}
@@ -45,13 +45,13 @@ export const TemplateGrid: React.FC<TemplateGridProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Estimated Cost</span>
                 <span className="font-medium">
-                  {template.estimated_cost ? `$${template.estimated_cost.toFixed(2)}` : 'N/A'}
+                  {template.estimatedCost ? `$${template.estimatedCost.toFixed(2)}` : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Created</span>
                 <span className="text-sm">
-                  {format(new Date(template.created_at), 'MMM d, yyyy')}
+                  {format(new Date(template.createdAt), 'MMM d, yyyy')}
                 </span>
               </div>
             </div>

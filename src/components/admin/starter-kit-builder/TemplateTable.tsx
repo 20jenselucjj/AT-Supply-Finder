@@ -46,15 +46,15 @@ export const TemplateTable: React.FC<TemplateTableProps> = ({
                 {template.description || 'No description'}
               </TableCell>
               <TableCell>
-                <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                  {template.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+                <Badge variant={template.isActive ? 'default' : 'secondary'}>
+                {template.isActive ? 'Active' : 'Inactive'}
+              </Badge>
               </TableCell>
               <TableCell>
-                {template.estimated_cost ? `$${template.estimated_cost.toFixed(2)}` : 'N/A'}
+                {template.estimatedCost ? `$${template.estimatedCost.toFixed(2)}` : 'N/A'}
               </TableCell>
               <TableCell>
-                {format(new Date(template.created_at), 'MMM d, yyyy')}
+                {format(new Date(template.createdAt), 'MMM d, yyyy')}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
