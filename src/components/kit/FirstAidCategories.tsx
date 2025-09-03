@@ -202,7 +202,7 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
   };
 
   const getCategoryItemCount = (categoryId: string) => {
-    return kit.filter(item => item.category === categoryId).length;
+    return kit.filter(item => item.category === categoryId).reduce((total, item) => total + item.quantity, 0);
   };
 
   return (
@@ -239,7 +239,7 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
                         )}
                         {hasItems && (
                           <Badge variant="default" className="text-xs">
-                            {selectedItems.reduce((total, item) => total + item.quantity, 0)} items
+                            {itemCount} items
                           </Badge>
                         )}
                       </div>

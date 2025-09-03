@@ -165,6 +165,8 @@ Guidelines:
         features: processedFeatures,
         category: finalCategory,
         material: parsed.material || productData.material,
+        // Preserve image URL from original product data
+        image_url: productData.image_url,
         // If quantity is found, we might want to use it instead of weight
         ...(parsed.quantity && { 
           weight: parsed.quantity, // Replace weight with quantity when available

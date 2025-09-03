@@ -55,7 +55,6 @@ const KitSummary = () => {
       navigate('/login', { state: { from: location.pathname } });
     }
   };
-
   const handleSaveKit = async () => {
     if (!kitName.trim()) {
       toast.error('Please enter a kit name');
@@ -127,13 +126,13 @@ const KitSummary = () => {
       return {
         ...category,
         itemCount,
-        isComplete: itemCount >= category.estimatedItems,
+        isComplete: itemCount >= 1, // Changed from category.estimatedItems to 1 for better UX
         items: categoryItems
       };
     });
     
     // Update completion score calculation to use FIRST_AID_CATEGORIES
-    const categoriesWithItems = categoryBreakdown.filter(cat => cat.isComplete).length;
+    const categoriesWithItems = categoryBreakdown.filter(cat => cat.itemCount > 0).length; // Changed to check itemCount > 0
     const completionScore = Math.round((categoriesWithItems / FIRST_AID_CATEGORIES.length) * 100);
     
     return { vendorTotals, bestVendor, subtotal, categoryBreakdown, completionScore };
@@ -219,6 +218,21 @@ const KitSummary = () => {
                       src={item.imageUrl || "/placeholder.svg"}
                       alt={item.name}
                       className="h-full w-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        console.log('Image failed to load for item:', item.name, 'URL:', item.imageUrl);
+                        // Try multiple fallback approaches
+                        if (target.src.includes('amazon.com') && item.asin) {
+                          // Try to construct image URL from ASIN
+                          target.src = `https://m.media-amazon.com/images/I/${item.asin}._SL1500_.jpg`;
+                        } else if (target.src !== window.location.origin + "/placeholder.svg") {
+                          target.src = "/placeholder.svg";
+                        }
+                      }}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        console.log('Image loaded successfully for item:', item.name, 'URL:', target.src);
+                      }}
                       loading="lazy"
                     />
                   </div>
@@ -227,13 +241,24 @@ const KitSummary = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <Link
-                          to={`/product/${item.id}`}
+                        {/* Product name link - ensure it goes to Amazon directly */}
+                        <a
+                          href={bestOffer?.url && bestOffer.url !== '#' ? bestOffer.url : `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="font-medium text-sm hover:text-primary transition-colors line-clamp-2"
                           title={item.name}
+                          onClick={(e) => {
+                            // If the URL is invalid, prevent navigation and show an error
+                            if ((!bestOffer || !bestOffer.url || bestOffer.url === '#') && !item.asin) {
+                              e.preventDefault();
+                              console.error('Invalid product URL for item:', item);
+                              // Optionally show a toast notification to the user
+                            }
+                          }}
                         >
                           {item.name}
-                        </Link>
+                        </a>
                         <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
                         {renderStars(item.rating)}
                         
@@ -244,10 +269,18 @@ const KitSummary = () => {
                               {formatCurrency(bestOffer.price)} ea • {bestOffer.name}
                             </span>
                             <a
-                              href={bestOffer.url}
+                              href={bestOffer.url && bestOffer.url !== '#' ? bestOffer.url : `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs text-primary hover:underline flex items-center gap-1"
+                              onClick={(e) => {
+                                // If the URL is invalid, prevent navigation and show an error
+                                if (!bestOffer.url || bestOffer.url === '#') {
+                                  e.preventDefault();
+                                  console.error('Invalid product URL for item:', item);
+                                  // Optionally show a toast notification to the user
+                                }
+                              }}
                             >
                               View <ExternalLink className="w-3 h-3" />
                             </a>

@@ -77,9 +77,16 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
               {/* Product Image - Made smaller */}
               <div className="aspect-square bg-secondary/70 rounded-lg flex items-center justify-center overflow-hidden border max-w-md mx-auto w-full">
                 <img
-                  src={product.imageUrl || '/placeholder.svg'}
+                  src={product.imageUrl || product.image_url || '/placeholder.svg'}
                   alt={product.name}
                   className="w-full h-full object-contain p-4"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    // Try multiple fallback options
+                    if (target.src !== '/placeholder.svg') {
+                      target.src = '/placeholder.svg';
+                    }
+                  }}
                 />
               </div>
               

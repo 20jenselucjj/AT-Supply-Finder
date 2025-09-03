@@ -163,7 +163,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
             <Skeleton className="h-full w-full" />
           ) : (
             <img
-              src={product.imageUrl || "/placeholder.svg"}
+              src={product.imageUrl || product.image_url || "/placeholder.svg"}
               alt={`${product.name} product image`}
               className="h-full object-contain transition-transform duration-300 hover:scale-105 rounded-xl"
               loading="lazy"
@@ -171,6 +171,10 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               height="160"
               decoding="async"
               fetchPriority="low"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.svg";
+              }}
             />
           )}
         </div>
@@ -257,7 +261,20 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               className="transition-transform duration-200 hover:scale-105 flex-1 md:flex-none min-w-[120px]"
               disabled={loading}
             >
-              <a href={o.url} target="_blank" rel="sponsored noopener noreferrer" aria-label={`View on ${o.name}`}>
+              <a 
+                href={o.url && o.url !== '#' ? o.url : `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`} 
+                target="_blank" 
+                rel="sponsored noopener noreferrer" 
+                aria-label={`View on ${o.name}`}
+                onClick={(e) => {
+                  // If the URL is invalid, prevent navigation and show an error
+                  if (!o.url || o.url === '#') {
+                    e.preventDefault();
+                    console.error('Invalid product URL for offer:', o);
+                    // Optionally show a toast notification to the user
+                  }
+                }}
+              >
                 {o.name} · {currency(o.price)}
               </a>
             </Button>

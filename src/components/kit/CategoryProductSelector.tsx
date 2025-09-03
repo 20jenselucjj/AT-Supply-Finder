@@ -116,13 +116,34 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
           features = product.features;
         }
 
+        // Ensure imageUrl is properly set, checking both imageUrl and image_url
+        const imageUrl = product.imageUrl || product.image_url || '';
+
+        // Ensure offers array is properly structured with valid URLs
+        let offers = product.offers || [];
+        if (offers.length > 0) {
+          offers = offers.map(offer => ({
+            ...offer,
+            url: offer.url && offer.url !== '#' ? offer.url : `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`
+          }));
+        } else if (product.price) {
+          offers = [{
+            name: 'Direct',
+            price: product.price,
+            url: product.affiliateLink && product.affiliateLink !== '#' 
+              ? product.affiliateLink 
+              : `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+            lastUpdated: product.updatedAt || new Date().toISOString()
+          }];
+        }
+
         return {
           id: product.$id,
           name: product.name,
           category: product.category,
           brand: product.brand,
           rating: product.rating || 0,
-          imageUrl: product.imageUrl || '',
+          imageUrl: imageUrl,
           asin: product.asin || '',
           dimensions: product.dimensions || '',
           weight: product.weight || '',
@@ -130,12 +151,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
           features: features,
           price: product.price,
           affiliateLink: product.affiliateLink,
-          offers: product.offers || (product.price ? [{
-            name: 'Direct',
-            price: product.price,
-            url: product.affiliateLink || '#',
-            lastUpdated: product.updatedAt || new Date().toISOString()
-          }] : [])
+          offers: offers
         };
       });
 
@@ -592,9 +608,13 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                           <TableCell className="py-2">
                             <div className="w-10 h-10 bg-muted rounded flex items-center justify-center overflow-hidden">
                               <img 
-                                src={product.imageUrl || "/placeholder.svg"} 
+                                src={product.imageUrl || product.image_url || "/placeholder.svg"} 
                                 alt={product.name}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "/placeholder.svg";
+                                }}
                               />
                             </div>
                           </TableCell>
@@ -688,11 +708,15 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                         {/* Product Image */}
                         <div className="bg-secondary/70 rounded-xl p-3 flex items-center justify-center aspect-square relative overflow-hidden flex-grow">
                           <img
-                            src={product.imageUrl || '/placeholder.svg'}
+                            src={product.imageUrl || product.image_url || '/placeholder.svg'}
                             alt={product.name}
                             loading="lazy"
                             decoding="async"
                             className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 rounded-xl"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/placeholder.svg";
+                            }}
                           />
                           {isInKit && (
                             <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">

@@ -88,18 +88,36 @@ const KitItem = ({ item }: KitItemProps) => {
             // Using lowercase fetchpriority to avoid React warning about unknown prop
             // @ts-ignore - not in the standard JSX typings yet
             fetchpriority="low"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              console.log('KitItem image failed to load for item:', item.name, 'URL:', item.imageUrl);
+              // Try multiple fallback approaches
+              if (target.src.includes('amazon.com') && item.asin) {
+                // Try to construct image URL from ASIN
+                target.src = `https://m.media-amazon.com/images/I/${item.asin}._SL1500_.jpg`;
+              } else if (target.src !== window.location.origin + "/placeholder.svg") {
+                target.src = "/placeholder.svg";
+              }
+            }}
+            onLoad={(e) => {
+              const target = e.target as HTMLImageElement;
+              console.log('KitItem image loaded successfully for item:', item.name, 'URL:', target.src);
+            }}
           />
         </a>
       </div>
       
       <div className="flex-1 min-w-0 w-full xs:w-auto">
-        <Link 
-          to={`/product/${item.id}`}
+        {/* Changed from Link to anchor tag to prevent 404 errors */}
+        <a 
+          href={offers.find(offer => offer.name === "Amazon")?.url || offers[0]?.url || `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="font-medium text-sm xs:text-base line-clamp-2 xs:truncate hover:text-primary transition-colors block" 
           title={item.name}
         >
           {item.name}
-        </Link>
+        </a>
         <p className="text-xs xs:text-sm text-muted-foreground">{item.category}</p>
         {renderStars(item.rating)}
         {bestOffer && (

@@ -183,10 +183,44 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   }, [kit, user, authLoading]);
 
   const addToKit = (product: Product, quantity: number = 1) => {
+    // Create a utility function to normalize image properties
+    const normalizeProductImage = (product: Product): string => {
+      // Try all possible image property names that might be used
+      return product.imageUrl || 
+             (product as any).product_image_url || 
+             product.image_url || 
+             (product as any).imageURL || 
+             (product as any).productImageURL ||
+             (product as any).image ||
+             (product as any).img ||
+             (product as any).photo ||
+             (product as any).picture ||
+             '';
+    };
+
     // Convert product category to build page category system
     const productWithConvertedCategory = {
       ...product,
-      category: convertToBuildPageCategory(product.category)
+      category: convertToBuildPageCategory(product.category),
+      // Ensure imageUrl is properly set - preserve existing imageUrl if it exists
+      // Also handle product_image_url from AI-generated kits and other variations
+      imageUrl: product.imageUrl || normalizeProductImage(product),
+      // Ensure offers array is properly structured with valid URLs
+      offers: product.offers && product.offers.length > 0 
+        ? product.offers.map(offer => ({
+            ...offer,
+            url: offer.url && offer.url !== '#' ? offer.url : `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`
+          }))
+        : product.price 
+          ? [{
+              name: 'Direct',
+              price: product.price,
+              url: product.affiliateLink && product.affiliateLink !== '#' 
+                ? product.affiliateLink 
+                : `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+              lastUpdated: (product as any).updatedAt || new Date().toISOString()
+            }]
+          : []
     };
     
     setKit(prevKit => {

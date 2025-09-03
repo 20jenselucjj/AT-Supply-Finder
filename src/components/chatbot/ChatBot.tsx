@@ -232,7 +232,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
         price: doc.price,
         features: doc.features || [],
         offers: [], // Appwrite doesn't have direct relationships like Supabase
-        imageUrl: doc.imageUrl,
+        imageUrl: doc.imageUrl || doc.image_url || '/placeholder.svg', // Ensure we get the image URL
+        image_url: doc.image_url || doc.imageUrl || '/placeholder.svg', // Add both for compatibility
         asin: doc.asin,
         affiliateLink: doc.affiliateLink,
         dimensions: doc.dimensions,
@@ -322,7 +323,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
       const generatedKit = await openRouterService.generateFirstAidKit({
         userQuery: content,
         availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
-        kitType: context.kitType,
+        kitType: context.kitType as any,
         scenario: context.scenario,
         budget: context.budget
       });
@@ -366,10 +367,22 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
       name: item.product_name,
       brand: item.product_brand,
       category: item.product_category,
-      image: item.product_image_url,
+      // Set both imageUrl and product_image_url for compatibility
+      imageUrl: item.product_image_url || '/placeholder.svg',
+      product_image_url: item.product_image_url || '/placeholder.svg',
+      image_url: item.product_image_url || '/placeholder.svg', // Add this for consistency
       price: item.price,
       quantity: item.quantity,
-      description: `${item.product_name} - ${item.reasoning}`
+      description: `${item.product_name} - ${item.reasoning}`,
+      // Add offers array for proper link handling
+      offers: item.offers && item.offers.length > 0 
+        ? item.offers 
+        : [{
+            name: 'Amazon',
+            url: `https://www.amazon.com/dp/${(item as any).asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+            price: item.price || 0,
+            lastUpdated: new Date().toISOString()
+          }]
     }));
 
     // Create deep link URL with kit data

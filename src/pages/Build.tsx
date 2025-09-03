@@ -42,27 +42,42 @@ const Build = () => {
     if (kitData && aiGenerated) {
       try {
         const parsedKit = JSON.parse(decodeURIComponent(kitData));
+        console.log('AI Generated Kit Data:', parsedKit); // Debug log
         if (Array.isArray(parsedKit) && parsedKit.length > 0) {
           // Clear existing kit and add AI-generated items
           clearKit();
           parsedKit.forEach((item: any) => {
+            // Handle multiple possible image URL properties with better fallback
+            const imageUrl = item.imageUrl || item.product_image_url || item.image_url || '/placeholder.svg';
+            console.log('Processing item:', item.name, 'Image URL:', imageUrl); // Debug log
+            
+            // Ensure offers array is properly structured
+            const offers = item.offers && Array.isArray(item.offers) && item.offers.length > 0 
+              ? item.offers.map((offer: any) => ({
+                ...offer,
+                url: offer.url && offer.url !== '#' ? offer.url : `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`
+              }))
+            : [{
+                name: 'AI Generated',
+                url: `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+                price: item.price || 0,
+                lastUpdated: new Date().toISOString()
+              }];
+            
             addToKit({
               id: item.id || `ai-${Date.now()}-${Math.random()}`,
               name: item.name,
               brand: item.brand || 'Unknown',
               price: item.price || 0,
-              imageUrl: item.image || '/placeholder-product.jpg',
-              category: item.category, // Use category directly without mapping
+              imageUrl: imageUrl,
+              category: item.category || item.product_category || 'miscellaneous',
               description: item.description || '',
               features: item.features || [],
               materials: item.materials || [],
-              offers: item.offers || [{
-                name: 'AI Generated',
-                url: '#',
-                price: item.price || 0,
-                lastUpdated: new Date().toISOString()
-              }]
-            }, item.quantity || 1);
+              asin: item.asin || undefined,
+              offers: offers,
+              quantity: item.quantity || 1
+            } as any, item.quantity || 1);
           });
           setIsAIGenerated(true);
           // Clear URL parameters after loading

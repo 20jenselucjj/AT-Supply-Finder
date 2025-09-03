@@ -182,7 +182,8 @@ Guidelines:
       category: product.category,
       price: product.vendor_offers?.[0]?.price || 0,
       description: product.description,
-      specifications: product.specifications
+      specifications: product.specifications,
+      imageUrl: product.imageUrl || product.image_url || '/placeholder.svg' // Add image URL to the catalog
     }));
 
     // Enhanced prompt with structured context and explicit category guidelines
@@ -247,7 +248,7 @@ Guidelines:
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+    
       // Validate the parsed response before processing
       this.validateKitResponse(parsed);
       
@@ -264,11 +265,14 @@ Guidelines:
           product_name: product.name,
           product_brand: product.brand,
           product_category: product.category,
-          product_image_url: product.image_url,
+          product_image_url: product.imageUrl || product.image_url || '/placeholder.svg', // Ensure image URL is passed
+          image_url: product.image_url || product.imageUrl || '/placeholder.svg', // Add for compatibility
           quantity: item.quantity || 1,
           price: product.vendor_offers?.[0]?.price || 0,
           notes: item.reason || '',
-          reasoning: item.reason || ''
+          reasoning: item.reason || '',
+          asin: product.asin, // Pass ASIN for fallback image URLs
+          offers: product.offers || [] // Pass offers for proper link handling
         };
       });
 
@@ -354,8 +358,8 @@ Guidelines:
       kit.items = kit.items.slice(0, 12);
     }
     
-    // Validate category consistency
-    const validCategories = [
+    // Validate category consistency - accept both display names and IDs
+    const validCategoryNames = [
       'Antiseptics & Ointments',
       'Pain & Symptom Relief',
       'Wound Care & Dressings',
@@ -363,8 +367,18 @@ Guidelines:
       'Instruments & Tools'
     ];
     
+    const validCategoryIds = [
+      'antiseptics-ointments',
+      'pain-relief',
+      'wound-care-dressings',
+      'tapes-wraps',
+      'instruments-tools'
+    ];
+    
+    const allValidCategories = [...validCategoryNames, ...validCategoryIds];
+    
     for (const item of kit.items) {
-      if (item.product_category && !validCategories.includes(item.product_category)) {
+      if (item.product_category && !allValidCategories.includes(item.product_category)) {
         console.warn(`Product ${item.product_name} has invalid category: ${item.product_category}`);
       }
     }

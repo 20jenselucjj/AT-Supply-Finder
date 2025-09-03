@@ -69,18 +69,31 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
             </div>
             
             <a
-              href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url}
+              href={product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url || `https://www.amazon.com/dp/${product.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`}
               target="_blank"
               rel="noopener noreferrer"
               className="block cursor-pointer"
+              onClick={(e) => {
+                const url = product.offers.find(offer => offer.name === "Amazon")?.url || product.offers[0]?.url;
+                // If the URL is invalid, prevent navigation and show an error
+                if (!url || url === '#') {
+                  e.preventDefault();
+                  console.error('Invalid product URL for item:', product);
+                  // Optionally show a toast notification to the user
+                }
+              }}
             >
               <div className="bg-secondary/70 rounded-xl p-3 mb-4 flex items-center justify-center aspect-square relative overflow-hidden">
                 <img
-                  src={product.imageUrl || '/placeholder.svg'}
+                  src={product.imageUrl || product.image_url || '/placeholder.svg'}
                   alt={product.name}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 rounded-xl"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
                 />
                 {hasMultipleOffers && (
                   <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
