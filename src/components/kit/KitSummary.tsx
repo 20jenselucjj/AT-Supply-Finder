@@ -107,41 +107,33 @@ const KitSummary = () => {
     
     // Analyze category coverage - updated to use FIRST_AID_CATEGORIES
     const categoryBreakdown = FIRST_AID_CATEGORIES.map(category => {
-      // Map first aid categories to product categories (reverse mapping from FirstAidCategories.tsx)
-      const categoryMapping: Record<string, string> = {
-        "wound-care-dressings": "First Aid & Wound Care",
-        "tapes-wraps": "Taping & Bandaging",
-        "antiseptics-ointments": "First Aid & Wound Care",
-        "pain-relief": "Over-the-Counter Medication",
-        "instruments-tools": "Instruments & Tools",
-        "trauma-emergency": "Emergency Care",
-        "ppe": "Personal Protection Equipment (PPE)",
-        "information-essentials": "Documentation & Communication"
-      };
+      // Use the category ID directly since we've updated the database to use the build page category system
+      const productCategory = category.id;
       
-      const productCategory = categoryMapping[category.id];
       // Handle both standard category matches and additional category mappings
       const categoryItems = kit.filter(item => {
         // Base case: direct category match
         if (item.category === productCategory) return true;
         
         // Special cases for categories that map to multiple product categories
-        if (category.id === "trauma-emergency" && item.category === "Hot & Cold Therapy") return true;
-        if (category.id === "instruments-tools" && item.category === "Health Monitoring") return true;
+        if (category.id === "trauma-emergency" && item.category === "hot-cold-therapy") return true;
+        if (category.id === "instruments-tools" && item.category === "health-monitoring") return true;
         
         return false;
       });
       
+      const itemCount = categoryItems.reduce((total, item) => total + item.quantity, 0);
+      
       return {
         ...category,
-        itemCount: categoryItems.length,
-        totalQuantity: categoryItems.reduce((sum, item) => sum + item.quantity, 0),
-        hasItems: categoryItems.length > 0
+        itemCount,
+        isComplete: itemCount >= category.estimatedItems,
+        items: categoryItems
       };
     });
     
     // Update completion score calculation to use FIRST_AID_CATEGORIES
-    const categoriesWithItems = categoryBreakdown.filter(cat => cat.hasItems).length;
+    const categoriesWithItems = categoryBreakdown.filter(cat => cat.isComplete).length;
     const completionScore = Math.round((categoriesWithItems / FIRST_AID_CATEGORIES.length) * 100);
     
     return { vendorTotals, bestVendor, subtotal, categoryBreakdown, completionScore };
@@ -196,7 +188,7 @@ const KitSummary = () => {
           <span className="text-sm font-medium">{completionScore}%</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          {categoryBreakdown.filter(cat => cat.hasItems).length} of {FIRST_AID_CATEGORIES.length} categories covered
+          {categoryBreakdown.filter(cat => cat.isComplete).length} of {FIRST_AID_CATEGORIES.length} categories covered
         </p>
       </div>
 
@@ -308,15 +300,15 @@ const KitSummary = () => {
         <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
           {categoryBreakdown.map(category => (
             <div key={category.id} className="flex items-center gap-2 p-2 rounded border">
-              {category.hasItems ? (
+              {category.isComplete ? (
                 <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium truncate block">{category.name}</span>
-                {category.hasItems && (
-                  <span className="text-xs text-gray-500">{category.totalQuantity} items</span>
+                {category.isComplete && (
+                  <span className="text-xs text-gray-500">{category.items.length} items</span>
                 )}
               </div>
             </div>

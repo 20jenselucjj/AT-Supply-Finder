@@ -49,6 +49,7 @@ interface Message {
     isEdited?: boolean;
     parentId?: string;
   };
+  feedback?: 'helpful' | 'not-helpful';
 }
 
 interface ChatState {
@@ -68,9 +69,10 @@ const QUICK_ACTIONS = [
 
 interface ChatBotProps {
   apiKey: string;
+  onInteraction?: (interactionType: string) => void;
 }
 
-const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
+const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
   // Initialize chat state from storage
   const [chatState, setChatState] = useState<ChatState>(() => {
     const defaultState = {
@@ -248,9 +250,52 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Add the extractContextFromQuery function here, before handleSendMessage
+  const extractContextFromQuery = (query: string): { kitType?: string; scenario?: string; budget?: number } => {
+    const queryLower = query.toLowerCase();
+    
+    // Extract kit type
+    let kitType: string | undefined;
+    if (queryLower.includes('travel') || queryLower.includes('trip') || queryLower.includes('portable')) {
+      kitType = 'travel';
+    } else if (queryLower.includes('work') || queryLower.includes('office') || queryLower.includes('job')) {
+      kitType = 'workplace';
+    } else if (queryLower.includes('outdoor') || queryLower.includes('camping') || queryLower.includes('hiking')) {
+      kitType = 'outdoor';
+    } else if (queryLower.includes('child') || queryLower.includes('baby') || queryLower.includes('kids') || queryLower.includes('pediatric')) {
+      kitType = 'pediatric';
+    } else if (queryLower.includes('basic') || queryLower.includes('simple') || queryLower.includes('home')) {
+      kitType = 'basic';
+    }
+    
+    // Extract scenario
+    let scenario: string | undefined;
+    if (queryLower.includes('emergency') || queryLower.includes('urgent')) {
+      scenario = 'emergency';
+    } else if (queryLower.includes('sports') || queryLower.includes('exercise') || queryLower.includes('gym')) {
+      scenario = 'sports';
+    } else if (queryLower.includes('car') || queryLower.includes('vehicle')) {
+      scenario = 'car travel';
+    } else if (queryLower.includes('hiking') || queryLower.includes('camping') || queryLower.includes('outdoor')) {
+      scenario = 'outdoor adventure';
+    }
+    
+    // Extract budget
+    let budget: number | undefined;
+    const budgetMatch = queryLower.match(/(?:budget|price|cost|max)\s*(?:of\s*)?\$?(\d+)/);
+    if (budgetMatch) {
+      budget = parseInt(budgetMatch[1], 10);
+    }
+    
+    return { kitType, scenario, budget };
+  };
+
   const handleSendMessage = async (messageContent?: string) => {
     const content = messageContent || inputValue.trim();
     if (!content || isLoading) return;
+
+    // Track interaction
+    onInteraction?.('send-message');
 
     const userMessage = addMessage({
       type: 'user',
@@ -267,13 +312,19 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
     try {
       updateChatState({ connectionStatus: 'connecting' });
       
-      // Search for relevant products using RAG
+      // Extract context from user message
+      const context = extractContextFromQuery(content);
+      
+      // Search for relevant products using enhanced RAG
       const relevantProducts = await openRouterService.searchProducts(content, products);
       
-      // Generate kit using DeepSeek via OpenRouter
+      // Generate kit using DeepSeek via OpenRouter with enhanced context
       const generatedKit = await openRouterService.generateFirstAidKit({
         userQuery: content,
-        availableProducts: relevantProducts.slice(0, 50) // Limit for API efficiency
+        availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
+        kitType: context.kitType,
+        scenario: context.scenario,
+        budget: context.budget
       });
 
       updateChatState({ connectionStatus: 'online' });
@@ -349,6 +400,40 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
       handleSendMessage();
     }
   };
+
+  const handleFeedback = useCallback((messageId: string, feedback: 'helpful' | 'not-helpful') => {
+    // Track interaction
+    onInteraction?.(`feedback-${feedback}`);
+
+    // Update message with feedback
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        return {
+          ...msg,
+          feedback
+        };
+      }
+      return msg;
+    }));
+    
+    // Store feedback in localStorage for future learning
+    try {
+      const feedbackData = {
+        messageId,
+        feedback,
+        timestamp: new Date().toISOString()
+      };
+      
+      const existingFeedback = JSON.parse(localStorage.getItem('chatbot-feedback') || '[]');
+      existingFeedback.push(feedbackData);
+      localStorage.setItem('chatbot-feedback', JSON.stringify(existingFeedback.slice(-50))); // Keep last 50 feedback items
+    } catch (error) {
+      console.warn('Failed to save feedback:', error);
+    }
+    
+    // Show confirmation
+    toast.success(feedback === 'helpful' ? 'Thanks for your feedback!' : 'Thanks, we\'ll improve our recommendations.');
+  }, [onInteraction]);
 
   return (
     <>
@@ -570,14 +655,41 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey }) => {
                                   )}
                                 </div>
                                   
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleBuildKit(message.kit!)}
-                                  className="w-full text-xs h-8 bg-primary hover:bg-primary/90"
-                                >
-                                  <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0" />
-                                  <span className="truncate">Build This Kit</span>
-                                </Button>
+                                <div className="flex gap-2 mb-3">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleBuildKit(message.kit!)}
+                                    className="flex-1 text-xs h-8 bg-primary hover:bg-primary/90"
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0" />
+                                    <span className="truncate">Build This Kit</span>
+                                  </Button>
+                                </div>
+                                
+                                {/* Feedback Collection */}
+                                <div className="pt-2 border-t border-border/50">
+                                  <div className="text-xs text-muted-foreground mb-1">How was this recommendation?</div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1 h-7 text-xs"
+                                      onClick={() => handleFeedback(message.id, 'helpful')}
+                                    >
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Helpful
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="flex-1 h-7 text-xs"
+                                      onClick={() => handleFeedback(message.id, 'not-helpful')}
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      Not Helpful
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
                             </motion.div>
                           )}

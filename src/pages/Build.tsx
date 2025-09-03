@@ -46,69 +46,13 @@ const Build = () => {
           // Clear existing kit and add AI-generated items
           clearKit();
           parsedKit.forEach((item: any) => {
-            // Map product categories to first aid categories when possible
-            const categoryMapping: Record<string, string> = {
-              // Wound Care & Dressings
-              'Bandages': 'First Aid & Wound Care',
-              'Gauze': 'First Aid & Wound Care',
-              'Dressings': 'First Aid & Wound Care',
-              'Adhesive Bandages': 'First Aid & Wound Care',
-              
-              // Tapes & Wraps
-              'Medical Tape': 'Taping & Bandaging',
-              'Elastic Bandages': 'Taping & Bandaging',
-              'Athletic Tape': 'Taping & Bandaging',
-              'Cohesive Wrap': 'Taping & Bandaging',
-              
-              // Antiseptics & Ointments
-              'Antibiotic Ointment': 'First Aid & Wound Care',
-              'Antiseptic': 'First Aid & Wound Care',
-              'Alcohol': 'First Aid & Wound Care',
-              'Hydrogen Peroxide': 'First Aid & Wound Care',
-              
-              // Pain & Symptom Relief
-              'Pain Relievers': 'Over-the-Counter Medication',
-              'Pain Relief': 'Over-the-Counter Medication',
-              'Antihistamines': 'Over-the-Counter Medication',
-              'Medication': 'Over-the-Counter Medication',
-              
-              // Instruments & Tools
-              'Scissors': 'Instruments & Tools',
-              'Tweezers': 'Instruments & Tools',
-              'Thermometers': 'Instruments & Tools',
-              'Medical Instruments': 'Instruments & Tools',
-              
-              // Trauma & Emergency
-              'Emergency Supplies': 'Emergency Care',
-              'Cold Packs': 'Hot & Cold Therapy',
-              'Emergency Blankets': 'Emergency Care',
-              
-              // PPE
-              'Gloves': 'Personal Protection Equipment (PPE)',
-              'Masks': 'Personal Protection Equipment (PPE)',
-              'Sanitizer': 'Personal Protection Equipment (PPE)',
-              
-              // Information & Essentials
-              'First Aid Books': 'Documentation & Communication',
-              'Documentation': 'Documentation & Communication'
-            };
-            
-            // Try to map the category or use the existing one
-            let mappedCategory = item.category || 'Other';
-            for (const [source, target] of Object.entries(categoryMapping)) {
-              if (mappedCategory.includes(source) || item.name.includes(source)) {
-                mappedCategory = target;
-                break;
-              }
-            }
-
             addToKit({
               id: item.id || `ai-${Date.now()}-${Math.random()}`,
               name: item.name,
               brand: item.brand || 'Unknown',
               price: item.price || 0,
               imageUrl: item.image || '/placeholder-product.jpg',
-              category: mappedCategory, // Use mapped category
+              category: item.category, // Use category directly without mapping
               description: item.description || '',
               features: item.features || [],
               materials: item.materials || [],
@@ -133,8 +77,8 @@ const Build = () => {
   const grouped = useMemo(() => {
     const map = new Map<string, typeof kit>();
     kit.forEach(item => {
-      // Ensure we have a category, defaulting to "Other" if none exists
-      const category = item.category || 'Other';
+      // Ensure we have a category, defaulting to "miscellaneous" if none exists
+      const category = item.category || 'miscellaneous';
       if (!map.has(category)) map.set(category, []);
       map.get(category)!.push(item);
     });

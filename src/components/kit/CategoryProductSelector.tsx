@@ -31,6 +31,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const [ratingFilter, setRatingFilter] = useState<string>("any");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Added setError state
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { kit, addToKit, removeFromKit, updateQuantity, getProductQuantity } = useKit();
@@ -52,23 +53,10 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const fetchCategoryProducts = async () => {
     try {
       setLoading(true);
+      console.log('Fetching products for category:', categoryId);
       
-      // Category mapping for First Aid categories
-      const categoryMapping: Record<string, string | string[]> = {
-        "wound-care-dressings": "First Aid & Wound Care",
-        "tapes-wraps": ["Taping & Bandaging", "Injury Prevention & Rehab"],
-        "antiseptics-ointments": "First Aid & Wound Care",
-        "pain-relief": "Over-the-Counter Medication",
-        "instruments-tools": "Instruments & Tools",
-        "trauma-emergency": "Emergency Care",
-        "ppe": "Personal Protection Equipment (PPE)",
-        "information-essentials": "Documentation & Communication",
-        "hot-cold-therapy": "Hot & Cold Therapy",
-        "hydration-nutrition": "Hydration & Nutrition",
-        "miscellaneous": "Miscellaneous & General"
-      };
-      
-      const productCategory = categoryMapping[categoryId];
+      // Use the category ID directly since we've updated the database to use the build page category system
+      const productCategory = categoryId;
       if (!productCategory) {
         console.error('Unknown category ID:', categoryId);
         setProducts([]);
@@ -77,13 +65,38 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
 
       // Query products from Appwrite database
       let queries = [];
-      if (Array.isArray(productCategory)) {
-        // Handle multiple categories
-        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: productCategory }));
-      } else {
-        // Handle single category
-        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] }));
+      queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] }));
+
+      // Add search query if provided (fixed: using searchTerm instead of searchQuery)
+      if (searchTerm) {
+        // For Appwrite, we'll get all documents and filter client-side to avoid fulltext index requirement
+        console.log('Search term provided, will filter client-side:', searchTerm);
       }
+
+      // Add brand filter if not 'all'
+      if (brandFilter !== 'all') {
+        queries.push(JSON.stringify({ method: 'equal', attribute: 'brand', values: [brandFilter] }));
+      }
+
+      // Add price range filters
+      if (priceRange.min) {
+        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'price', values: [parseFloat(priceRange.min)] }));
+      }
+      if (priceRange.max) {
+        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'price', values: [parseFloat(priceRange.max)] }));
+      }
+
+      // Add rating filter
+      if (ratingFilter !== 'any') {
+        const minRating = parseInt(ratingFilter);
+        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'rating', values: [minRating] }));
+      }
+
+      // Add limit and order
+      queries.push(JSON.stringify({ method: 'limit', values: [50] }));
+      queries.push(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }));
+
+      console.log('Appwrite query:', queries);
 
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
@@ -91,61 +104,65 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         queries
       );
 
-      if (response) {
-        const transformedProducts: Product[] = (response.documents || []).map((product: any) => {
-          // Convert features to array if needed, with better handling
-          let features: string[] = [];
-          if (typeof product.features === 'string' && product.features.trim() !== '') {
-            // Split by comma and clean up each feature
-            features = product.features.split(',')
-              .map((f: string) => f.trim())
-              .filter((f: string) => f.length > 0);
-          } else if (Array.isArray(product.features)) {
-            features = product.features.filter((f: any) => f && f.toString().trim().length > 0)
-              .map((f: any) => f.toString().trim());
-          }
+      console.log('Appwrite response:', response);
 
-          // Create vendor offers from product price data
-          const offers = [];
-          if (product.price && product.price > 0) {
-            offers.push({
-              id: `${product.$id}-primary`,
-              name: product.brand || 'Direct',
-              vendorName: product.brand || 'Direct',
-              price: product.price,
-              url: product.affiliate_link || '#',
-              shipping: 'Standard',
-              availability: 'In Stock',
-              lastUpdated: product.updated_at || new Date().toISOString()
-            });
-          }
+      // Transform Appwrite documents to match Product interface
+      let transformedProducts: Product[] = (response.documents || []).map((product: any) => {
+        // Convert features string to array if needed
+        let features: string[] = [];
+        if (typeof product.features === 'string' && product.features.trim() !== '') {
+          features = product.features.split(',').map((f: string) => f.trim());
+        } else if (Array.isArray(product.features)) {
+          features = product.features;
+        }
 
-          return {
-            id: product.$id,
-            name: product.name,
-            brand: product.brand || 'Unknown',
-            category: product.category,
-            subcategory: product.subcategory,
-            description: product.description || '',
-            features: features,
-            imageUrl: product.image_url || product.imageUrl,
-            rating: product.rating || 0,
-            offers: offers,
-            specifications: {
-              dimensions: product.dimensions || 'N/A',
-              weight: product.weight || 'N/A',
-              material: product.material || 'N/A',
-              quantity: product.quantity || 'N/A'
-            },
-            lastUpdated: product.updated_at || new Date().toISOString()
-          };
-        });
-        setProducts(transformedProducts);
-      } else {
-        setProducts([]);
+        return {
+          id: product.$id,
+          name: product.name,
+          category: product.category,
+          brand: product.brand,
+          rating: product.rating || 0,
+          imageUrl: product.imageUrl || '',
+          asin: product.asin || '',
+          dimensions: product.dimensions || '',
+          weight: product.weight || '',
+          material: product.material || '',
+          features: features,
+          price: product.price,
+          affiliateLink: product.affiliateLink,
+          offers: product.offers || (product.price ? [{
+            name: 'Direct',
+            price: product.price,
+            url: product.affiliateLink || '#',
+            lastUpdated: product.updatedAt || new Date().toISOString()
+          }] : [])
+        };
+      });
+
+      console.log('Transformed products:', transformedProducts);
+
+      // Apply client-side search filtering if search term is provided (fixed: using searchTerm)
+      if (searchTerm) {
+        const searchTermLower = searchTerm.toLowerCase();
+        transformedProducts = transformedProducts.filter(product => 
+          product.name.toLowerCase().includes(searchTermLower) ||
+          (product.brand && product.brand.toLowerCase().includes(searchTermLower)) ||
+          (product.category && product.category.toLowerCase().includes(searchTermLower)) ||
+          (product.features && product.features.some(feature => feature.toLowerCase().includes(searchTermLower)))
+        );
+        console.log(`Filtered ${transformedProducts.length} products based on search term: ${searchTerm}`);
       }
-    } catch (error) {
-      console.error('Error in fetchCategoryProducts:', error);
+
+      setProducts(transformedProducts);
+      setError(null);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response
+      });
+      setError(`Failed to load products: ${error.message}`);
       setProducts([]);
     } finally {
       setLoading(false);
@@ -473,6 +490,15 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading products...</p>
             </div>
+          ) : error ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-destructive mb-4">{error}</p>
+                <Button onClick={fetchCategoryProducts} variant="outline">
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : filteredAndSortedProducts.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">

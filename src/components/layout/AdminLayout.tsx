@@ -33,7 +33,6 @@ import {
   ChevronDown,
   Search,
   Bell,
-  HelpCircle,
   UserCog,
   Home,
   FileBarChart,
@@ -479,9 +478,6 @@ data-tooltip-position="right"
             <div className="flex items-center gap-2">
               {/* Search Bar removed */}
               
-              <Button variant="ghost" size="icon">
-                <HelpCircle className="h-4 w-4" />
-              </Button>
               <NotificationsPanel />
               {/* Mobile Toggle Button Removed */}
             </div>

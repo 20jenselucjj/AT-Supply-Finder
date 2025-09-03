@@ -3,6 +3,7 @@ import { Product, VendorOffer } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { databases } from '@/lib/appwrite';
 import { Query } from 'appwrite';
+import { convertToDatabaseCategory, convertToBuildPageCategory } from '@/lib/utils'; // Import conversion functions
 
 export interface KitItem {
   id: string;
@@ -182,21 +183,27 @@ export const KitProvider: React.FC<KitProviderProps> = ({ children }) => {
   }, [kit, user, authLoading]);
 
   const addToKit = (product: Product, quantity: number = 1) => {
+    // Convert product category to build page category system
+    const productWithConvertedCategory = {
+      ...product,
+      category: convertToBuildPageCategory(product.category)
+    };
+    
     setKit(prevKit => {
-      const existingItem = prevKit.find(item => item.id === product.id);
+      const existingItem = prevKit.find(item => item.id === productWithConvertedCategory.id);
       if (existingItem) {
         const updated = prevKit.map(item =>
-          item.id === product.id
+          item.id === productWithConvertedCategory.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
         const live = document.getElementById('live-region');
-        if (live) live.textContent = `${quantity} added: ${product.name} (total ${existingItem.quantity + quantity})`;
+        if (live) live.textContent = `${quantity} added: ${productWithConvertedCategory.name} (total ${existingItem.quantity + quantity})`;
         return updated;
       } else {
-        const updated = [...prevKit, { ...product, quantity }];
+        const updated = [...prevKit, { ...productWithConvertedCategory, quantity }];
         const live = document.getElementById('live-region');
-        if (live) live.textContent = `${product.name} added to kit`;
+        if (live) live.textContent = `${productWithConvertedCategory.name} added to kit`;
         return updated;
       }
     });

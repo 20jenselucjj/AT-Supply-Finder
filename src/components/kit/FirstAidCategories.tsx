@@ -202,23 +202,7 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
   };
 
   const getCategoryItemCount = (categoryId: string) => {
-    return kit.filter(item => {
-      // Map product categories to first aid categories
-      const categoryMapping: Record<string, string> = {
-        "First Aid & Wound Care": "wound-care-dressings",
-        "Taping & Bandaging": "tapes-wraps",
-        "Over-the-Counter Medication": "pain-relief",
-        "Instruments & Tools": "instruments-tools",
-        "Emergency Care": "trauma-emergency",
-        "Documentation & Communication": "information-essentials",
-        "Hot & Cold Therapy": "trauma-emergency",
-        "Health Monitoring": "instruments-tools"
-      };
-      
-      return Object.entries(categoryMapping).some(([productCategory, mappedId]) => 
-        mappedId === categoryId && item.category === productCategory
-      );
-    }).length;
+    return kit.filter(item => item.category === categoryId).length;
   };
 
   return (
@@ -235,22 +219,7 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
           const isExpanded = expandedCategories.has(category.id);
           const itemCount = getCategoryItemCount(category.id);
           const hasItems = itemCount > 0;
-          const selectedItems = kit.filter(item => {
-            const categoryMapping: Record<string, string> = {
-              "First Aid & Wound Care": "wound-care-dressings",
-              "Taping & Bandaging": "tapes-wraps",
-              "Over-the-Counter Medication": "pain-relief",
-              "Instruments & Tools": "instruments-tools",
-              "Emergency Care": "trauma-emergency",
-              "Documentation & Communication": "information-essentials",
-              "Hot & Cold Therapy": "trauma-emergency",
-              "Health Monitoring": "instruments-tools"
-            };
-            
-            return Object.entries(categoryMapping).some(([productCategory, mappedId]) => 
-              mappedId === category.id && item.category === productCategory
-            );
-          });
+          const selectedItems = kit.filter(item => item.category === category.id);
 
           return (
             <Card key={category.id} className={`transition-all duration-200 ${

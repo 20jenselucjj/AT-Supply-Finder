@@ -185,12 +185,20 @@ Guidelines:
       specifications: product.specifications
     }));
 
+    // Enhanced prompt with structured context and explicit category guidelines
     return `You are an expert first aid specialist and medical supply specialist. Your task is to create a personalized first aid kit based on the user's request.
 
 User Request: "${userQuery}"
 Kit Type: ${kitType || 'Not specified'}
 First Aid Scenario: ${scenario || 'Not specified'}
 Budget: ${budget ? `$${budget}` : 'Not specified'}
+
+IMPORTANT CATEGORY GUIDELINES:
+- "Antiseptics & Ointments" includes antibiotic ointments, antiseptic wipes, burn gels, and other topical treatments for wounds and skin conditions
+- "Pain & Symptom Relief" includes oral pain relievers (ibuprofen, acetaminophen), antihistamines, antacids, and other medications taken internally
+- "Wound Care & Dressings" includes bandages, gauze, dressings, and wound cleaning supplies
+- "Tapes & Wraps" includes medical tapes, elastic bandages, and athletic tape
+- "Instruments & Tools" includes scissors, tweezers, thermometers, and other medical tools
 
 Available Products:
 ${JSON.stringify(productCatalog, null, 2)}
@@ -225,7 +233,9 @@ Guidelines:
 - Ensure products complement each other for comprehensive first aid coverage
 - Only select products from the provided catalog that are appropriate for first aid
 - Keep all text concise and focused
-- Focus on medical supplies, wound care, medications, instruments, and emergency equipment`;
+- Focus on medical supplies, wound care, medications, instruments, and emergency equipment
+- Use only the approved category IDs from the CATEGORY GUIDELINES above
+- For antibiotic ointments, always categorize them under "Antiseptics & Ointments" not "Wound Care & Dressings"`;
   }
 
   private parseKitResponse(response: string, availableProducts: Product[]): GeneratedKit {
@@ -237,6 +247,9 @@ Guidelines:
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Validate the parsed response before processing
+      this.validateKitResponse(parsed);
       
       // Convert selected products to KitItem format
       const kitItems: KitItem[] = parsed.selectedProducts.map((item: any) => {
@@ -259,25 +272,154 @@ Guidelines:
         };
       });
 
-      return {
+      const generatedKit: GeneratedKit = {
         name: parsed.name,
         description: parsed.description,
         items: kitItems,
         totalPrice: parsed.totalPrice,
         reasoning: parsed.reasoning
       };
+      
+      // Validate the final kit
+      this.validateGeneratedKit(generatedKit);
+      
+      return generatedKit;
     } catch (error) {
       console.error('Error parsing OpenRouter response:', error);
       throw new Error('Failed to parse AI response. Please try again.');
     }
   }
 
+  private validateKitResponse(response: any): void {
+    // Validate required fields
+    if (!response.name || typeof response.name !== 'string') {
+      throw new Error('Invalid kit name in response');
+    }
+    
+    if (!response.description || typeof response.description !== 'string') {
+      throw new Error('Invalid kit description in response');
+    }
+    
+    if (!Array.isArray(response.selectedProducts)) {
+      throw new Error('Invalid selectedProducts array in response');
+    }
+    
+    if (typeof response.totalPrice !== 'number') {
+      throw new Error('Invalid totalPrice in response');
+    }
+    
+    if (!response.reasoning || typeof response.reasoning !== 'string') {
+      throw new Error('Invalid reasoning in response');
+    }
+    
+    // Validate each selected product
+    for (const item of response.selectedProducts) {
+      if (!item.productId || typeof item.productId !== 'string') {
+        throw new Error('Invalid productId in selected product');
+      }
+      
+      if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
+        throw new Error('Invalid quantity in selected product');
+      }
+      
+      if (!item.reason || typeof item.reason !== 'string') {
+        throw new Error('Invalid reason in selected product');
+      }
+    }
+  }
+
+  private validateGeneratedKit(kit: GeneratedKit): void {
+    // Validate kit name length
+    if (kit.name.length > 50) {
+      kit.name = kit.name.substring(0, 50);
+    }
+    
+    // Validate kit description length
+    if (kit.description.length > 100) {
+      kit.description = kit.description.substring(0, 100);
+    }
+    
+    // Validate kit reasoning length
+    if (kit.reasoning.length > 200) {
+      kit.reasoning = kit.reasoning.substring(0, 200);
+    }
+    
+    // Validate item count (5-12 items as per guidelines)
+    if (kit.items.length < 5) {
+      console.warn('Generated kit has fewer than 5 items');
+    }
+    
+    if (kit.items.length > 12) {
+      console.warn('Generated kit has more than 12 items, truncating to 12');
+      kit.items = kit.items.slice(0, 12);
+    }
+    
+    // Validate category consistency
+    const validCategories = [
+      'Antiseptics & Ointments',
+      'Pain & Symptom Relief',
+      'Wound Care & Dressings',
+      'Tapes & Wraps',
+      'Instruments & Tools'
+    ];
+    
+    for (const item of kit.items) {
+      if (item.product_category && !validCategories.includes(item.product_category)) {
+        console.warn(`Product ${item.product_name} has invalid category: ${item.product_category}`);
+      }
+    }
+    
+    // Check for duplicate items
+    const productIds = kit.items.map(item => item.product_id);
+    const uniqueProductIds = [...new Set(productIds)];
+    if (productIds.length !== uniqueProductIds.length) {
+      console.warn('Generated kit contains duplicate items');
+    }
+  }
+
   async searchProducts(query: string, products: Product[]): Promise<Product[]> {
-    // Enhanced RAG system with semantic search and relevance scoring
+    // Enhanced RAG system with multi-pass filtering and improved relevance scoring
+    
+    // Pass 1: Initial keyword filtering
+    const keywordFiltered = this.initialKeywordFilter(query, products);
+    
+    // Pass 2: Semantic similarity scoring
+    const semanticallyScored = await this.semanticSimilarityScoring(query, keywordFiltered);
+    
+    // Pass 3: Category relevance boosting
+    const categoryBoosted = this.categoryRelevanceBoosting(query, semanticallyScored);
+    
+    // Pass 4: User preference weighting (if available)
+    const finalScored = this.userPreferenceWeighting(categoryBoosted);
+    
+    // Final ranking and limiting
+    return finalScored
+      .sort((a, b) => b.finalScore - a.finalScore)
+      .map(item => item.product)
+      .slice(0, 50); // Limit to top 50 most relevant products
+  }
+
+  private initialKeywordFilter(query: string, products: Product[]): Product[] {
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
     
-    // Score products based on relevance
-    const scoredProducts = products.map(product => {
+    return products.filter(product => {
+      const searchableFields = [
+        product.name || '',
+        product.brand || '',
+        product.category || '',
+        product.description || '',
+        Array.isArray(product.specifications?.['features']) ? product.specifications['features'].join(' ') : '',
+        Array.isArray(product.specifications?.materials) ? product.specifications.materials.join(' ') : ''
+      ].join(' ').toLowerCase();
+      
+      return searchTerms.some(term => searchableFields.includes(term));
+    });
+  }
+
+  private async semanticSimilarityScoring(query: string, products: Product[]): Promise<Array<{product: Product, score: number}>> {
+    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    
+    return products.map(product => {
       let score = 0;
       const searchableFields = {
         name: product.name || '',
@@ -306,42 +448,52 @@ Guidelines:
         searchTerms.forEach(term => {
           // Exact match bonus
           if (fieldText.includes(term)) {
-            score += weight * 2;
+            score += weight * 3;
           }
           
           // Partial match bonus
           const words = fieldText.split(' ');
           words.forEach(word => {
             if (word.includes(term) || term.includes(word)) {
-              score += weight * 0.5;
+              score += weight * 1.0;
             }
           });
         });
       });
 
-      // First aid keyword boosting
-      const firstAidKeywords = this.extractFirstAidKeywords(query);
-      firstAidKeywords.forEach(keyword => {
-        Object.values(searchableFields).forEach(text => {
-          if (text.toLowerCase().includes(keyword.toLowerCase())) {
-            score += 2.0; // Increased boost for first aid keywords
-          }
-        });
-      });
-
-      // Category relevance boosting
-      const categoryRelevance = this.getCategoryRelevance(query, product.category);
-      score += categoryRelevance;
-
       return { product, score };
     });
+  }
 
-    // Filter products with score > 0 and sort by relevance
-    return scoredProducts
-      .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.product)
-      .slice(0, 50); // Limit to top 50 most relevant products
+  private categoryRelevanceBoosting(query: string, scoredProducts: Array<{product: Product, score: number}>): Array<{product: Product, score: number, categoryBoost: number}> {
+    return scoredProducts.map(item => {
+      const categoryRelevance = this.getEnhancedCategoryRelevance(query, item.product.category);
+      const categoryBoost = categoryRelevance * 2; // Double the category relevance impact
+      return { 
+        product: item.product, 
+        score: item.score, 
+        categoryBoost 
+      };
+    });
+  }
+
+  private userPreferenceWeighting(scoredProducts: Array<{product: Product, score: number, categoryBoost: number}>): Array<{product: Product, finalScore: number}> {
+    return scoredProducts.map(item => {
+      let finalScore = item.score + item.categoryBoost;
+      
+      // Brand reputation boosting (if available)
+      if (item.product.brand) {
+        const reputableBrands = ['band-aid', 'johnson & johnson', '3m', 'cardinal health', 'mckesson', 'first aid only'];
+        if (reputableBrands.some(brand => item.product.brand?.toLowerCase().includes(brand))) {
+          finalScore += 1.5; // Small boost for reputable brands
+        }
+      }
+      
+      return { 
+        product: item.product, 
+        finalScore 
+      };
+    });
   }
 
   private extractSportKeywords(query: string): string[] {
@@ -397,31 +549,37 @@ Guidelines:
     return [...new Set(keywords)];
   }
 
-  private getCategoryRelevance(query: string, category: string): number {
+  private getEnhancedCategoryRelevance(query: string, category: string): number {
     const queryLower = query.toLowerCase();
     const categoryLower = category.toLowerCase();
     
-    // Direct category match
+    // Direct category match with higher weight
     if (queryLower.includes(categoryLower) || categoryLower.includes(queryLower)) {
-      return 2.0;
+      return 3.0;
     }
 
-    // First aid category synonym matching
+    // Enhanced category synonym matching with more comprehensive mappings
     const categorySynonyms: Record<string, string[]> = {
-      'first aid': ['first aid', 'medical', 'emergency', 'treatment'],
-      'wound care': ['wound', 'bandage', 'gauze', 'dressing'],
-      'medication': ['medicine', 'drug', 'pill', 'tablet', 'ointment'],
-      'instruments': ['tool', 'scissors', 'tweezers', 'thermometer'],
-      'ppe': ['protection', 'gloves', 'mask', 'safety'],
-      'emergency': ['emergency', 'urgent', 'critical', 'severe']
+      'antiseptics & ointments': ['antibiotic', 'ointment', 'antiseptic', 'gel', 'cream', 'burn', 'wound treatment'],
+      'pain & symptom relief': ['pain', 'relief', 'medication', 'pill', 'tablet', 'fever', 'headache', 'allergy'],
+      'wound care & dressings': ['bandage', 'gauze', 'dressing', 'wound', 'cut', 'scrape', 'laceration'],
+      'tapes & wraps': ['tape', 'wrap', 'elastic', 'adhesive', 'bandage'],
+      'instruments & tools': ['scissors', 'tweezers', 'thermometer', 'gloves', 'tool', 'instrument'],
+      'first aid': ['first aid', 'medical', 'emergency', 'treatment', 'health'],
+      'ppe': ['protection', 'gloves', 'mask', 'safety', 'ppe'],
+      'emergency': ['emergency', 'urgent', 'critical', 'severe', 'rescue']
     };
 
-    const synonyms = categorySynonyms[categoryLower] || [];
-    if (synonyms.some(synonym => queryLower.includes(synonym))) {
-      return 1.5;
-    }
+    // Find the best matching category
+    let maxRelevance = 0;
+    Object.entries(categorySynonyms).forEach(([cat, synonyms]) => {
+      if (categoryLower.includes(cat) || cat.includes(categoryLower)) {
+        const relevance = synonyms.some(synonym => queryLower.includes(synonym)) ? 2.5 : 0;
+        maxRelevance = Math.max(maxRelevance, relevance);
+      }
+    });
 
-    return 0;
+    return maxRelevance;
   }
 }
 

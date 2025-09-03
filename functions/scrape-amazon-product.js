@@ -366,43 +366,53 @@ export default async function scrapeAmazonProduct(req, res) {
       }
     }
     
-    // Map Amazon categories to our first aid categories
+    // Map Amazon categories to our first aid categories (using the new build page category system)
     const categoryMapping = {
-      'Medical Supplies': 'First Aid & Wound Care',
-      'Wound Care Supplies': 'First Aid & Wound Care',
-      'Bandages': 'First Aid & Wound Care',
-      'First Aid': 'First Aid & Wound Care',
-      'Tape': 'Taping & Bandaging',
-      'Bandaging Supplies': 'Taping & Bandaging',
-      'Elastic Bandages': 'Taping & Bandaging',
-      'Ace Bandages': 'Taping & Bandaging',
-      'Athletic Tape': 'Taping & Bandaging',
-      'Medical Tape': 'Taping & Bandaging',
-      'Antiseptics': 'First Aid & Wound Care',
-      'Hydrogen Peroxide': 'First Aid & Wound Care',
-      'Alcohol': 'First Aid & Wound Care',
-      'Pain Relievers': 'Over-the-Counter Medication',
-      'Pain Relief': 'Over-the-Counter Medication',
-      'Medication': 'Over-the-Counter Medication',
-      'Allergy': 'Over-the-Counter Medication',
-      'Antihistamines': 'Over-the-Counter Medication',
-      'Thermometers': 'Health Monitoring',
-      'Health Monitoring': 'Health Monitoring',
-      'Medical Instruments': 'Instruments & Tools',
-      'First Aid Tools': 'Instruments & Tools',
-      'Scissors': 'Instruments & Tools',
-      'Tweezers': 'Instruments & Tools',
-      'Gloves': 'Instruments & Tools',
-      'Safety Equipment': 'Instruments & Tools',
-      'Emergency Supplies': 'Emergency Care',
-      'Emergency Blankets': 'Emergency Care',
-      'Trauma Supplies': 'Emergency Care',
-      'Cold Packs': 'Hot & Cold Therapy',
-      'Heat Packs': 'Hot & Cold Therapy',
-      'Hot & Cold': 'Hot & Cold Therapy',
-      'Documentation': 'Documentation & Communication',
-      'First Aid Books': 'Documentation & Communication',
-      'Instructional': 'Documentation & Communication'
+      'Medical Supplies': 'wound-care-dressings',
+      'Wound Care Supplies': 'wound-care-dressings',
+      'Bandages': 'wound-care-dressings',
+      'First Aid': 'wound-care-dressings',
+      'Tape': 'tapes-wraps',
+      'Bandaging Supplies': 'tapes-wraps',
+      'Elastic Bandages': 'tapes-wraps',
+      'Ace Bandages': 'tapes-wraps',
+      'Athletic Tape': 'tapes-wraps',
+      'Medical Tape': 'tapes-wraps',
+      'Antiseptics': 'antiseptics-ointments',
+      'Hydrogen Peroxide': 'antiseptics-ointments',
+      'Alcohol': 'antiseptics-ointments',
+      'Antibiotic Ointment': 'antiseptics-ointments', // Specific mapping for antibiotic ointments
+      'Ointment': 'antiseptics-ointments', // General mapping for ointments
+      'Burn Gel': 'antiseptics-ointments', // Specific mapping for burn gels
+      'Antiseptic Wipes': 'antiseptics-ointments', // Specific mapping for antiseptic wipes
+      'Pain Relievers': 'pain-relief',
+      'Pain Relief': 'pain-relief',
+      'Medication': 'pain-relief',
+      'Allergy': 'pain-relief',
+      'Antihistamines': 'pain-relief',
+      'Thermometers': 'instruments-tools',
+      'Health Monitoring': 'instruments-tools',
+      'Medical Instruments': 'instruments-tools',
+      'First Aid Tools': 'instruments-tools',
+      'Scissors': 'instruments-tools',
+      'Tweezers': 'instruments-tools',
+      'Gloves': 'instruments-tools',
+      'Safety Equipment': 'instruments-tools',
+      'Emergency Supplies': 'trauma-emergency',
+      'Emergency Blankets': 'trauma-emergency',
+      'Splints': 'trauma-emergency',
+      'Tourniquets': 'trauma-emergency',
+      'Protective Equipment': 'ppe',
+      'Masks': 'ppe',
+      'Sanitizers': 'ppe',
+      'First Aid Books': 'information-essentials',
+      'Instructional Materials': 'information-essentials',
+      'Hot Cold Therapy': 'hot-cold-therapy',
+      'Heat Packs': 'hot-cold-therapy',
+      'Cold Packs': 'hot-cold-therapy',
+      'Electrolytes': 'hydration-nutrition',
+      'Energy Gels': 'hydration-nutrition',
+      'Nutritional Supplements': 'hydration-nutrition'
     };
     
     // Try to map the extracted category to our system
@@ -414,6 +424,30 @@ export default async function scrapeAmazonProduct(req, res) {
           break;
         }
       }
+    }
+    
+    // Additional check for antibiotic ointments in the product title
+    const fullTitleLower = fullTitle.toLowerCase();
+    if (fullTitleLower.includes('antibiotic ointment') || fullTitleLower.includes('triple antibiotic')) {
+      productData.category = 'antiseptics-ointments';
+    }
+    // Additional check for other ointments
+    else if (fullTitleLower.includes('ointment') && !productData.category) {
+      productData.category = 'antiseptics-ointments';
+    }
+    // Additional check for antiseptic products
+    else if ((fullTitleLower.includes('antiseptic') || fullTitleLower.includes('burn gel')) && !productData.category) {
+      productData.category = 'antiseptics-ointments';
+    }
+    // Additional check for pain relief products
+    else if (!productData.category && (
+      fullTitleLower.includes('pain') || 
+      fullTitleLower.includes('relief') || 
+      fullTitleLower.includes('ibuprofen') || 
+      fullTitleLower.includes('acetaminophen') ||
+      fullTitleLower.includes('antihistamine')
+    )) {
+      productData.category = 'pain-relief';
     }
 
     // Extract dimensions and weight from product details

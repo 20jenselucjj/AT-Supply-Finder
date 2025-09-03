@@ -11,7 +11,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "analyze": "node scripts/analyze-bundle.js"
+    "migrate:categories": "node migration/update-category-system.js",
+    "migrate:products-category": "node migration/update-products-category.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -38,6 +38,7 @@ interface SearchAndActionsProps {
   handleEnhanceWithAI?: () => void;
   isLoadingProductInfo: boolean;
   handleAddProduct: () => void;
+  handleKeyPress: (event: React.KeyboardEvent<HTMLInputElement>) => void; // Add this new prop
 }
 
 export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
@@ -69,7 +70,8 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   handleAffiliateLinkChange,
   handleEnhanceWithAI,
   isLoadingProductInfo,
-  handleAddProduct
+  handleAddProduct,
+  handleKeyPress // Add this new prop
 }) => {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
@@ -79,6 +81,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
           placeholder="Search products..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={handleKeyPress}
           className="pl-9"
         />
       </div>
@@ -95,9 +98,6 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
           ))}
         </SelectContent>
       </Select>
-      <Button onClick={handleSearch} variant="outline">
-        Search
-      </Button>
       <Button
         variant="outline"
         onClick={() => setShowFilters(!showFilters)}
@@ -122,10 +122,6 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
         <SelectContent>
           <SelectItem value="$createdAt-desc">Newest First</SelectItem>
           <SelectItem value="$createdAt-asc">Oldest First</SelectItem>
-          <SelectItem value="name-asc">Name A-Z</SelectItem>
-          <SelectItem value="name-desc">Name Z-A</SelectItem>
-          <SelectItem value="price-asc">Price Low-High</SelectItem>
-          <SelectItem value="price-desc">Price High-Low</SelectItem>
         </SelectContent>
       </Select>
       <Dialog open={isImportProductsOpen} onOpenChange={setIsImportProductsOpen}>

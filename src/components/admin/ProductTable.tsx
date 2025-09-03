@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Edit, Trash2 } from "lucide-react";
+import { Star, Edit, Trash2, Zap } from "lucide-react";
 import { ProductData } from "./types";
 
 interface ProductTableProps {
@@ -26,6 +26,7 @@ interface ProductTableProps {
   setProductForm: React.Dispatch<React.SetStateAction<any>>;
   handleUpdateProduct: () => void;
   handleAffiliateLinkChange: (url: string) => void;
+  handleEnhanceWithAI?: () => void;
   isLoadingProductInfo: boolean;
   categories: string[];
   brands: string[];
@@ -45,10 +46,68 @@ export const ProductTable: React.FC<ProductTableProps> = ({
   setProductForm,
   handleUpdateProduct,
   handleAffiliateLinkChange,
+  handleEnhanceWithAI,
   isLoadingProductInfo,
   categories,
   brands
 }) => {
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleOpenEditDialog = (product: ProductData) => {
+    openEditDialog(product);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+  };
+
+  // Define the list of valid first aid categories with their icons
+  const FIRST_AID_CATEGORIES = [
+    { id: "wound-care-dressings", name: "Wound Care & Dressings", icon: "🩹" },
+    { id: "tapes-wraps", name: "Tapes & Wraps", icon: "🧵" },
+    { id: "antiseptics-ointments", name: "Antiseptics & Ointments", icon: "🧴" },
+    { id: "pain-relief", name: "Pain & Symptom Relief", icon: "💊" },
+    { id: "instruments-tools", name: "Instruments & Tools", icon: "🛠️" },
+    { id: "trauma-emergency", name: "Trauma & Emergency", icon: "🚨" },
+    { id: "ppe", name: "Personal Protection Equipment (PPE)", icon: "🛡️" },
+    { id: "information-essentials", name: "First Aid Information & Essentials", icon: "📋" },
+    { id: "hot-cold-therapy", name: "Hot & Cold Therapy", icon: "🧊" },
+    { id: "hydration-nutrition", name: "Hydration & Nutrition", icon: "💧" },
+    { id: "miscellaneous", name: "Miscellaneous & General", icon: "📦" }
+  ];
+
+  // Map category IDs to their display names
+  const getCategoryNameById = (id: string): string => {
+    const category = FIRST_AID_CATEGORIES.find(cat => cat.id === id);
+    return category ? category.name : id;
+  };
+
+  // Map category names to their IDs
+  const getCategoryIdByName = (name: string): string => {
+    const category = FIRST_AID_CATEGORIES.find(cat => cat.name === name);
+    return category ? category.id : name;
+  };
+
+  // Map database category names to friendly category names
+  const mapDatabaseCategoryToFriendlyName = (databaseCategory: string): string => {
+    const categoryMapping: Record<string, string> = {
+      "First Aid & Wound Care": "Wound Care & Dressings",
+      "Taping & Bandaging": "Tapes & Wraps",
+      "Instruments & Tools": "Instruments & Tools",
+      "Over-the-Counter Medication": "Pain & Symptom Relief",
+      "Emergency Care": "Trauma & Emergency",
+      "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+      "Documentation & Communication": "First Aid Information & Essentials",
+      "Hot & Cold Therapy": "Hot & Cold Therapy",
+      "Hydration & Nutrition": "Hydration & Nutrition",
+      "Miscellaneous & General": "Miscellaneous & General"
+    };
+    
+    return categoryMapping[databaseCategory] || databaseCategory;
+  };
+
   return (
     <div className="hidden md:block">
       <Table>
@@ -94,7 +153,18 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                       />
                     )}
                     <div>
-                      <div className="font-medium">{product.name}</div>
+                      {product.affiliateLink ? (
+                        <a 
+                          href={product.affiliateLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {product.name}
+                        </a>
+                      ) : (
+                        <div className="font-medium">{product.name}</div>
+                      )}
                       <div className="text-sm text-muted-foreground">
                         {product.dimensions && `${product.dimensions} • `}
                         {product.weight}
@@ -103,7 +173,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  <Badge variant="outline">{product.category}</Badge>
+                  <Badge variant="outline">{mapDatabaseCategoryToFriendlyName(product.category)}</Badge>
                 </TableCell>
                 <TableCell>{product.brand}</TableCell>
                 <TableCell>
@@ -127,12 +197,12 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <Dialog>
+                    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openEditDialog(product)}
+                          onClick={() => handleOpenEditDialog(product)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -164,6 +234,30 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                             <p className="text-sm text-muted-foreground mt-1">
                               Paste an Amazon product link to automatically extract the ASIN and help populate product details
                             </p>
+                            {handleEnhanceWithAI && (
+                              <div className="mt-2">
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  className="w-full"
+                                  onClick={handleEnhanceWithAI}
+                                  disabled={isLoadingProductInfo}
+                                >
+                                  <Zap className="mr-2 h-4 w-4" />
+                                  {isLoadingProductInfo ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                                      Enhancing with AI...
+                                    </>
+                                  ) : (
+                                    'Enhance with AI'
+                                  )}
+                                </Button>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  AI will optimize product name, features, category, and extract quantity/material
+                                </p>
+                              </div>
+                            )}
                           </div>
                           <div className="col-span-2">
                             <Label htmlFor="edit-name">Product Name *</Label>
@@ -175,11 +269,36 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                           </div>
                           <div>
                             <Label htmlFor="edit-category">Category *</Label>
-                            <Input
-                              id="edit-category"
-                              value={productForm.category}
-                              onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                            />
+                            <Select 
+                              value={getCategoryIdByName(productForm.category || "")} 
+                              onValueChange={(value) => {
+                                const categoryName = getCategoryNameById(value);
+                                setProductForm(prev => ({ ...prev, category: categoryName }));
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a category">
+                                  {productForm.category && (
+                                    <div className="flex items-center">
+                                      <span className="mr-2">
+                                        {FIRST_AID_CATEGORIES.find(cat => cat.name === productForm.category)?.icon}
+                                      </span>
+                                      <span>{productForm.category}</span>
+                                    </div>
+                                  )}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {FIRST_AID_CATEGORIES.map((category) => (
+                                  <SelectItem key={category.id} value={category.id}>
+                                    <div className="flex items-center">
+                                      <span className="mr-2">{category.icon}</span>
+                                      <span>{category.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div>
                             <Label htmlFor="edit-brand">Brand *</Label>
@@ -264,12 +383,13 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                           </div>
                         </div>
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => {
-                            // Reset form when closing
-                          }}>
+                          <Button variant="outline" onClick={handleCloseEditDialog}>
                             Cancel
                           </Button>
-                          <Button onClick={handleUpdateProduct}>
+                          <Button onClick={() => {
+                            handleUpdateProduct();
+                            handleCloseEditDialog();
+                          }}>
                             Update Product
                           </Button>
                         </DialogFooter>

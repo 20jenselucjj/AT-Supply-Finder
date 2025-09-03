@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { convertToBuildPageCategory } from "@/lib/utils";
 
 // Lazy load heavy components - correct import syntax for named vs default exports
 const ProductQuickView = lazy(() => 
@@ -249,7 +250,8 @@ const Catalog = () => {
         );
         
         if (response) {
-          const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
+          // Convert database categories to build page categories
+          const uniqueCategories = [...new Set(response.documents.map((item: any) => convertToBuildPageCategory(item.category)).filter(Boolean))];
           setCategories(uniqueCategories);
         }
       } catch (error: any) {

@@ -36,7 +36,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<'$createdAt' | 'name' | 'price'>('$createdAt');
+  const [sortBy, setSortBy] = useState<'$createdAt'>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
   
@@ -84,73 +84,83 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       // Build query with filters for Appwrite
       let queries: string[] = [];
 
-      // Apply search term filter
+      // Apply search term filter - using contains method which doesn't require fulltext index
       if (search) {
-        // Enhanced search with multiple matching strategies
-        const searchTerms = search.split(' ').filter(term => term.length > 0);
-        
-        if (searchTerms.length > 0) {
-          // For multiple terms, create search conditions
-          const searchConditions = searchTerms.map(term => 
-            `name LIKE '%${term}%' OR brand LIKE '%${term}%' OR category LIKE '%${term}%' OR material LIKE '%${term}%'`
-          ).join(' OR ');
-          
-          queries.push(JSON.stringify({ method: 'search', values: [searchConditions] }));
-        } else {
-          // For single term, use broader matching
-          const searchCondition = `name LIKE '%${search}%' OR brand LIKE '%${search}%' OR category LIKE '%${search}%' OR material LIKE '%${search}%'`;
-          queries.push(JSON.stringify({ method: 'search', values: [searchCondition] }));
-        }
+        queries.push(JSON.stringify({ 
+          method: 'contains', 
+          attribute: 'name', 
+          values: [search] 
+        }));
       }
 
       // Apply category filter
       if (category !== 'all') {
-        queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [category] }));
+        // Map friendly category names back to database format for filtering
+        const reverseCategoryMapping: Record<string, string> = {
+          "Wound Care & Dressings": "First Aid & Wound Care",
+          "Antiseptics & Ointments": "Antiseptics & Ointments",
+          "Tapes & Wraps": "Taping & Bandaging",
+          "Instruments & Tools": "Instruments & Tools",
+          "Pain & Symptom Relief": "Over-the-Counter Medication",
+          "Trauma & Emergency": "Emergency Care",
+          "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+          "First Aid Information & Essentials": "Documentation & Communication",
+          "Hot & Cold Therapy": "Hot & Cold Therapy",
+          "Hydration & Nutrition": "Hydration & Nutrition",
+          "Miscellaneous & General": "Miscellaneous & General"
+        };
+        
+        const databaseCategory = reverseCategoryMapping[category] || category;
+        
+        queries.push(JSON.stringify({ 
+          method: 'equal', 
+          attribute: 'category', 
+          values: [databaseCategory] 
+        }));
       }
 
-      // Apply advanced filters
+      // Apply only the most essential advanced filters to avoid schema issues
       if (advancedFilters.minPrice !== undefined) {
-        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'price', values: [advancedFilters.minPrice] }));
+        queries.push(JSON.stringify({ 
+          method: 'greaterThanEqual', 
+          attribute: 'price', 
+          values: [advancedFilters.minPrice] 
+        }));
       }
       
       if (advancedFilters.maxPrice !== undefined) {
-        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'price', values: [advancedFilters.maxPrice] }));
-      }
-      
-      if (advancedFilters.minRating !== undefined) {
-        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'rating', values: [advancedFilters.minRating] }));
-      }
-      
-      if (advancedFilters.maxRating !== undefined) {
-        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'rating', values: [advancedFilters.maxRating] }));
-      }
-      
-      if (advancedFilters.brand) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'brand', values: [`%${advancedFilters.brand}%`] }));
-      }
-      
-      if (advancedFilters.material) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'material', values: [`%${advancedFilters.material}%`] }));
-      }
-      
-      if (advancedFilters.weight) {
-        queries.push(JSON.stringify({ method: 'search', attribute: 'weight', values: [`%${advancedFilters.weight}%`] }));
+        queries.push(JSON.stringify({ 
+          method: 'lessThanEqual', 
+          attribute: 'price', 
+          values: [advancedFilters.maxPrice] 
+        }));
       }
 
-      // Apply sorting - map frontend sortBy values to Appwrite attributes
-      const appwriteSortAttribute = sortBy === '$createdAt' ? '$createdAt' : sortBy;
-      if (appwriteSortAttribute) {
+      // Apply sorting
+      if (sortBy === '$createdAt') {
         if (sortOrder === 'asc') {
-          queries.push(JSON.stringify({ method: 'orderAsc', attribute: appwriteSortAttribute }));
+          queries.push(JSON.stringify({ 
+            method: 'orderAsc', 
+            attribute: '$createdAt' 
+          }));
         } else {
-          queries.push(JSON.stringify({ method: 'orderDesc', attribute: appwriteSortAttribute }));
+          queries.push(JSON.stringify({ 
+            method: 'orderDesc', 
+            attribute: '$createdAt' 
+          }));
         }
       }
 
       // Apply pagination
       const offset = (page - 1) * productsPerPage;
-      queries.push(JSON.stringify({ method: 'limit', values: [productsPerPage] }));
-      queries.push(JSON.stringify({ method: 'offset', values: [offset] }));
+      queries.push(JSON.stringify({ 
+        method: 'limit', 
+        values: [productsPerPage] 
+      }));
+      queries.push(JSON.stringify({ 
+        method: 'offset', 
+        values: [offset] 
+      }));
 
       // Fetch products from Appwrite 'products' collection
       const response = await databases.listDocuments(
@@ -160,10 +170,15 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       );
 
       // Also get total count for pagination
+      const countQueries = queries.filter(q => {
+        const queryObj = JSON.parse(q);
+        return queryObj.method !== 'limit' && queryObj.method !== 'offset';
+      });
+      
       const countResponse = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         'products',
-        []
+        countQueries
       );
 
       const transformedProducts = response.documents?.map((product: any) => ({
@@ -176,16 +191,36 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         dimensions: product.dimensions,
         weight: product.weight,
         material: product.material,
-        features: product.features,
+        features: Array.isArray(product.features) 
+          ? product.features 
+          : typeof product.features === 'string' 
+            ? product.features.split('\n').filter((f: string) => f.trim()) 
+            : [],
         image_url: product.imageUrl,
         asin: product.asin,
-        affiliate_link: product.affiliateLink,
+        affiliateLink: product.affiliateLink,
         created_at: product.$createdAt,
         updated_at: product.$updatedAt
       })) || [];
 
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Antiseptics & Ointments": "Antiseptics & Ointments",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+
       setProducts(transformedProducts.map(product => ({
         ...product,
+        category: categoryMapping[product.category] || product.category,
         createdAt: product.created_at,
         updatedAt: product.updated_at
       })));
@@ -193,7 +228,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       onProductCountChange(countResponse.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
+      toast.error('Failed to fetch products. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -209,7 +244,27 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       );
       
       const uniqueCategories = [...new Set(response.documents.map((item: any) => item.category).filter(Boolean))];
-      setCategories(uniqueCategories);
+      
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Antiseptics & Ointments": "Antiseptics & Ointments",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+      
+      const mappedCategories = uniqueCategories.map(category => 
+        categoryMapping[category] || category
+      );
+      
+      setCategories(mappedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -297,6 +352,22 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       
       // Fetch product names before deletion for audit logging
       const productData = [];
+      
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Antiseptics & Ointments": "Antiseptics & Ointments",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+      
       for (const productId of productIds) {
         try {
           const product = await databases.getDocument(
@@ -307,7 +378,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           productData.push({
             id: product.$id,
             name: product.name,
-            category: product.category,
+            category: categoryMapping[product.category] || product.category,
             brand: product.brand
           });
         } catch (error) {
@@ -364,10 +435,24 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         []
       );
       
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+      
       const data = response.documents.map((product: any) => ({
         id: product.$id,
         name: product.name,
-        category: product.category,
+        category: categoryMapping[product.category] || product.category,
         brand: product.brand,
         rating: product.rating,
         price: product.price,
@@ -449,6 +534,20 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       const productIds = Array.from(selectedProducts);
       const data = [];
       
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+      
       for (const productId of productIds) {
         try {
           const product = await databases.getDocument(
@@ -460,7 +559,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           data.push({
             id: product.$id,
             name: product.name,
-            category: product.category,
+            category: categoryMapping[product.category] || product.category,
             brand: product.brand,
             rating: product.rating,
             price: product.price,
@@ -499,15 +598,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           typeof value === 'object' ? JSON.stringify(value) : value
         ).join(',')
       );
-
-      // Log successful export
-      await logger.auditLog({
-        action: 'EXPORT_SELECTED_PRODUCTS',
-        entityType: 'PRODUCT',
-        details: {
-          count: data.length
-        }
-      });
       
       const csvContent = [csvHeaders, ...csvRows].join('\n');
       
@@ -521,8 +611,17 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // Log successful export
+      await logger.auditLog({
+        action: 'EXPORT_SELECTED_PRODUCTS',
+        entityType: 'PRODUCT',
+        details: {
+          count: data.length
+        }
+      });
       
-      toast.success(`${selectedProducts.size} product${selectedProducts.size > 1 ? 's' : ''} exported successfully`);
+      toast.success(`Successfully exported ${data.length} product${data.length > 1 ? 's' : ''}`);
     } catch (error: any) {
       await logger.auditLog({
         action: 'EXPORT_SELECTED_PRODUCTS_FAILED',
@@ -613,7 +712,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             const numValue = parseFloat(value);
             product[header] = isNaN(numValue) ? null : numValue;
           } else if (header === 'features') {
-            product[header] = value ? value.split(';').map(f => f.trim()) : [];
+            product[header] = value || null;
           } else {
             product[header] = value || null;
           }
@@ -645,7 +744,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             dimensions: product.dimensions,
             weight: product.weight,
             material: product.material,
-            features: product.features,
+            features: product.features ? (Array.isArray(product.features) ? product.features.join(', ') : product.features) : null,
             imageUrl: product.image_url,
             asin: product.asin,
             affiliateLink: product.affiliate_link
@@ -815,139 +914,65 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         return;
       }
       
+      // Import the AI enhancement function
+      const { enhanceProductWithAI } = await import('../../../functions/utils/ai-product-enhancer');
+      
+      // Map friendly category names back to database format for AI processing
+      const reverseCategoryMapping: Record<string, string> = {
+        "Wound Care & Dressings": "First Aid & Wound Care",
+        "Tapes & Wraps": "Taping & Bandaging",
+        "Antiseptics & Ointments": "Antiseptics & Ointments",
+        "Instruments & Tools": "Instruments & Tools",
+        "Pain & Symptom Relief": "Over-the-Counter Medication",
+        "Trauma & Emergency": "Emergency Care",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "First Aid Information & Essentials": "Documentation & Communication",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+
       // Prepare product data for AI enhancement
       const productData = {
         title: productForm.name,
         brand: productForm.brand,
-        category: productForm.category,
+        category: reverseCategoryMapping[productForm.category] || productForm.category,
         features: productForm.features ? productForm.features.split('\n') : [],
         dimensions: productForm.dimensions,
         weight: productForm.weight,
         material: productForm.material
       };
       
-      // Create a more detailed prompt for OpenRouter to enhance the product data
-      const prompt = `
-You are an expert product data analyst specializing in medical and first aid supplies. 
-Your task is to enhance the product data by:
-1. Creating a concise, descriptive product name (max 50 characters) - make it appealing to medical professionals, never use "..." or other truncation symbols
-2. Improving the feature descriptions to be more informative and professional while preserving ALL factual information, technical specifications, sizing details (like "1-inch by 10 yard-roll"), and measurements from the original listing - focus on benefits for medical use
-3. Classifying the product into the most appropriate category from these options: First Aid & Wound Care, Taping & Bandaging, Over-the-Counter Medication, Instruments & Tools, Emergency Care, Personal Protection Equipment (PPE), Documentation & Communication, Hot & Cold Therapy, Hydration & Nutrition, Miscellaneous & General
-4. Extracting quantity information when available (e.g., "100 ct", "12 pack", "50 sheets") - look in title, features, dimensions
-5. Identifying the main material when relevant (e.g., "sterile gauze", "nitrile", "latex-free", "adhesive", "foam", "plastic") - look in title, features, description
-
-Product Data:
-- Title: ${productData.title}
-- Brand: ${productData.brand || 'Not specified'}
-- Features: ${productData.features.join(', ') || 'Not specified'}
-- Category: ${productData.category || 'Not specified'}
-- Dimensions: ${productData.dimensions || 'Not specified'}
-- Weight: ${productData.weight || 'Not specified'}
-
-Please respond in the following JSON format:
-{
-  "name": "Enhanced product name (max 50 characters, no truncation symbols like ..., complete words only)",
-  "features": ["Professional feature description 1. Preserves all original facts, technical details, and sizing information like 1-inch by 10 yard-roll.", "Professional feature description 2. Maintains all specifications, measurements, and product dimensions.", "Professional feature description 3. Highlights medical benefits, applications, and includes all sizing details."],
-  "category": "Most appropriate category",
-  "quantity": "Quantity information if available (e.g., '100 ct', '12 pack')",
-  "material": "Main material if identifiable (e.g., 'adhesive', 'foam', 'latex-free', 'sterile gauze')"
-}
-
-Guidelines:
-- Keep product names concise but descriptive (max 50 characters)
-- Never use "..." or other truncation symbols in product names
-- Complete words only, no partial words
-- For features, focus on medical benefits and use cases while preserving ALL original facts and technical details:
-  * Highlight sterility, safety, and medical compliance
-  * Emphasize ease of use for medical professionals
-  * Mention specific applications in medical settings
-  * Focus on quality, durability, and performance
-  * Preserve ALL technical specifications, measurements, materials, sizing information (e.g., "1-inch by 10 yard-roll"), and factual information from the original listing
-  * Never omit, summarize away, or lose important details including specific measurements and sizing
-  * Present facts in a more professional and readable format without losing any information
-  * Convert technical jargon into clear, professional language while keeping all specifications
-  * Ensure all sizing, dimensions, and measurement details are explicitly included in the features
-  * Features can be longer if needed to include every aspect of the product
-- Use standard first aid/medical supply categories
-- Extract quantity from title, features, or dimensions when possible
-- Identify materials by looking for terms like: adhesive, foam, latex-free, sterile gauze, plastic, fabric, metal, cotton, polyester, silicone, rubber, vinyl, etc.
-- Look for material terms in the product title and features
-- If no clear material is identifiable, leave this field empty
-- Only include fields that can be meaningfully enhanced
-- If quantity is found, prefer it over weight in the response
-- Make sure features are clear, benefit-focused, and concise
-- Product names should be suitable for catalog listings but still informative
-`;
-
-      // Call OpenRouter API
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterApiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'AT Supply Finder'
-        },
-        body: JSON.stringify({
-          model: 'deepseek/deepseek-chat-v3.1:free',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000
-        })
-      });
+      // Call the AI enhancement function
+      const enhancedData = await enhanceProductWithAI(productData, openRouterApiKey);
       
-      if (!response.ok) {
-        throw new Error(`AI enhancement failed: ${response.status}`);
-      }
+      // Map database category names to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Antiseptics & Ointments": "Antiseptics & Ointments",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
       
-      const aiResponse = await response.json();
-      const aiContent = aiResponse.choices[0]?.message?.content || '{}';
+      // Update form with AI-enhanced data
+      setProductForm(prev => ({
+        ...prev,
+        name: enhancedData.name || prev.name,
+        category: categoryMapping[enhancedData.category] || enhancedData.category || prev.category,
+        material: enhancedData.material || prev.material,
+        // If quantity is found, we might want to use it instead of weight
+        weight: enhancedData.quantity || prev.weight,
+        features: enhancedData.features || prev.features
+      }));
       
-      // Extract JSON from the response (in case there's additional text)
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        
-        // Clean up the product name to remove any truncation symbols
-        let cleanedName = parsed.name || productForm.name;
-        if (cleanedName) {
-          // Remove any truncation symbols like "..." or "…"
-          cleanedName = cleanedName.replace(/\.{3,}/g, '').trim();
-          // Ensure we don't end with a punctuation mark
-          cleanedName = cleanedName.replace(/[.,;:]$/g, '').trim();
-        }
-        
-        // Process features to ensure they are benefit-focused while preserving all facts
-        let processedFeatures = productForm.features;
-        if (parsed.features && Array.isArray(parsed.features)) {
-          // Join features with periods for better readability
-          // Filter out any empty features and ensure we have content
-          const validFeatures = parsed.features.filter(f => f && f.trim().length > 0);
-          if (validFeatures.length > 0) {
-            processedFeatures = validFeatures.join('. ') + '.';
-          }
-        }
-        
-        // Update form with AI-enhanced data
-        setProductForm(prev => ({
-          ...prev,
-          name: cleanedName,
-          category: parsed.category || prev.category,
-          material: parsed.material || prev.material,
-          // If quantity is found, we might want to use it instead of weight
-          weight: parsed.quantity || prev.weight,
-          features: processedFeatures
-        }));
-        
-        toast.success('Product information enhanced with AI successfully!');
-      } else {
-        throw new Error('Invalid AI response format');
-      }
+      toast.success('Product information enhanced with AI successfully!');
     } catch (error: any) {
       console.error('Error enhancing product with AI:', error);
       toast.error(`Failed to enhance product with AI: ${error.message}`);
@@ -956,23 +981,32 @@ Guidelines:
     }
   };
 
-  const handleAddProduct = async () => {
+  const handleCreateProduct = async () => {
     try {
-      if (!productForm.name || !productForm.category || !productForm.brand) {
-        toast.error('Name, category, and brand are required');
-        return;
-      }
+      // Map friendly category names back to database format
+      const reverseCategoryMapping: Record<string, string> = {
+        "Wound Care & Dressings": "First Aid & Wound Care",
+        "Tapes & Wraps": "Taping & Bandaging",
+        "Instruments & Tools": "Instruments & Tools",
+        "Pain & Symptom Relief": "Over-the-Counter Medication",
+        "Trauma & Emergency": "Emergency Care",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "First Aid Information & Essentials": "Documentation & Communication",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
 
       const productData = {
         name: productForm.name,
-        category: productForm.category,
+        category: reverseCategoryMapping[productForm.category] || productForm.category,
         brand: productForm.brand,
         rating: productForm.rating ? parseFloat(productForm.rating) : null,
         price: productForm.price ? parseFloat(productForm.price) : null,
         dimensions: productForm.dimensions || null,
         weight: productForm.weight || null,
         material: productForm.material || null,
-        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()).join('\n').substring(0, 1000) : null,
+        features: productForm.features || null,
         imageUrl: productForm.image_url || null,
         asin: productForm.asin || null,
         affiliateLink: productForm.affiliate_link || null
@@ -1020,16 +1054,30 @@ Guidelines:
     if (!editingProduct) return;
 
     try {
+      // Map friendly category names back to database format
+      const reverseCategoryMapping: Record<string, string> = {
+        "Wound Care & Dressings": "First Aid & Wound Care",
+        "Tapes & Wraps": "Taping & Bandaging",
+        "Instruments & Tools": "Instruments & Tools",
+        "Pain & Symptom Relief": "Over-the-Counter Medication",
+        "Trauma & Emergency": "Emergency Care",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "First Aid Information & Essentials": "Documentation & Communication",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+
       const productData = {
         name: productForm.name,
-        category: productForm.category,
+        category: reverseCategoryMapping[productForm.category] || productForm.category,
         brand: productForm.brand,
         rating: productForm.rating ? parseFloat(productForm.rating) : null,
         price: productForm.price ? parseFloat(productForm.price) : null,
         dimensions: productForm.dimensions || null,
         weight: productForm.weight || null,
         material: productForm.material || null,
-        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : null,
+        features: productForm.features || null,
         imageUrl: productForm.image_url || null,
         asin: productForm.asin || null,
         affiliateLink: productForm.affiliate_link || null,
@@ -1084,9 +1132,23 @@ Guidelines:
         productId
       );
       
+      // Map database categories to friendly names
+      const categoryMapping: Record<string, string> = {
+        "First Aid & Wound Care": "Wound Care & Dressings",
+        "Taping & Bandaging": "Tapes & Wraps",
+        "Instruments & Tools": "Instruments & Tools",
+        "Over-the-Counter Medication": "Pain & Symptom Relief",
+        "Emergency Care": "Trauma & Emergency",
+        "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+        "Documentation & Communication": "First Aid Information & Essentials",
+        "Hot & Cold Therapy": "Hot & Cold Therapy",
+        "Hydration & Nutrition": "Hydration & Nutrition",
+        "Miscellaneous & General": "Miscellaneous & General"
+      };
+      
       const productData = {
         name: product.name,
-        category: product.category,
+        category: categoryMapping[product.category] || product.category,
         brand: product.brand
       };
       
@@ -1125,17 +1187,35 @@ Guidelines:
   };
 
   const openEditDialog = (product: ProductData) => {
+    // Map database category names to friendly names
+    const categoryMapping: Record<string, string> = {
+      "First Aid & Wound Care": "Wound Care & Dressings",
+      "Taping & Bandaging": "Tapes & Wraps",
+      "Instruments & Tools": "Instruments & Tools",
+      "Over-the-Counter Medication": "Pain & Symptom Relief",
+      "Emergency Care": "Trauma & Emergency",
+      "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+      "Documentation & Communication": "First Aid Information & Essentials",
+      "Hot & Cold Therapy": "Hot & Cold Therapy",
+      "Hydration & Nutrition": "Hydration & Nutrition",
+      "Miscellaneous & General": "Miscellaneous & General"
+    };
+
     setEditingProduct(product);
     setProductForm({
       name: product.name,
-      category: product.category,
+      category: categoryMapping[product.category] || product.category,
       brand: product.brand,
       rating: product.rating?.toString() || '',
       price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
       weight: product.weight || '',
       material: product.material || '',
-      features: product.features?.join('\n') || '',
+      features: Array.isArray(product.features) 
+        ? product.features.join(', ') 
+        : typeof product.features === 'string' 
+          ? product.features 
+          : '',
       image_url: product.imageUrl || '',
       asin: product.asin || '',
       affiliate_link: product.affiliateLink || ''
@@ -1160,6 +1240,42 @@ Guidelines:
   const handleSearch = () => {
     setCurrentPage(1);
     fetchProducts(1, searchTerm, selectedCategory);
+  };
+
+  // Add debounce to search to avoid too many API calls
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  // Create debounced search function
+  const debouncedSearch = React.useCallback(
+    debounce((searchTerm: string) => {
+      setCurrentPage(1);
+      fetchProducts(1, searchTerm, selectedCategory);
+    }, 500),
+    [selectedCategory]
+  );
+
+  // Handle search input change
+  const handleSearchInputChange = (value: string) => {
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      setCurrentPage(1);
+      fetchProducts(1, searchTerm, selectedCategory);
+    }
   };
 
   // Check if any advanced filters are active
@@ -1195,13 +1311,18 @@ Guidelines:
     fetchProducts(1, searchTerm, selectedCategory);
   };
 
+  // Handle adding a new product
+  const handleAddProduct = async () => {
+    await handleCreateProduct();
+  };
+
   return (
     <div className="space-y-4">
       <Card>
         <CardContent>
           <SearchAndActions
             searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
+            setSearchTerm={handleSearchInputChange}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             categories={categories}
@@ -1229,6 +1350,7 @@ Guidelines:
             handleEnhanceWithAI={handleEnhanceWithAI}
             isLoadingProductInfo={isLoadingProductInfo}
             handleAddProduct={handleAddProduct}
+            handleKeyPress={handleKeyPress} // Add this new prop
           />
           
           {/* Advanced Filters Panel */}
@@ -1236,7 +1358,6 @@ Guidelines:
             <Filters
               advancedFilters={advancedFilters}
               setAdvancedFilters={setAdvancedFilters}
-              brands={brands}
               resetFilters={resetFilters}
               applyFilters={applyFilters}
             />
@@ -1263,6 +1384,7 @@ Guidelines:
                 setProductForm={setProductForm}
                 handleUpdateProduct={handleUpdateProduct}
                 handleAffiliateLinkChange={handleAffiliateLinkChange}
+                handleEnhanceWithAI={handleEnhanceWithAI}
                 isLoadingProductInfo={isLoadingProductInfo}
                 categories={categories}
                 brands={brands}
@@ -1302,9 +1424,11 @@ Guidelines:
                     setProductForm={setProductForm}
                     handleUpdateProduct={handleUpdateProduct}
                     handleAffiliateLinkChange={handleAffiliateLinkChange}
+                    handleEnhanceWithAI={handleEnhanceWithAI}
                     isLoadingProductInfo={isLoadingProductInfo}
                   />
                 ))}
+
               </div>
 
               {/* Pagination */}

@@ -45,6 +45,25 @@ const getCategoryIdByName = (name: string): string => {
   return category ? category.id : name;
 };
 
+// Map database category names to friendly category names
+const mapDatabaseCategoryToFriendlyName = (databaseCategory: string): string => {
+  const categoryMapping: Record<string, string> = {
+    "First Aid & Wound Care": "Wound Care & Dressings",
+    "Antiseptics & Ointments": "Antiseptics & Ointments",
+    "Taping & Bandaging": "Tapes & Wraps",
+    "Instruments & Tools": "Instruments & Tools",
+    "Over-the-Counter Medication": "Pain & Symptom Relief",
+    "Emergency Care": "Trauma & Emergency",
+    "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+    "Documentation & Communication": "First Aid Information & Essentials",
+    "Hot & Cold Therapy": "Hot & Cold Therapy",
+    "Hydration & Nutrition": "Hydration & Nutrition",
+    "Miscellaneous & General": "Miscellaneous & General"
+  };
+  
+  return categoryMapping[databaseCategory] || databaseCategory;
+};
+
 export const ProductForm: React.FC<ProductFormProps> = ({
   productForm,
   setProductForm,
@@ -128,9 +147,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 {productForm.category && (
                   <div className="flex items-center">
                     <span className="mr-2">
-                      {FIRST_AID_CATEGORIES.find(cat => cat.name === productForm.category)?.icon}
+                      {FIRST_AID_CATEGORIES.find(cat => cat.name === mapDatabaseCategoryToFriendlyName(productForm.category))?.icon}
                     </span>
-                    <span>{productForm.category}</span>
+                    <span>{mapDatabaseCategoryToFriendlyName(productForm.category)}</span>
                   </div>
                 )}
               </SelectValue>
