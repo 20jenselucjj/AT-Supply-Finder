@@ -42,9 +42,27 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the React app build directory
-// This should be the path to your built React app
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the React app build directory with proper cache headers
+const buildPath = path.join(__dirname, 'dist');
+app.use(express.static(buildPath, {
+  setHeaders: (res, path) => {
+    // Ensure JavaScript and CSS files are served with the correct MIME types
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+    
+    // Add cache control headers for static assets
+    if (path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.svg')) {
+      // Assets with hashes can be cached for a long time
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      // HTML and other files should not be cached
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 // Import and use the Amazon API functions
 import amazonAuth from './functions/amazon-auth.js';
@@ -265,13 +283,14 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Catch-all handler for SPA routing
-// This should come AFTER all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+// API routes should be defined before the catch-all handler
+// Catch-all handler for SPA routing - serve index.html for any non-API routes
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Serving static files from: ${buildPath}`);
 });
