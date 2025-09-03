@@ -35,6 +35,13 @@ import { OpenRouterService, type GeneratedKit } from '@/lib/openrouter-service';
 import { databases } from '@/lib/appwrite';
 import type { Product } from '@/lib/types';
 import { useTheme } from '@/context/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Message {
   id: string;
@@ -73,6 +80,10 @@ interface ChatBotProps {
 }
 
 const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
+  const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const isMobile = useIsMobile();
+  
   // Initialize chat state from storage
   const [chatState, setChatState] = useState<ChatState>(() => {
     const defaultState = {
@@ -127,8 +138,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const { isDark } = useTheme();
 
   const openRouterService = new OpenRouterService({ 
     apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
@@ -399,7 +408,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
     handleSendMessage(query);
   };
 
+  // State for showing the feature tooltip
+  const [showFeatureTooltip, setShowFeatureTooltip] = useState(true);
+
   const toggleChat = () => {
+    // Hide the tooltip when the chat is opened
+    setShowFeatureTooltip(false);
     updateChatState({ 
       isOpen: !chatState.isOpen, 
       hasNotification: false, 
@@ -450,111 +464,144 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
 
   return (
     <>
-      {/* Enhanced Floating Chat Button */}
+      {/* Modern Floating Chat Button inspired by ChatBot.com */}
       <AnimatePresence>
         {!chatState.isOpen && (
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0, opacity: 0, y: 20 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className={`fixed ${isMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'} z-50`}
           >
-            <div className="relative">
-              <Button
-                onClick={toggleChat}
-                size="lg"
-                className={`
-                  h-16 w-16 rounded-full shadow-lg hover:shadow-xl 
-                  chat-button transition-all duration-300 
-                  ${chatState.hasNotification ? 'chat-button-pulse' : ''}
-                `}
-                aria-label="Open chat assistant"
-              >
-                <motion.div
-                  animate={chatState.hasNotification ? {
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0]
-                  } : {}}
-                  transition={{
-                    duration: 0.6,
-                    repeat: chatState.hasNotification ? Infinity : 0,
-                    repeatDelay: 2
-                  }}
+            <TooltipProvider>
+              <Tooltip open={showFeatureTooltip} onOpenChange={setShowFeatureTooltip}>
+                <TooltipTrigger asChild>
+                  <div className="relative group">
+
+                    
+                    <Button
+                      onClick={toggleChat}
+                      className="
+                        relative h-16 w-16 rounded-full shadow-xl 
+                        bg-gradient-to-br from-primary via-primary to-primary/90
+                        hover:from-primary/90 hover:via-primary hover:to-primary
+                        border-0 transition-all duration-300 ease-out
+                        hover:scale-105 active:scale-95
+                        group overflow-hidden
+                        before:absolute before:inset-0 before:rounded-full
+                        before:bg-gradient-to-br before:from-white/30 before:to-transparent
+                        before:opacity-0 hover:before:opacity-100 before:transition-opacity
+                      "
+                      size="lg"
+                      aria-label="Open Medical Assistant"
+                    >
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 rounded-full" />
+                      
+                      {/* Icon with subtle animation */}
+                      <MessageCircle className="h-7 w-7 text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 relative z-10" />
+                      
+                      {/* Modern glow effect */}
+                      <div className="absolute inset-0 rounded-full bg-primary/50 blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
+                    </Button>
+                    
+
+                    
+                    {/* Enhanced Notification Badge */}
+                    {chatState.unreadCount > 0 && (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: 180 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                        className="absolute -top-2 -left-2 h-6 w-6 bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-background z-20"
+                      >
+                        {chatState.unreadCount > 9 ? '9+' : chatState.unreadCount}
+                      </motion.div>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  align="end" 
+                  className="
+                    rounded-xl bg-background/95 backdrop-blur-md border border-border/50 
+                    shadow-2xl px-4 py-3 text-sm max-w-[200px] leading-relaxed
+                    animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2
+                  "
+                  sideOffset={8}
+                  onPointerDownOutside={(e) => e.preventDefault()}
                 >
-                  <MessageCircle className="h-7 w-7" />
-                </motion.div>
-              </Button>
-              
-              {/* Notification Badge - Keeping this as it's part of the design */}
-              {chatState.unreadCount > 0 && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg"
-                >
-                  {chatState.unreadCount > 9 ? '9+' : chatState.unreadCount}
-                </motion.div>
-              )}
-              
-              {/* Removing the connection status indicator that was showing the green circle/WiFi symbol */}
-            </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Bot className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">Medical Assistant</span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    Get personalized first aid kit recommendations
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Enhanced Chat Dialog */}
+      {/* Modern Chat Dialog inspired by ChatBot.com */}
       <Dialog open={chatState.isOpen} onOpenChange={toggleChat}>
         <DialogContent 
-          className="
-            fixed bottom-6 right-6 top-auto left-auto 
-            w-96 max-w-[calc(100vw-3rem)] 
-            h-[600px] max-h-[calc(100vh-3rem)] 
+          className={`
+            fixed ${isMobile ? 'inset-4 top-auto' : 'bottom-6 right-6 top-auto left-auto'} 
+            ${isMobile ? 'w-auto' : 'w-[400px]'} max-w-[calc(100vw-3rem)] 
+            ${isMobile ? 'h-[calc(100vh-8rem)]' : 'h-[650px]'} max-h-[calc(100vh-3rem)] 
             p-0 gap-0 translate-x-0 translate-y-0 
             overflow-hidden [&>button]:hidden
-            border-2 border-border/50 shadow-2xl
-            bg-background/80 backdrop-blur-md
-          "
+            border border-border/30 shadow-2xl
+            bg-background/98 backdrop-blur-xl
+            ${isMobile ? 'rounded-2xl' : 'rounded-3xl'}
+            animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4
+            duration-300
+          `}
         >
-          {/* Enhanced Chat Header */}
-          <DialogHeader className="p-4 pb-3 border-b bg-muted/50 flex-shrink-0">
+          {/* Modern Chat Header inspired by ChatBot.com */}
+          <DialogHeader className={`${isMobile ? 'p-3 pb-2' : 'p-4 pb-3'} border-b border-border/20 bg-gradient-to-r from-background/80 to-muted/30 flex-shrink-0 ${isMobile ? 'rounded-t-2xl' : 'rounded-t-3xl'} backdrop-blur-sm`}>
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-3 text-base font-semibold truncate">
+              <DialogTitle className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'} text-base font-semibold truncate`}>
                 <div className="relative">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <Bot className="h-4 w-4" />
+                  <Avatar className={`${isMobile ? 'h-8 w-8' : 'h-10 w-10'} rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-background`}>
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full">
+                      <Bot className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="truncate text-sm font-semibold">Medical Assistant</span>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {chatState.connectionStatus === 'online' && 'Online'}
-                    {chatState.connectionStatus === 'offline' && 'Offline'}
-                    {chatState.connectionStatus === 'connecting' && 'Connecting...'}
-                    {chatState.isTyping && 'Typing...'}
-                  </span>
+                  <span className={`truncate ${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-900 dark:text-white`}>Medical Assistant</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-300`}>
+                      {chatState.isTyping ? 'Typing...' : 'Ready to help'}
+                    </span>
+                  </div>
                 </div>
               </DialogTitle>
               
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearChatHistory}
-                  className="h-8 w-8 p-0 hover:bg-muted"
+                  className={`${isMobile ? 'h-8 w-8' : 'h-9 w-9'} p-0 hover:bg-muted/60 rounded-full transition-all duration-200 hover:scale-105`}
                   title="Clear chat history"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-muted-foreground hover:text-foreground`} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={toggleChat}
-                  className="h-8 w-8 p-0 hover:bg-muted"
-                  title="Close"
+                  className={`${isMobile ? 'h-8 w-8' : 'h-9 w-9'} p-0 hover:bg-muted/60 rounded-full transition-all duration-200 hover:scale-105`}
+                  aria-label="Close chat"
                 >
-                  <X className="h-4 w-4" />
+                  <X className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} text-muted-foreground hover:text-foreground`} />
                 </Button>
               </div>
             </div>
@@ -573,15 +620,20 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => handleQuickAction(action.query)}
                       className="
-                        p-2 text-xs bg-background hover:bg-muted/80 
-                        rounded-lg transition-colors text-left
-                        border border-border hover:border-border/80
+                        p-2 text-xs bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700
+                        rounded-xl transition-all duration-200 text-left
+                        border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600
+                        shadow-sm hover:shadow-md
+                        group relative overflow-hidden
                       "
                       disabled={isLoading}
                     >
-                      <div className="font-medium text-foreground">{action.label}</div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      <div className="font-medium text-gray-900 dark:text-gray-100 relative z-10">{action.label}</div>
                     </motion.button>
                   ))}
                 </div>
@@ -591,7 +643,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
 
             {/* Enhanced Messages Area */}
             <ScrollArea className="flex-1 min-h-0">
-              <div className="p-4 space-y-4 pb-4">
+              <div className={`${isMobile ? 'p-3 space-y-3 pb-3' : 'p-4 space-y-4 pb-4'}`}>
                 <AnimatePresence mode="popLayout">
                   {messages.map((message) => (
                     <motion.div
@@ -599,29 +651,30 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                       initial={{ opacity: 0, y: 20, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
                     >
-                      <div className="flex items-start gap-2 max-w-[85%] min-w-0">
+                      <div className={`flex items-start ${isMobile ? 'gap-2' : 'gap-3'} ${isMobile ? 'max-w-[95%]' : 'max-w-[85%]'} min-w-0`}>
                         {message.type === 'bot' && (
-                          <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                            <AvatarFallback className="bg-muted text-muted-foreground">
-                              <Bot className="h-3 w-3" />
+                          <Avatar className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mt-1 flex-shrink-0 ring-1 ring-border/20`}>
+                            <AvatarFallback className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                              <Bot className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                             </AvatarFallback>
                           </Avatar>
                         )}
                           
                         <div
                           className={`
-                              p-3 text-sm leading-relaxed
+                              ${isMobile ? 'px-3 py-2' : 'px-4 py-3'} ${isMobile ? 'text-sm' : 'text-sm'} leading-relaxed ${isMobile ? 'rounded-xl' : 'rounded-2xl'} shadow-sm
                               ${message.type === 'user' 
-                                ? 'chat-message-user text-primary-foreground' 
-                                : 'chat-message-bot'
+                                ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-tr-md border border-primary/20' 
+                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-md border border-gray-200 dark:border-gray-700'
                               }
-                              ${message.status === 'error' ? 'border-l-4 border-red-500' : ''}
+                              ${message.status === 'error' ? 'border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20' : ''}
+                              backdrop-blur-sm
                             `}
                         >
-                          <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                          <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere font-medium">
                             {message.content}
                           </div>
                             
@@ -633,13 +686,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                               animate={{ opacity: 1, height: 'auto' }}
                               transition={{ delay: 0.2 }}
                             >
-                              <div className="bg-muted/50 rounded-lg p-3 border border-border/80">
+                              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 shadow-sm">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Package2 className="h-4 w-4 text-primary" />
-                                  <span className="font-medium text-sm">Medical Kit: {message.kit.name}</span>
+                                  <span className="font-medium text-sm text-gray-900 dark:text-gray-100">Medical Kit: {message.kit.name}</span>
                                 </div>
                                   
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                                <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mb-3">
                                   <div className="flex items-center gap-1">
                                     <Package className="h-3 w-3" />
                                     <span>{message.kit.items.length} items</span>
@@ -655,52 +708,75 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                                     <Badge 
                                       key={index} 
                                       variant="secondary" 
-                                      className="text-xs truncate max-w-[100px]" 
+                                      className="text-xs truncate max-w-[100px] rounded-full" 
                                       title={item.product_name}
                                     >
                                       {item.product_name}
                                     </Badge>
                                   ))}
                                   {message.kit.items.length > 3 && (
-                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    <Badge variant="outline" className="text-xs flex-shrink-0 rounded-full">
                                       +{message.kit.items.length - 3} more
                                     </Badge>
                                   )}
                                 </div>
                                   
                                 <div className="flex gap-2 mb-3">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleBuildKit(message.kit!)}
-                                    className="flex-1 text-xs h-8 bg-primary hover:bg-primary/90"
+                                  <motion.div
+                                    className="flex-1"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                   >
-                                    <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0" />
-                                    <span className="truncate">Build This Kit</span>
-                                  </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleBuildKit(message.kit!)}
+                                      className="
+                                        w-full text-xs h-8 bg-primary hover:bg-primary/90 rounded-lg
+                                        transition-all duration-200 hover:shadow-md
+                                        relative overflow-hidden group
+                                      "
+                                    >
+                                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                      <ExternalLink className="h-3 w-3 mr-2 flex-shrink-0 relative z-10" />
+                                      <span className="truncate relative z-10">Build This Kit</span>
+                                    </Button>
+                                  </motion.div>
                                 </div>
                                 
                                 {/* Feedback Collection */}
-                                <div className="pt-2 border-t border-border/50">
-                                  <div className="text-xs text-muted-foreground mb-1">How was this recommendation?</div>
+                                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">How was this recommendation?</div>
                                   <div className="flex gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="flex-1 h-7 text-xs"
-                                      onClick={() => handleFeedback(message.id, 'helpful')}
+                                    <motion.div
+                                      className="flex-1"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
                                     >
-                                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                                      Helpful
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="flex-1 h-7 text-xs"
-                                      onClick={() => handleFeedback(message.id, 'not-helpful')}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-full h-7 text-xs hover:bg-green-50 hover:border-green-200 hover:text-green-700 dark:hover:bg-green-950/20 transition-all duration-200"
+                                        onClick={() => handleFeedback(message.id, 'helpful')}
+                                      >
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                        Helpful
+                                      </Button>
+                                    </motion.div>
+                                    <motion.div
+                                      className="flex-1"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
                                     >
-                                      <X className="h-3 w-3 mr-1" />
-                                      Not Helpful
-                                    </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-full h-7 text-xs hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/20 transition-all duration-200"
+                                        onClick={() => handleFeedback(message.id, 'not-helpful')}
+                                      >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Not Helpful
+                                      </Button>
+                                    </motion.div>
                                   </div>
                                 </div>
                               </div>
@@ -749,7 +825,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                   >
                     <div className="flex items-start gap-2">
                       <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                        <AvatarFallback className="bg-muted text-muted-foreground">
+                        <AvatarFallback className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                           <Bot className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
@@ -760,7 +836,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                             <div className="chat-typing-dot"></div>
                             <div className="chat-typing-dot"></div>
                           </div>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
                             {isLoading ? 'Creating your first aid kit...' : 'Typing...'}
                           </span>
                         </div>
@@ -773,62 +849,92 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
               </div>
             </ScrollArea>
 
-            {/* Enhanced Input Area */}
-            <div className="p-4 border-t bg-muted/30 flex-shrink-0">
-              <div className="flex gap-3 items-end">
-                <div className="flex-1 min-w-0">
+            {/* Modern Input Area inspired by ChatBot.com */}
+            <div className={`${isMobile ? 'p-4' : 'p-6'} border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0`}>
+              <div className={`flex ${isMobile ? 'gap-2' : 'gap-3'} items-end`}>
+                <div className="flex-1 min-w-0 relative">
                   <Input
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Describe your first aid needs..."
+                    placeholder="Ask about first aid kits, medical supplies..."
                     disabled={isLoading}
-                    className="
-                      text-sm resize-none border-border/50 
-                      focus:border-primary transition-colors
-                      bg-background/50
-                    "
+                    className={`
+                      ${isMobile ? 'text-sm' : 'text-sm'} resize-none border-border/30 
+                      focus:border-primary/50 transition-all duration-200
+                      bg-white dark:bg-gray-800
+                      ${isMobile ? 'rounded-lg' : 'rounded-xl'} ${isMobile ? 'px-3 py-2' : 'px-4 py-3'} pr-12
+                      shadow-sm hover:shadow-md
+                      focus:ring-2 focus:ring-primary/20
+                      placeholder:text-gray-500 dark:placeholder:text-gray-400
+                      ${isMobile ? 'min-h-[40px]' : 'min-h-[44px]'}
+                    `}
                     maxLength={500}
                     aria-label="Chat input"
                   />
-
-                </div>
-                  
-                <Button
-                  onClick={() => handleSendMessage()}
-                  disabled={!inputValue.trim() || isLoading}
-                  size="sm"
-                  className="h-10 w-10 p-0 flex-shrink-0 rounded-full"
-                  aria-label="Send message"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-                
-              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span>Powered by AI</span>
-                  <div className="flex items-center gap-1">
-                    {chatState.connectionStatus === 'online' && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    )}
-                    {chatState.connectionStatus === 'offline' && (
-                      <div className="w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                    {chatState.connectionStatus === 'connecting' && (
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-                    )}
+                  {/* Character count indicator */}
+                  <div className={`absolute ${isMobile ? 'right-2 top-1/2' : 'right-3 top-1/2'} -translate-y-1/2`}>
+                    <span className={`text-xs transition-colors ${
+                      inputValue.length > 450 
+                        ? 'text-amber-500' 
+                        : inputValue.length > 400 
+                        ? 'text-muted-foreground' 
+                        : 'text-muted-foreground/50'
+                    }`}>
+                      {inputValue.length > 400 && `${inputValue.length}/500`}
+                    </span>
                   </div>
                 </div>
-                <span className={inputValue.length > 450 ? 'text-yellow-500' : ''}>
-                  {inputValue.length}/500
-                </span>
+                  
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <Button
+                    onClick={() => handleSendMessage()}
+                    disabled={!inputValue.trim() || isLoading}
+                    size="sm"
+                    className={`
+                      ${isMobile ? 'h-10 w-10' : 'h-11 w-11'} p-0 flex-shrink-0 ${isMobile ? 'rounded-lg' : 'rounded-xl'}
+                      bg-gradient-to-br from-primary to-primary/90
+                      hover:from-primary/90 hover:to-primary
+                      shadow-md hover:shadow-lg
+                      transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      disabled:hover:scale-100
+                      relative overflow-hidden
+                      before:absolute before:inset-0 before:bg-white/20
+                      before:opacity-0 hover:before:opacity-100
+                      before:transition-opacity before:duration-200
+                    `}
+                    aria-label="Send message"
+                  >
+                    <motion.div
+                      animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
+                      transition={isLoading ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+                    >
+                      {isLoading ? (
+                        <Loader2 className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                      ) : (
+                        <Send className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                      )}
+                    </motion.div>
+                  </Button>
+                </motion.div>
               </div>
-
+                
+              <div className={`flex items-center justify-between ${isMobile ? 'mt-2' : 'mt-3'} ${isMobile ? 'text-xs' : 'text-xs'}`}>
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Bot className={`${isMobile ? 'h-3 w-3' : 'h-3 w-3'}`} />
+                  <span>Powered by AI</span>
+                </div>
+                {!isMobile && (
+                  <div className="text-gray-500 dark:text-gray-500">
+                    Press Enter to send
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </DialogContent>
