@@ -42,6 +42,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from the React app build directory
+// This should be the path to your built React app
+app.use(express.static(path.join(__dirname, 'dist')));
+
 // Import and use the Amazon API functions
 import amazonAuth from './functions/amazon-auth.js';
 import amazonCatalogSearch from './functions/amazon-catalog-search.js';
@@ -259,6 +263,12 @@ app.post('/api/users', async (req, res) => {
       message: error.message 
     });
   }
+});
+
+// Catch-all handler for SPA routing
+// This should come AFTER all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Start the server
