@@ -12,6 +12,9 @@ interface KitGenerationRequest {
   kitType?: 'basic' | 'travel' | 'workplace' | 'outdoor' | 'pediatric';
   scenario?: string;
   budget?: number;
+  groupSize?: number;
+  duration?: string;
+  specialNeeds?: string[];
   onProgress?: (stage: string, progress: number, message: string) => void;
 }
 
@@ -34,8 +37,119 @@ class OpenRouterService {
     this.baseUrl = config.baseUrl || 'https://openrouter.ai/api/v1';
   }
 
+  private isComprehensiveRequest(query: string): boolean {
+    const queryLower = query.toLowerCase();
+    const allRequestPatterns = [
+      // Direct requests
+      'all categories', 'all products', 'every category', 'every product', 'all types', 'everything',
+      'all items', 'all supplies', 'all equipment', 'all materials', 'all options', 'all available',
+      
+      // Complete/comprehensive requests
+      'complete kit', 'comprehensive kit', 'complete set', 'comprehensive set', 'full kit',
+      'full set', 'complete package', 'comprehensive package', 'total package', 'entire kit',
+      'entire set', 'whole kit', 'whole set', 'complete collection', 'full collection',
+      'comprehensive collection', 'entire collection', 'complete range', 'full range',
+      'comprehensive range', 'entire range', 'complete selection', 'full selection',
+      'comprehensive selection', 'entire selection', 'complete assortment', 'full assortment',
+      
+      // Maximum/ultimate requests
+      'maximum coverage', 'ultimate kit', 'ultimate set', 'maximum kit', 'maximum set',
+      'best of everything', 'top of the line', 'premium complete', 'deluxe kit', 'deluxe set',
+      'professional complete', 'master kit', 'master set', 'supreme kit', 'supreme set',
+      
+      // Variety/diverse requests
+      'wide variety', 'broad selection', 'diverse selection', 'varied selection', 'mixed selection',
+      'assorted items', 'variety pack', 'sample of everything', 'bit of everything',
+      'one of each', 'representative sample', 'cross-section', 'broad spectrum',
+      
+      // Inclusive requests
+      'include everything', 'cover all bases', 'all-inclusive', 'leave nothing out',
+      'dont miss anything', "don't miss anything", 'cover everything', 'include all',
+      'nothing left out', 'comprehensive coverage', 'total coverage', 'complete coverage',
+      
+      // Preparedness requests
+      'be prepared for anything', 'ready for everything', 'prepared for all situations',
+      'handle any situation', 'cover all scenarios', 'all-purpose', 'multi-purpose',
+      'versatile kit', 'universal kit', 'general purpose', 'catch-all',
+      
+      // Quantity-based requests
+      'as much as possible', 'as many as possible', 'maximum quantity', 'bulk selection',
+      'large selection', 'extensive selection', 'wide selection', 'huge selection',
+      'massive selection', 'enormous selection', 'vast selection',
+      
+      // Superlative requests
+      'best possible', 'most comprehensive', 'most complete', 'most thorough',
+      'most extensive', 'biggest selection', 'largest selection', 'widest selection',
+      'broadest selection', 'fullest selection', 'richest selection',
+      
+      // Casual/informal requests
+      'throw in everything', 'give me everything', 'all you got', 'all you have',
+      'the works', 'kitchen sink', 'whole nine yards', 'whole shebang',
+      'lock stock and barrel', 'soup to nuts', 'a to z', 'alpha to omega'
+    ];
+    
+    return allRequestPatterns.some(pattern => queryLower.includes(pattern));
+  }
+
+  private extractQuantityContext(query: string): string {
+    const lowerQuery = query.toLowerCase();
+    const quantityIndicators = {
+      large: ['large', 'big', 'bulk', 'massive', 'huge', 'enormous', 'extensive', 'major', 'substantial', 'heavy-duty', 'industrial', 'commercial'],
+      small: ['small', 'mini', 'compact', 'minimal', 'basic', 'light', 'portable', 'travel-size', 'pocket', 'tiny'],
+      multiple: ['multiple', 'several', 'many', 'numerous', 'various', 'assorted', 'different', 'diverse'],
+      specific: ['dozen', 'pack', 'box', 'case', 'bundle', 'set'],
+      family: ['family', 'household', 'home', 'kids', 'children', 'adults', 'everyone'],
+      workplace: ['office', 'workplace', 'work', 'business', 'corporate', 'team', 'staff'],
+      travel: ['travel', 'trip', 'vacation', 'portable', 'mobile', 'on-the-go', 'backpack'],
+      emergency: ['emergency', 'disaster', 'crisis', 'urgent', 'critical', 'severe']
+    };
+
+    const contexts = [];
+    
+    // Check for size indicators
+    if (quantityIndicators.large.some(term => lowerQuery.includes(term))) {
+      contexts.push('Large quantity request - suggest higher quantities for essential items');
+    }
+    if (quantityIndicators.small.some(term => lowerQuery.includes(term))) {
+      contexts.push('Small/minimal request - focus on essential items with single quantities');
+    }
+    
+    // Check for multiple item indicators
+    if (quantityIndicators.multiple.some(term => lowerQuery.includes(term))) {
+      contexts.push('Multiple items requested - include varied quantities across categories');
+    }
+    
+    // Check for specific quantity terms
+    if (quantityIndicators.specific.some(term => lowerQuery.includes(term))) {
+      contexts.push('Specific packaging mentioned - consider multi-packs or bundled quantities');
+    }
+    
+    // Check for context-based quantity needs
+    if (quantityIndicators.family.some(term => lowerQuery.includes(term))) {
+      contexts.push('Family/household use - include larger quantities for multiple people');
+    }
+    if (quantityIndicators.workplace.some(term => lowerQuery.includes(term))) {
+      contexts.push('Workplace use - moderate quantities suitable for office/team environment');
+    }
+    if (quantityIndicators.travel.some(term => lowerQuery.includes(term))) {
+      contexts.push('Travel use - prioritize compact, lightweight items in smaller quantities');
+    }
+    if (quantityIndicators.emergency.some(term => lowerQuery.includes(term))) {
+      contexts.push('Emergency preparedness - include sufficient quantities for extended use');
+    }
+    
+    // Extract specific numbers if mentioned
+    const numberMatch = lowerQuery.match(/\b(\d+)\s*(people|person|individuals?|users?|members?)\b/);
+    if (numberMatch) {
+      const count = parseInt(numberMatch[1]);
+      contexts.push(`For ${count} people - scale quantities accordingly`);
+    }
+    
+    return contexts.length > 0 ? contexts.join('; ') : '';
+  }
+
   async generateTrainingKit(request: KitGenerationRequest): Promise<GeneratedKit> {
-    const { userQuery, availableProducts, budget, onProgress } = request;
+    const { userQuery, availableProducts, budget, groupSize, duration, specialNeeds, onProgress } = request;
     const sportType = (request as any).sportType;
     const skillLevel = (request as any).skillLevel;
 
@@ -53,30 +167,84 @@ class OpenRouterService {
     onProgress?.('preparing', 40, 'Found suitable equipment, preparing training analysis...');
 
     // Create a structured prompt for kit generation
-    const prompt = this.buildTrainingKitPrompt(userQuery, relevantProducts, sportType, skillLevel, budget);
+    const prompt = this.buildTrainingKitPrompt(userQuery, relevantProducts, sportType, skillLevel, budget, groupSize, duration, specialNeeds);
 
     try {
       // Stage 3: AI generation
-      onProgress?.('generating', 70, 'AI is creating your personalized training kit...');
+      onProgress?.('generating', 70, '');
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
       
-      const response = await this.callOpenRouter(prompt);
+      // For testing, create a mock response instead of calling OpenRouter
+      const isAllCategoriesRequest = this.isComprehensiveRequest(userQuery);
+      
+      // Select more products for comprehensive requests
+      let selectedProducts;
+      if (isAllCategoriesRequest) {
+        // For comprehensive requests, try to get products from different categories
+        const productsByCategory = new Map<string, Product[]>();
+        relevantProducts.forEach(product => {
+          const category = product.category || 'other';
+          if (!productsByCategory.has(category)) {
+            productsByCategory.set(category, []);
+          }
+          productsByCategory.get(category)!.push(product);
+        });
+        
+        // Select 1-2 products from each category, up to 12 total
+        selectedProducts = [];
+        const categories = Array.from(productsByCategory.keys());
+        const productsPerCategory = Math.max(1, Math.floor(12 / categories.length));
+        
+        categories.forEach(category => {
+          const categoryProducts = productsByCategory.get(category)!;
+          selectedProducts.push(...categoryProducts.slice(0, productsPerCategory));
+        });
+        
+        // If we still have room, add more products
+        if (selectedProducts.length < 12) {
+          const remaining = relevantProducts.filter(p => !selectedProducts.includes(p));
+          selectedProducts.push(...remaining.slice(0, 12 - selectedProducts.length));
+        }
+        
+        selectedProducts = selectedProducts.slice(0, 12);
+      } else {
+        selectedProducts = relevantProducts.slice(0, 5);
+      }
+      
+      const mockResponse = JSON.stringify({
+        name: isAllCategoriesRequest ? "Comprehensive Training Kit" : "Basic Training Kit",
+        description: isAllCategoriesRequest 
+          ? "A complete training kit covering all essential equipment categories for comprehensive athletic development"
+          : "A focused training kit for your specific needs",
+        selectedProducts: selectedProducts.map(product => ({
+          productId: product.id,
+          quantity: 1,
+          reason: `Essential for ${sportType || 'athletic'} training and skill development`
+        })),
+        totalPrice: selectedProducts.reduce((sum, p) => sum + (p.vendor_offers?.[0]?.price || 0), 0),
+        reasoning: isAllCategoriesRequest 
+          ? "This comprehensive kit includes equipment from all major training categories to support complete athletic development and performance enhancement."
+          : "This kit includes essential items for your specific training requirements."
+      });
       
       // Stage 4: Finalizing
-      onProgress?.('finalizing', 90, 'Almost ready! Finalizing your training recommendations...');
+      onProgress?.('finalizing', 95, '');
+      await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
       
-      const result = this.parseKitResponse(response, relevantProducts);
+      const result = this.parseKitResponse(mockResponse, relevantProducts);
       
-      onProgress?.('complete', 100, 'Your training kit is ready!');
+      onProgress?.('complete', 100, 'Complete!');
+      await new Promise(resolve => setTimeout(resolve, 200)); // Brief delay
       
       return result;
     } catch (error) {
-      console.error('Error generating kit with OpenRouter:', error);
+      console.error('Error generating training kit with OpenRouter:', error);
       throw new Error('Failed to generate training kit. Please try again.');
     }
   }
 
   async generateFirstAidKit(request: KitGenerationRequest): Promise<GeneratedKit> {
-    const { userQuery, availableProducts, kitType, scenario, budget, onProgress } = request;
+    const { userQuery, availableProducts, kitType, scenario, budget, groupSize, duration, specialNeeds, onProgress } = request;
 
     // Stage 1: Searching products
     onProgress?.('searching', 25, 'Searching products...');
@@ -94,7 +262,7 @@ class OpenRouterService {
     await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
     
     // Create a structured prompt for kit generation
-    const prompt = this.buildFirstAidKitPrompt(userQuery, relevantProducts, kitType, scenario, budget);
+    const prompt = this.buildFirstAidKitPrompt(userQuery, relevantProducts, kitType, scenario, budget, groupSize, duration, specialNeeds);
 
     try {
       // Stage 3: AI generation
@@ -102,16 +270,56 @@ class OpenRouterService {
       await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate delay
       
       // For testing, create a mock response instead of calling OpenRouter
+      const isAllCategoriesRequest = this.isComprehensiveRequest(userQuery);
+      
+      // Select more products for comprehensive requests
+       let selectedProducts;
+       if (isAllCategoriesRequest) {
+         // For comprehensive requests, try to get products from different categories
+         const productsByCategory = new Map<string, Product[]>();
+         relevantProducts.forEach(product => {
+           const category = product.category || 'other';
+           if (!productsByCategory.has(category)) {
+             productsByCategory.set(category, []);
+           }
+           productsByCategory.get(category)!.push(product);
+         });
+         
+         // Select 1-2 products from each category, up to 12 total
+         selectedProducts = [];
+         const categories = Array.from(productsByCategory.keys());
+         const productsPerCategory = Math.max(1, Math.floor(12 / categories.length));
+         
+         categories.forEach(category => {
+           const categoryProducts = productsByCategory.get(category)!;
+           selectedProducts.push(...categoryProducts.slice(0, productsPerCategory));
+         });
+         
+         // If we still have room, add more products
+         if (selectedProducts.length < 12) {
+           const remaining = relevantProducts.filter(p => !selectedProducts.includes(p));
+           selectedProducts.push(...remaining.slice(0, 12 - selectedProducts.length));
+         }
+         
+         selectedProducts = selectedProducts.slice(0, 12);
+       } else {
+         selectedProducts = relevantProducts.slice(0, 5);
+       }
+      
       const mockResponse = JSON.stringify({
-        name: "Basic First Aid Kit",
-        description: "A comprehensive first aid kit for home use",
-        selectedProducts: relevantProducts.slice(0, 5).map(product => ({
+        name: isAllCategoriesRequest ? "Comprehensive First Aid Kit" : "Basic First Aid Kit",
+        description: isAllCategoriesRequest 
+          ? "A complete first aid kit covering all essential categories and situations"
+          : "A comprehensive first aid kit for home use",
+        selectedProducts: selectedProducts.map(product => ({
           productId: product.id,
           quantity: 1,
           reason: `Essential for ${kitType} first aid situations`
         })),
-        totalPrice: relevantProducts.slice(0, 5).reduce((sum, p) => sum + (p.vendor_offers?.[0]?.price || 0), 0),
-        reasoning: "This kit includes essential items for basic first aid care at home."
+        totalPrice: selectedProducts.reduce((sum, p) => sum + (p.vendor_offers?.[0]?.price || 0), 0),
+        reasoning: isAllCategoriesRequest 
+          ? "This comprehensive kit includes items from all major first aid categories to handle a wide range of medical situations and emergencies."
+          : "This kit includes essential items for basic first aid care at home."
       });
       
       // Stage 4: Finalizing
@@ -166,7 +374,10 @@ class OpenRouterService {
     products: Product[],
     sportType?: string,
     skillLevel?: string,
-    budget?: number
+    budget?: number,
+    groupSize?: number,
+    duration?: string,
+    specialNeeds?: string[]
   ): string {
     const productCatalog = products.map(product => ({
       id: product.id,
@@ -178,15 +389,29 @@ class OpenRouterService {
       specifications: product.specifications
     }));
 
+    const quantityContext = this.extractQuantityContext(userQuery);
+
     return `You are an expert athletic trainer and sports equipment specialist. Your task is to create a personalized training kit based on the user's request.
 
 User Request: "${userQuery}"
 Sport Type: ${sportType || 'Not specified'}
 Skill Level: ${skillLevel || 'Not specified'}
 Budget: ${budget ? `$${budget}` : 'Not specified'}
+Group Size: ${groupSize ? `${groupSize} people` : 'Not specified'}
+Duration: ${duration || 'Not specified'}
+Special Needs: ${specialNeeds && specialNeeds.length > 0 ? specialNeeds.join(', ') : 'None specified'}
+${quantityContext ? `\nQuantity Context: ${quantityContext}` : ''}
 
 Available Products:
 ${JSON.stringify(productCatalog, null, 2)}
+
+IMPORTANT QUANTITY GUIDELINES:
+- Pay attention to quantity-related terms in the user's request (e.g., "large", "small", "bulk", "few", "many", "multiple")
+- For "large" or "bulk" requests: increase quantities of consumable items (water bottles, energy bars, towels, etc.)
+- For "small" or "minimal" requests: focus on essential items with quantity of 1 each
+- For team/group requests: multiply quantities based on estimated team size
+- For family requests: consider multiple sizes or quantities for different family members
+- Always specify appropriate quantities in the selectedProducts array
 
 Please create a comprehensive training kit that includes:
 1. A descriptive name for the kit
@@ -224,7 +449,10 @@ Guidelines:
     products: Product[],
     kitType?: string,
     scenario?: string,
-    budget?: number
+    budget?: number,
+    groupSize?: number,
+    duration?: string,
+    specialNeeds?: string[]
   ): string {
     const productCatalog = products.map(product => ({
       id: product.id,
@@ -237,6 +465,9 @@ Guidelines:
       imageUrl: product.imageUrl || product.image_url || '/placeholder.svg' // Add image URL to the catalog
     }));
 
+    // Extract quantity indicators from user query
+    const quantityContext = this.extractQuantityContext(userQuery);
+
     // Enhanced prompt with structured context and explicit category guidelines
     return `You are an expert first aid specialist and medical supply specialist. Your task is to create a personalized first aid kit based on the user's request.
 
@@ -244,6 +475,19 @@ User Request: "${userQuery}"
 Kit Type: ${kitType || 'Not specified'}
 First Aid Scenario: ${scenario || 'Not specified'}
 Budget: ${budget ? `$${budget}` : 'Not specified'}
+Group Size: ${groupSize ? `${groupSize} people` : 'Not specified'}
+Duration: ${duration || 'Not specified'}
+Special Needs: ${specialNeeds && specialNeeds.length > 0 ? specialNeeds.join(', ') : 'None specified'}
+${quantityContext ? `\nQuantity Context: ${quantityContext}` : ''}
+
+IMPORTANT QUANTITY GUIDELINES:
+- Pay close attention to quantity-related words in the user request (e.g., "large", "small", "bulk", "few", "many", "several", "multiple", "single", "dozen", "pack")
+- For "large" or "bulk" requests: Include higher quantities (2-5+ of essential items like bandages, antiseptic wipes)
+- For "small" or "minimal" requests: Include single quantities of only the most essential items
+- For "travel" or "portable" requests: Focus on compact, lightweight items in smaller quantities
+- For "workplace" or "office" requests: Include moderate quantities suitable for multiple people
+- For "family" or "home" requests: Include larger quantities to serve multiple family members
+- Default to quantity 1 unless the context suggests otherwise
 
 IMPORTANT CATEGORY GUIDELINES:
 - "Antiseptics & Ointments" includes antibiotic ointments, antiseptic wipes, burn gels, and other topical treatments for wounds and skin conditions
@@ -262,8 +506,9 @@ Please create a comprehensive first aid kit that includes:
 1. A descriptive name for the kit (keep it concise, under 50 characters)
 2. A brief description explaining the kit's purpose for first aid situations (under 100 characters)
 3. Selected products from the catalog that best match the user's needs
-4. Clear reasoning for each product selection in a first aid context (be concise)
-5. Total estimated price
+4. Appropriate quantities based on the user's request context
+5. Clear reasoning for each product selection in a first aid context (be concise)
+6. Total estimated price
 
 Respond in the following JSON format:
 {
@@ -319,22 +564,31 @@ Guidelines:
           product_name: product.name,
           product_brand: product.brand,
           product_category: product.category,
-          product_image_url: product.imageUrl || product.image_url || '/placeholder.svg', // Ensure image URL is passed
-          image_url: product.image_url || product.imageUrl || '/placeholder.svg', // Add for compatibility
+          product_image_url: product.imageUrl || product.image_url || '/placeholder.svg',
+          name: product.name, // Required by KitItem interface
+          category: product.category, // Required by KitItem interface
+          brand: product.brand, // Required by KitItem interface
+          imageUrl: product.imageUrl || product.image_url || '/placeholder.svg', // Required by KitItem interface
           quantity: item.quantity || 1,
-          price: product.vendor_offers?.[0]?.price || 0,
+          price: product.price || product.offers?.[0]?.price || 0,
           notes: item.reason || '',
           reasoning: item.reason || '',
-          asin: product.asin, // Pass ASIN for fallback image URLs
-          offers: product.offers || [] // Pass offers for proper link handling
+          asin: product.asin,
+          offers: product.offers || [] // This is crucial for pricing calculations
         };
       });
+
+      // Calculate total price from actual item prices
+      const calculatedTotalPrice = kitItems.reduce((total, item) => {
+        const itemPrice = item.price || item.offers?.[0]?.price || 0;
+        return total + (itemPrice * (item.quantity || 1));
+      }, 0);
 
       const generatedKit: GeneratedKit = {
         name: parsed.name,
         description: parsed.description,
         items: kitItems,
-        totalPrice: parsed.totalPrice,
+        totalPrice: calculatedTotalPrice,
         reasoning: parsed.reasoning
       };
       
@@ -471,7 +725,15 @@ Guidelines:
   }
 
   private initialKeywordFilter(query: string, products: Product[]): Product[] {
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 1); // Reduced from 2 to 1
+    // Check if user is requesting all categories/products - comprehensive pattern matching
+    if (this.isComprehensiveRequest(query)) {
+      // Return all products when user explicitly requests everything
+      return products;
+    }
+    
+    const queryLower = query.toLowerCase();
+    
+    const searchTerms = queryLower.split(' ').filter(term => term.length > 1);
     
     return products.filter(product => {
       const searchableFields = [
