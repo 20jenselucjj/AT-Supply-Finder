@@ -68,6 +68,13 @@ interface ChatState {
   hasNotification: boolean;
 }
 
+interface ProgressState {
+  stage: string;
+  progress: number;
+  message: string;
+  isActive: boolean;
+}
+
 const QUICK_ACTIONS = [
   { label: 'Basic First Aid Kit', query: 'Create a basic first aid kit for home use' },
   { label: 'Travel First Aid Kit', query: 'Create a compact travel first aid kit' },
@@ -139,6 +146,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [progressState, setProgressState] = useState<ProgressState>({
+    stage: '',
+    progress: 0,
+    message: '',
+    isActive: false
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const openRouterService = new OpenRouterService({ 
@@ -330,16 +343,35 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
       // Search for relevant products using enhanced RAG
       const relevantProducts = await openRouterService.searchProducts(content, products);
       
+      // Progress callback to update UI
+      const onProgress = (stage: string, progress: number, message: string) => {
+        setProgressState({
+          stage,
+          progress,
+          message,
+          isActive: true
+        });
+      };
+
       // Generate kit using DeepSeek via OpenRouter with enhanced context
       const generatedKit = await openRouterService.generateFirstAidKit({
         userQuery: content,
         availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
         kitType: context.kitType as any,
         scenario: context.scenario,
-        budget: context.budget
+        budget: context.budget,
+        onProgress
       });
 
       updateChatState({ connectionStatus: 'online' });
+      
+      // Reset progress state
+      setProgressState({
+        stage: '',
+        progress: 0,
+        message: '',
+        isActive: false
+      });
 
       // Create a more concise response without markdown formatting
       const botMessage = addMessage({
@@ -358,6 +390,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
     } catch (error) {
       console.error('Error generating kit:', error);
       updateChatState({ connectionStatus: 'offline' });
+      
+      // Reset progress state on error
+      setProgressState({
+        stage: '',
+        progress: 0,
+        message: '',
+        isActive: false
+      });
       
       addMessage({
         type: 'bot',
@@ -486,8 +526,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                       onClick={toggleChat}
                       className="
                         relative h-16 w-16 rounded-full shadow-xl 
-                        bg-gradient-to-br from-primary via-primary to-primary/90
-                        hover:from-primary/90 hover:via-primary hover:to-primary
+                        bg-gradient-to-br from-red-500 via-red-500 to-red-600
+                        hover:from-red-400 hover:via-red-500 hover:to-red-600
                         border-0 transition-all duration-300 ease-out
                         hover:scale-105 active:scale-95
                         group overflow-hidden
@@ -502,10 +542,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 rounded-full" />
                       
                       {/* Icon with subtle animation */}
-                      <MessageCircle className="h-7 w-7 text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 relative z-10" />
+                      <MessageCircle className="h-7 w-7 text-white transition-all duration-300 group-hover:scale-110 group-hover:rotate-12 relative z-10" />
                       
                       {/* Modern glow effect */}
-                      <div className="absolute inset-0 rounded-full bg-primary/50 blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
+                      <div className="absolute inset-0 rounded-full bg-red-500/50 blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                     </Button>
                     
 
@@ -536,7 +576,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                   onPointerDownOutside={(e) => e.preventDefault()}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Bot className="h-4 w-4 text-primary" />
+                    <Bot className="h-4 w-4 text-red-500 dark:text-red-400" />
                     <span className="font-semibold text-foreground">Medical Assistant</span>
                   </div>
                   <p className="text-muted-foreground text-xs">
@@ -566,12 +606,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
           `}
         >
           {/* Modern Chat Header inspired by ChatBot.com */}
-          <DialogHeader className={`${isMobile ? 'p-3 pb-2' : 'p-4 pb-3'} border-b border-border/20 bg-gradient-to-r from-background/80 to-muted/30 flex-shrink-0 ${isMobile ? 'rounded-t-2xl' : 'rounded-t-3xl'} backdrop-blur-sm`}>
+          <DialogHeader className={`${isMobile ? 'p-3 pb-2' : 'p-4 pb-3'} border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-white/90 to-gray-50/90 dark:from-gray-900/90 dark:to-gray-800/90 flex-shrink-0 ${isMobile ? 'rounded-t-2xl' : 'rounded-t-3xl'} backdrop-blur-sm`}>
             <div className="flex items-center justify-between">
               <DialogTitle className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'} text-base font-semibold truncate`}>
                 <div className="relative">
-                  <Avatar className={`${isMobile ? 'h-8 w-8' : 'h-10 w-10'} rounded-full ring-2 ring-primary/20 ring-offset-2 ring-offset-background`}>
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full">
+                  <Avatar className={`${isMobile ? 'h-8 w-8' : 'h-10 w-10'} rounded-full ring-2 ring-red-500/20 dark:ring-red-400/20 ring-offset-2 ring-offset-background`}>
+                    <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 dark:from-red-400 dark:to-red-500 text-white rounded-full">
                       <Bot className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                     </AvatarFallback>
                   </Avatar>
@@ -634,7 +674,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                       "
                       disabled={isLoading}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                       <div className="font-medium text-gray-900 dark:text-gray-100 relative z-10">{action.label}</div>
                     </motion.button>
                   ))}
@@ -817,8 +857,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                   ))}
                 </AnimatePresence>
                   
-                {/* Enhanced Typing Indicator */}
-                {(isLoading || chatState.isTyping) && (
+                {/* Enhanced Typing Indicator with Progress */}
+                {(isLoading || chatState.isTyping || progressState.isActive) && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -827,21 +867,43 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                   >
                     <div className="flex items-start gap-2">
                       <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                        <AvatarFallback className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        <AvatarFallback className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                           <Bot className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
-                      <div className="chat-message-bot p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="chat-typing">
-                            <div className="chat-typing-dot"></div>
-                            <div className="chat-typing-dot"></div>
-                            <div className="chat-typing-dot"></div>
+                      <div className="chat-message-bot p-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                        {(isLoading || progressState.isActive) ? (
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center px-1">
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                {progressState.isActive ? (progressState.message || 'Processing...') : 'Creating your first aid kit...'}
+                              </span>
+                              <span className="text-sm font-medium text-gray-800 dark:text-gray-200 ml-4">
+                                {progressState.isActive ? `${progressState.progress}%` : '0%'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden mt-3">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 to-red-600 dark:from-red-400 dark:to-red-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                style={{ 
+                                  width: progressState.isActive ? `${progressState.progress}%` : '0%',
+                                  animation: progressState.isActive ? 'none' : 'pulse 2s infinite'
+                                }}
+                              />
+                            </div>
                           </div>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            {isLoading ? 'Creating your first aid kit...' : 'Typing...'}
-                          </span>
-                        </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="chat-typing">
+                              <div className="chat-typing-dot"></div>
+                              <div className="chat-typing-dot"></div>
+                              <div className="chat-typing-dot"></div>
+                            </div>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Typing...
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </motion.div>
