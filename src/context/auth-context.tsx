@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { account, databases } from '@/lib/appwrite';
-import { Models } from 'appwrite';
-import { Query } from 'appwrite';
+import { Models, Query, OAuthProvider } from 'appwrite';
 
 // Storage keys for persistence
 const AUTH_STORAGE_KEY = 'wrap_wizard_auth';
@@ -11,6 +10,7 @@ interface AuthContextType {
   user: Models.User<Models.Preferences> | null;
   signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<{ error: Error | null }>;
   updateUser: (data: { name?: string; prefs?: any }) => Promise<{ error: Error | null }>;
   loading: boolean;
@@ -245,6 +245,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+     try {
+       // Create OAuth2 session with Google
+       account.createOAuth2Session(
+         OAuthProvider.Google,
+         `${window.location.origin}/auth`, // Success URL
+         `${window.location.origin}/login` // Failure URL
+       );
+     } catch (error: any) {
+       console.error('Google sign in error:', error);
+       throw error;
+     }
+   };
+
   const signOut = async () => {
     try {
       await account.deleteSession('current');
@@ -297,6 +311,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     updateUser,
     loading,

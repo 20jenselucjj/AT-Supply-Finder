@@ -31,6 +31,7 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
 // Removed AdminOrders import
 const Login = lazy(() => import("./pages/Login"));
+const OAuthCallback = lazy(() => import("./pages/OAuthCallback"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -91,6 +92,7 @@ const App = () => {
                             <Route path="system" element={<AdminSettings />} />
                           </Route>
                           <Route path="/login" element={<Login />} />
+                          <Route path="/auth" element={<OAuthCallback />} />
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
                           {/* New routes */}
