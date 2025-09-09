@@ -41,7 +41,7 @@ import { useTheme } from '@/context/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProductRefresh } from '@/context/product-refresh-context';
 import { useAuth } from '@/context/auth-context'; // Add this import
-import { Query } from 'appwrite'; // Add this import
+import { Query, Permission, Role } from 'appwrite'; // Add this import
 import {
   Tooltip,
   TooltipContent,
@@ -248,7 +248,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                 {
                   userId: user.$id,
                   messages: JSON.stringify(defaultMessages)
-                }
+                },
+                [
+                  Permission.read(Role.user(user.$id)),
+                  Permission.update(Role.user(user.$id)),
+                  Permission.delete(Role.user(user.$id))
+                ]
               );
             }
           } catch (appwriteError: any) {
@@ -373,7 +378,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
                   {
                     userId: user.$id,
                     messages: messagesString
-                  }
+                  },
+                  [
+                    Permission.read(Role.user(user.$id)),
+                    Permission.update(Role.user(user.$id)),
+                    Permission.delete(Role.user(user.$id))
+                  ]
                 );
               }
             } catch (appwriteError: any) {

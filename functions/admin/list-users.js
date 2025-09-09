@@ -157,7 +157,8 @@ export default async function ({ req, res, log, error }) {
         passwordUpdate: user.passwordUpdate,
         $createdAt: user.$createdAt,
         $updatedAt: user.$updatedAt,
-        accessedAt: user.accessedAt
+        accessedAt: user.accessedAt,
+        lastSignInAt: user.accessedAt // Include this for clarity
       }));
       
     // Apply search filter in memory if search term is provided

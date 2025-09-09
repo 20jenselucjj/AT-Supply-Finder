@@ -127,12 +127,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           .map((user: any) => ({
             id: user.id || '',
             email: user.email || 'No email',
-            $createdAt: user.createdAt || new Date().toISOString(),
-            $lastSignInAt: user.lastSignInAt || user.accessedAt,
+            $createdAt: user.$createdAt || new Date().toISOString(),
+            $lastSignInAt: user.accessedAt || null, // Use accessedAt for last sign in
             role: user.role || 'user',
             emailVerified: user.emailVerification ? true : false,
-            is_active: user.lastSignInAt || user.accessedAt ? 
-              new Date(user.lastSignInAt || user.accessedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
+            is_active: user.accessedAt ? 
+              new Date(user.accessedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
               false
           }));
 
