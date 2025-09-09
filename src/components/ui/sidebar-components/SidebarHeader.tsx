@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { SidebarHeaderProps } from "./types"
 
 export const SidebarHeader = React.forwardRef<HTMLDivElement, SidebarHeaderProps>(

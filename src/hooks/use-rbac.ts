@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getUserRole, hasRole, hasPermission, UserRole, RolePermissions, isCurrentUserAdmin, isCurrentUserEditorOrAdmin } from '@/lib/rbac';
+import { getUserRole, hasRole, hasPermission, UserRole, RolePermissions, isCurrentUserAdmin, isCurrentUserEditorOrAdmin } from '@/lib/utils/rbac';
 
 export const useRBAC = () => {
   const { user } = useAuth();

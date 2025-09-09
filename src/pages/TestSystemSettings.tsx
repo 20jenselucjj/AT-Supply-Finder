@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAllSettings } from '@/lib/appwrite-system-settings';
+import { fetchAllSettings } from '@/lib/api/appwrite-system-settings';
 
 const TestSystemSettings: React.FC = () => {
   const [settings, setSettings] = useState<any>(null);

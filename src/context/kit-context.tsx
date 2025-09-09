@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, VendorOffer } from '@/lib/types';
+import { Product, VendorOffer } from '@/lib/types/types';
 import { useAuth } from './auth-context';
-import { databases } from '@/lib/appwrite';
+import { databases } from '@/lib/api/appwrite';
 import { Query } from 'appwrite';
-import { convertToDatabaseCategory, convertToBuildPageCategory } from '@/lib/utils'; // Import conversion functions
+import { convertToDatabaseCategory, convertToBuildPageCategory } from '@/lib/utils/utils'; // Import conversion functions
 
 export interface KitItem {
   id: string;

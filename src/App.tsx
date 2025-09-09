@@ -12,14 +12,14 @@ import { ProductRefreshProvider } from "@/context/product-refresh-context";
 import ScrollToTop from "@/components/ScrollToTop";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
-import ChatBot from "@/components/chatbot/ChatBot";
+import ChatBot from "@/components/features/chatbot/ChatBot";
 import { lazy, Suspense } from "react";
 
 // Lazy load pages
-const Index = lazy(() => import("./pages/Index"));
-const Catalog = lazy(() => import("./pages/Catalog"));
-const Build = lazy(() => import("./pages/Build"));
-const Profile = lazy(() => import("./pages/Profile"));
+const Index = lazy(() => import("./pages/public/Index"));
+const Catalog = lazy(() => import("./pages/public/Catalog"));
+const Build = lazy(() => import("./pages/public/Build"));
+const Profile = lazy(() => import("./pages/user/Profile"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
@@ -30,15 +30,15 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
 // Removed AdminOrders import
-const Login = lazy(() => import("./pages/Login"));
-const OAuthCallback = lazy(() => import("./pages/OAuthCallback"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Login = lazy(() => import("./pages/auth/Login"));
+const OAuthCallback = lazy(() => import("./pages/auth/OAuthCallback"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPassword"));
+const NotFound = lazy(() => import("./pages/public/NotFound"));
 // New pages
-const Contact = lazy(() => import("./pages/Contact"));
-const About = lazy(() => import("./pages/About"));
-const AffiliateDisclosure = lazy(() => import("./pages/AffiliateDisclosure"));
+const Contact = lazy(() => import("./pages/public/Contact"));
+const About = lazy(() => import("./pages/public/About"));
+const AffiliateDisclosure = lazy(() => import("./pages/public/AffiliateDisclosure"));
 const TestSystemSettings = lazy(() => import("./pages/TestSystemSettings"));
 
 import AdminRoute from "./components/layout/AdminRoute";

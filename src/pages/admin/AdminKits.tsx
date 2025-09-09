@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { StarterKitBuilder } from '@/components/admin/StarterKitBuilder';
+import { StarterKitBuilder } from '@/components/pages/admin/StarterKitBuilder';
 
 const AdminKits = () => {
   return (

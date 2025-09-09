@@ -11,6 +11,9 @@ migration/
 ├── update-client-config.js     # Updates client configuration
 ├── update-auth-context.js      # Updates authentication context
 ├── update-product-service.js   # Updates product service
+├── update-category-system.js   # Updates category system
+├── update-products-category.js # Updates product categories
+├── setup-chat-history.js       # Sets up chat history collection
 ├── package.json               # Dependencies for migration scripts
 ├── README.md                  # Instructions for using migration scripts
 └── SUMMARY.md                 # This file
@@ -58,6 +61,15 @@ Updates product service functions to use Appwrite:
 - Updates create/update/delete operations
 - Maintains filter functionality
 
+### update-category-system.js
+Updates the category system in the database.
+
+### update-products-category.js
+Updates product categories in the database.
+
+### setup-chat-history.js
+Sets up the chatHistory collection with the required attributes and indexes for storing chat conversation history.
+
 ### package.json
 Dependencies required for migration:
 - @supabase/supabase-js
@@ -80,8 +92,9 @@ Comprehensive guide for migrating from Supabase to Appwrite:
 2. Run `supabase-export.js` to export data
 3. Run `appwrite-import.js` to import data
 4. Run update scripts to modify application code
-5. Test the migrated application
-6. Deploy to production
+5. Run additional migration scripts like `setup-chat-history.js`
+6. Test the migrated application
+7. Deploy to production
 
 ## Next Steps
 
@@ -89,3 +102,4 @@ Comprehensive guide for migrating from Supabase to Appwrite:
 2. Test the migration process in a development environment
 3. Update any additional services not covered by the provided scripts
 4. Follow the comprehensive migration guide for complete migration
+5. Run the chat history migration script: `npm run migrate:chat-history`

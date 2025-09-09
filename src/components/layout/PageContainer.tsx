@@ -1,5 +1,6 @@
+import React from 'react';
+import { cn } from '@/lib/utils/utils';
 import { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 
 interface PageContainerProps {
   children: ReactNode;

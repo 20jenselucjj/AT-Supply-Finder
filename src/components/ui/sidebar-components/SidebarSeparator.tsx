@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { SidebarSeparatorProps } from "./types"
 
 export const SidebarSeparator = React.forwardRef<

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { account, databases } from '@/lib/appwrite';
+import { account, databases } from '@/lib/api/appwrite';
 import { Models, Query, OAuthProvider } from 'appwrite';
 
 // Storage keys for persistence

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { useSidebar } from "./SidebarProvider"
 import { SidebarProps } from "./types"
 

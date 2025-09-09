@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { SidebarGroupLabelProps } from "./types"
 
 export const SidebarGroupLabel = React.forwardRef<

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import DashboardOverview from '@/components/admin/DashboardOverview';
+import DashboardOverview from '@/components/pages/admin/DashboardOverview';
 
 const AdminDashboard = () => {
   return (

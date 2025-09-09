@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { UserManagement } from '@/components/admin/user-management';
-import { databases, functions } from '@/lib/appwrite';
+import { UserManagement } from '@/components/pages/admin/user-management';
+import { databases, functions } from '@/lib/api/appwrite';
 
 const AdminUsers = () => {
   const [userCount, setUserCount] = useState(0);

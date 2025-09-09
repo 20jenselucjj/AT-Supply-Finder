@@ -11,39 +11,11 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/utils/logger';
 import { useRBAC } from '@/hooks/use-rbac';
-import {
-  LayoutDashboard,
-  Users,
-  Package,
-  BarChart3,
-  Settings,
-  Menu,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
-  Activity,
-  Database,
-  FileText,
-  LogOut,
-  Moon,
-  Sun,
-  Wrench,
-  ChevronDown,
-  Search,
-  Bell,
-  UserCog,
-  Home,
-  FileBarChart,
-  CreditCard,
-  Mail,
-  MapPin,
-  Tag,
-  Filter
-} from 'lucide-react';
-import { NotificationsPanel } from '@/components/admin/NotificationsPanel';
-import { cn } from '@/lib/utils';
+import { LayoutDashboard, Users, Package, BarChart3, Settings, Menu, LogOut, Moon, Sun, Wrench, ChevronDown, FileBarChart, ShieldAlert, Mail } from 'lucide-react';
+import { NotificationsPanel } from '@/components/pages/admin/NotificationsPanel';
+import { cn } from '@/lib/utils/utils';
 
 interface SidebarItem {
   id: string;

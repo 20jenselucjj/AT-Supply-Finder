@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReportsOverview } from '@/components/admin/ReportsOverview';
+import { ReportsOverview } from '@/components/pages/admin/ReportsOverview';
 
 export const AdminReports: React.FC = () => {
   return (

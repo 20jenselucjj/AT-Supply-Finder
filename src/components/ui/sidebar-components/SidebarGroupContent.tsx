@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { SidebarGroupContentProps } from "./types"
 
 export const SidebarGroupContent = React.forwardRef<HTMLDivElement, SidebarGroupContentProps>(

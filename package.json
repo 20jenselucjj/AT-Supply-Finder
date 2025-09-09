@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "migrate:categories": "node migration/update-category-system.js",
-    "migrate:products-category": "node migration/update-products-category.js"
+    "migrate:products-category": "node migration/update-products-category.js",
+    "migrate:chat-history": "node migration/setup-chat-history.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

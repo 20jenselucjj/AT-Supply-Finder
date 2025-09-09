@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MarketingOverview } from '@/components/admin/MarketingOverview';
+import { MarketingOverview } from '@/components/pages/admin/MarketingOverview';
 
 export const AdminMarketing: React.FC = () => {
   return (

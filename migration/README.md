@@ -1,81 +1,56 @@
-# AT Supply Finder - Supabase to Appwrite Migration
+# Migration Scripts
 
-This directory contains scripts to migrate data from Supabase to Appwrite for the AT Supply Finder application.
+This directory contains migration scripts for setting up and updating the Appwrite database collections used by the AT Supply Finder application.
+
+## Available Scripts
+
+### 1. Category System Update
+```bash
+npm run migrate:categories
+```
+Updates the category system in the database.
+
+### 2. Product Category Update
+```bash
+npm run migrate:products-category
+```
+Updates product categories in the database.
+
+### 3. Chat History Collection Setup
+```bash
+npm run migrate:chat-history
+```
+Creates the chatHistory collection with the required attributes and indexes for storing chat conversation history.
+
+## Running Migrations
+
+To run any migration script, use the corresponding npm command from the project root directory:
+
+```bash
+npm run migrate:chat-history
+```
 
 ## Prerequisites
 
-1. Node.js installed
-2. Supabase project with data to migrate
-3. Appwrite instance set up with the required collections
+Before running migrations, ensure you have:
+1. Set up your `.env` file with the required Appwrite credentials
+2. Installed all project dependencies with `npm install`
+3. Proper permissions to modify the Appwrite database
 
-## Setup
+## Environment Variables
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+The migration scripts require the following environment variables:
+- `VITE_APPWRITE_ENDPOINT`: Your Appwrite endpoint URL
+- `VITE_APPWRITE_PROJECT_ID`: Your Appwrite project ID
+- `VITE_APPWRITE_API_KEY`: Your Appwrite API key
+- `VITE_APPWRITE_DATABASE_ID`: Your Appwrite database ID
 
-2. Set environment variables:
-   ```bash
-   # Supabase credentials
-   export SUPABASE_URL="your_supabase_url"
-   export SUPABASE_SERVICE_KEY="your_supabase_service_key"
-   
-   # Appwrite credentials
-   export APPWRITE_ENDPOINT="your_appwrite_endpoint"
-   export APPWRITE_PROJECT_ID="your_appwrite_project_id"
-   export APPWRITE_API_KEY="your_appwrite_api_key"
-   ```
+## Error Handling
 
-## Running the Migration
+Migration scripts include error handling for common issues:
+- Collection already exists
+- Missing environment variables
+- Insufficient permissions
+- Network connectivity issues
 
-### Option 1: Run export and import separately
-
-1. Export data from Supabase:
-   ```bash
-   npm run export
-   ```
-
-2. Import data into Appwrite:
-   ```bash
-   npm run import
-   ```
-
-### Option 2: Run both steps together
-
-```bash
-npm run migrate
-```
-
-## What Gets Migrated
-
-The migration scripts will transfer the following data:
-
-1. Users and their authentication data
-2. User roles and permissions
-3. Product catalog
-4. Starter kit templates
-5. User-created kits
-6. User favorites
-7. Template-product relationships
-8. Vendor offers
-9. Audit logs
-
-## Troubleshooting
-
-If you encounter any issues during the migration:
-
-1. Check that all environment variables are set correctly
-2. Ensure the Appwrite collections have been created with the correct attributes
-3. Verify that the Supabase credentials have sufficient permissions
-4. Check the console output for specific error messages
-
-## Post-Migration Steps
-
-After the migration is complete:
-
-1. Update your application code to use Appwrite instead of Supabase
-2. Test all functionality to ensure data integrity
-3. Update authentication logic to use Appwrite Auth
-4. Modify data fetching and mutation logic to work with Appwrite
-5. Update any server-side functions to use Appwrite instead of Supabase
+If a migration fails, check the console output for specific error messages and resolve the underlying issue before retrying.

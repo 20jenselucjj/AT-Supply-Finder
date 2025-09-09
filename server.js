@@ -65,11 +65,11 @@ app.use(express.static(buildPath, {
 }));
 
 // Import and use the Amazon API functions
-import amazonAuth from './functions/amazon-auth.js';
-import amazonCatalogSearch from './functions/amazon-catalog-search.js';
-import amazonProductDetails from './functions/amazon-product-details.js';
-import amazonPricing from './functions/amazon-pricing.js';
-import scrapeAmazonProduct from './functions/scrape-amazon-product.js';
+import amazonAuth from './functions/amazon/amazon-auth.js';
+import amazonCatalogSearch from './functions/amazon/amazon-catalog-search.js';
+import amazonProductDetails from './functions/amazon/amazon-product-details.js';
+import amazonPricing from './functions/amazon/amazon-pricing.js';
+import scrapeAmazonProduct from './functions/amazon/scrape-amazon-product.js';
 
 // Contact form endpoint
 app.post('/api/contact', async (req, res) => {

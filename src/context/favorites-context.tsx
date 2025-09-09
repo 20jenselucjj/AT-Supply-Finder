@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './auth-context';
-import { databases } from '@/lib/appwrite';
+import { databases } from '@/lib/api/appwrite';
 import { Query } from 'appwrite';
-import { Product } from '@/lib/types';
+import { Product } from '@/lib/types/types';
 
 interface FavoritesContextType {
   favorites: string[]; // Array of product IDs

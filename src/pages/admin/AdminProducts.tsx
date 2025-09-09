@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import ProductManagement from '@/components/admin/ProductManagement';
-import { databases, account } from '@/lib/appwrite';
+import ProductManagement from '@/components/pages/admin/ProductManagement';
+import { databases, account } from '@/lib/api/appwrite';
 
 const AdminProducts = () => {
   const [productCount, setProductCount] = useState(0);

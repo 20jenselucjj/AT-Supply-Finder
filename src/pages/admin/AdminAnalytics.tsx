@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Analytics } from '@/components/admin/Analytics';
+import { Analytics } from '@/components/pages/admin/Analytics';
 
 const AdminAnalytics = () => {
   return (

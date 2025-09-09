@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { PanelLeft } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils"
 import { useSidebar } from "./SidebarProvider"
 import { SidebarTriggerProps } from "./types"
 

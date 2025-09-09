@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { SystemSettingsRefactored } from '@/components/admin/system-settings';
+import { SystemSettingsRefactored } from '@/components/pages/admin/system-settings';
 
 const AdminSettings = () => {
   return (
