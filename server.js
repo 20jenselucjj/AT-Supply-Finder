@@ -18,9 +18,9 @@ const PORT = 3001;
 const allowedOrigins = [
   'http://localhost:5173', // Local development
   'http://localhost:3000', // Alternative local development port
+  'http://localhost:3001', // Server port
   'https://wrap-wizard-finder-bmxeumvee-20jenselucjjs-projects.vercel.app', // Your Vercel deployment
   'https://at-supply-finder.appwrite.network', // Appwrite network deployment
-  // Add any other domains you want to allow
 ];
 
 const corsOptions = {
@@ -70,6 +70,7 @@ import amazonCatalogSearch from './functions/amazon/amazon-catalog-search.js';
 import amazonProductDetails from './functions/amazon/amazon-product-details.js';
 import amazonPricing from './functions/amazon/amazon-pricing.js';
 import scrapeAmazonProduct from './functions/amazon/scrape-amazon-product.js';
+import validateRole from './functions/auth/validate-role.js';
 
 // Contact form endpoint
 app.post('/api/contact', async (req, res) => {
@@ -219,6 +220,31 @@ app.get('/api/list-users', async (req, res) => {
 
 // Amazon Product Scraping endpoint
 app.post('/api/scrape-amazon-product', scrapeAmazonProduct);
+
+// Role validation endpoint
+app.post('/api/validate-role', async (req, res) => {
+  try {
+    // Create Appwrite Functions compatible context
+    const context = {
+      req: {
+        body: JSON.stringify(req.body),
+        headers: req.headers
+      },
+      res: {
+        json: (data) => res.json(data),
+        send: (data) => res.send(data)
+      },
+      log: console.log,
+      error: console.error
+    };
+    
+    // Call the validateRole function with Appwrite Functions format
+    await validateRole(context);
+  } catch (error) {
+    console.error('Error in validate-role endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
 
 // User Management Endpoints
 // Create User endpoint

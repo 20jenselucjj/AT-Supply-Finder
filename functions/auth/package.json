@@ -1,0 +1,15 @@
+{
+  "name": "validate-role-function",
+  "version": "1.0.0",
+  "description": "Appwrite function for role validation",
+  "main": "validate-role.js",
+  "dependencies": {
+    "node-appwrite": "^14.0.0"
+  },
+  "scripts": {
+    "start": "node validate-role.js"
+  },
+  "keywords": ["appwrite", "function", "role", "validation"],
+  "author": "",
+  "license": "MIT"
+}

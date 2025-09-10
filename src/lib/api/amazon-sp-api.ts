@@ -22,16 +22,12 @@ interface SearchProductsParams {
 }
 
 class AmazonSPAPI {
-  private clientId: string;
-  private clientSecret: string;
   private refreshToken: string;
   private marketplaceId: string;
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
 
   constructor() {
-    this.clientId = import.meta.env.VITE_AMZN_CLIENT_ID || '';
-    this.clientSecret = import.meta.env.VITE_AMZN_CLIENT_SECRET || '';
     this.refreshToken = import.meta.env.VITE_AMZN_SANDBOX_REFRESH_TOKEN || '';
     this.marketplaceId = import.meta.env.VITE_AMZN_MARKETPLACE_ID || 'ATVPDKIKX0DER';
   }
@@ -43,10 +39,7 @@ class AmazonSPAPI {
 
     try {
       const response = await axios.post('/api/amazon-auth', {
-        grant_type: 'refresh_token',
-        refresh_token: this.refreshToken,
-        client_id: this.clientId,
-        client_secret: this.clientSecret
+        refresh_token: this.refreshToken
       });
 
       this.accessToken = response.data.access_token;

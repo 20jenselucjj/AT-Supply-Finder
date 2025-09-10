@@ -26,7 +26,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminKits = lazy(() => import("./pages/admin/AdminKits"));
-const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminMarketing = lazy(() => import("./pages/admin/AdminMarketing"));
 // Removed AdminOrders import
@@ -89,7 +89,7 @@ const App = () => {
                             <Route path="reports" element={<AdminReports />} />
                             <Route path="marketing" element={<AdminMarketing />} />
                             <Route path="templates" element={<AdminKits />} />
-                            <Route path="system" element={<AdminSettings />} />
+
                           </Route>
                           <Route path="/login" element={<Login />} />
                           <Route path="/auth" element={<OAuthCallback />} />

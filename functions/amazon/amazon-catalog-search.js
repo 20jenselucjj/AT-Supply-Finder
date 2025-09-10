@@ -4,12 +4,17 @@ import { createSignature } from '../utils/aws-signature.js';
 import { mockAthleticProducts, transformMockItems } from '../utils/mock-products.js';
 
 const getAccessToken = async () => {
-    const { AMZN_CLIENT_ID, AMZN_CLIENT_SECRET, AMZN_SANDBOX_REFRESH_TOKEN } = process.env;
+    const { AMAZON_CLIENT_ID, AMAZON_CLIENT_SECRET, AMZN_SANDBOX_REFRESH_TOKEN } = process.env;
+    
+    if (!AMAZON_CLIENT_ID || !AMAZON_CLIENT_SECRET || !AMZN_SANDBOX_REFRESH_TOKEN) {
+        throw new Error('Missing Amazon API credentials in server environment');
+    }
+    
     const params = new URLSearchParams();
     params.append('grant_type', 'refresh_token');
     params.append('refresh_token', AMZN_SANDBOX_REFRESH_TOKEN);
-    params.append('client_id', AMZN_CLIENT_ID);
-    params.append('client_secret', AMZN_CLIENT_SECRET);
+    params.append('client_id', AMAZON_CLIENT_ID);
+    params.append('client_secret', AMAZON_CLIENT_SECRET);
 
     try {
         const tokenResponse = await axios.post('https://api.amazon.com/auth/o2/token', params, {

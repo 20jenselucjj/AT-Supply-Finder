@@ -77,13 +77,7 @@ const sidebarItems: SidebarItem[] = [
     href: '/admin/marketing',
     requiredRole: 'editor'
   },
-  {
-    id: 'system',
-    label: 'System Settings',
-    icon: Settings,
-    href: '/admin/system',
-    requiredRole: 'admin'
-  }
+
 ];
 
 interface AdminLayoutProps {

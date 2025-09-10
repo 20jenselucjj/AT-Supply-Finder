@@ -1,86 +1,85 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Activity, Server, Database, Wifi } from 'lucide-react';
 
-interface SystemHealth {
-  status: 'healthy' | 'warning' | 'critical';
-  uptime: string;
-  responseTime: number;
-  dbConnections: number;
-  errorRate: number;
+interface SystemHealthMetric {
+  name: string;
+  status: 'healthy' | 'warning' | 'error';
+  value: string;
+  icon: React.ReactNode;
 }
 
-interface SystemHealthCardProps {
-  systemHealth: SystemHealth;
-}
+const SystemHealthCard: React.FC = () => {
+  const healthMetrics: SystemHealthMetric[] = [
+    {
+      name: 'Server Status',
+      status: 'healthy',
+      value: 'Online',
+      icon: <Server className="h-4 w-4" />
+    },
+    {
+      name: 'Database',
+      status: 'healthy',
+      value: '99.9% uptime',
+      icon: <Database className="h-4 w-4" />
+    },
+    {
+      name: 'API Response',
+      status: 'healthy',
+      value: '< 200ms',
+      icon: <Activity className="h-4 w-4" />
+    },
+    {
+      name: 'Network',
+      status: 'healthy',
+      value: 'Stable',
+      icon: <Wifi className="h-4 w-4" />
+    }
+  ];
 
-export const SystemHealthCard: React.FC<SystemHealthCardProps> = ({ systemHealth }) => {
-  const getStatusIcon = () => {
-    switch (systemHealth.status) {
+  const getStatusColor = (status: string) => {
+    switch (status) {
       case 'healthy':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'critical':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'error':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return <ShieldCheck className="h-4 w-4 text-blue-500" />;
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getStatusColor = () => {
-    switch (systemHealth.status) {
-      case 'healthy':
-        return 'text-green-500';
-      case 'warning':
-        return 'text-yellow-500';
-      case 'critical':
-        return 'text-red-500';
-      default:
-        return 'text-blue-500';
-      }
-  };
-
-  const getUptimePercentage = () => {
-    // Convert uptime string to percentage (e.g., "99.9%" -> 99.9)
-    const match = systemHealth.uptime.match(/(\d+\.?\d*)%/);
-    return match ? parseFloat(match[1]) : 0;
-  };
-
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          {getStatusIcon()}
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
           System Health
         </CardTitle>
-        <CardDescription className="text-xs">
-          Current system status and metrics
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Uptime</span>
-            <span className={getStatusColor()}>{systemHealth.uptime}</span>
-          </div>
-          <Progress value={getUptimePercentage()} className="h-2" />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-muted-foreground">Response Time</div>
-            <div>{systemHealth.responseTime}ms</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">DB Connections</div>
-            <div>{systemHealth.dbConnections}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Error Rate</div>
-            <div>{systemHealth.errorRate}%</div>
-          </div>
+      <CardContent>
+        <div className="space-y-3">
+          {healthMetrics.map((metric, index) => (
+            <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="text-gray-600">
+                  {metric.icon}
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{metric.name}</p>
+                  <p className="text-xs text-gray-500">{metric.value}</p>
+                </div>
+              </div>
+              <Badge 
+                variant="outline" 
+                className={getStatusColor(metric.status)}
+              >
+                {metric.status}
+              </Badge>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

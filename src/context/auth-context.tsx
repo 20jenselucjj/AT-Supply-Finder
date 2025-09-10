@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { account, databases } from '@/lib/api/appwrite';
+import { account, databases, functions } from '@/lib/api/appwrite';
 import { Models, Query, OAuthProvider } from 'appwrite';
 
 // Storage keys for persistence
@@ -47,104 +47,67 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
   const [hasCheckedAdmin, setHasCheckedAdmin] = useState(false);
 
-  const checkAdminStatus = React.useCallback(async (userId?: string, retryCount = 0) => {
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Admin check timeout')), 3000); // 3 second timeout
-    });
-    
+  const checkAdminStatus = React.useCallback(async (userId?: string) => {
     try {
-      await Promise.race([
-        (async () => {
-          // Use provided userId or get current user
-          let authUser;
-          if (userId) {
-            authUser = { $id: userId };
-          } else {
-            try {
-              authUser = await account.get();
-            } catch (error) {
-              console.log('No authenticated user found');
-              setIsAdmin(false);
-              setHasCheckedAdmin(true);
-              return;
-            }
-          }
-          
-          if (!authUser || !authUser.$id) {
-            console.log('No valid user found');
-            setIsAdmin(false);
-            setHasCheckedAdmin(true);
-            return;
-          }
-
-          console.log('Checking admin status for user:', authUser.$id);
-
-          // Check if required environment variables are present
-          if (!import.meta.env.VITE_APPWRITE_DATABASE_ID) {
-            console.error('VITE_APPWRITE_DATABASE_ID is not set in environment variables');
-            setIsAdmin(false);
-            setHasCheckedAdmin(true);
-            return;
-          }
-
-          // Query the user_roles collection in Appwrite using the SDK
-          try {
-            console.log('Checking admin status for user ID:', authUser.$id);
-            console.log('Using database ID:', import.meta.env.VITE_APPWRITE_DATABASE_ID);
-            console.log('Querying userRoles collection with userId:', authUser.$id);
-            
-            const response = await databases.listDocuments(
-              import.meta.env.VITE_APPWRITE_DATABASE_ID,
-              'userRoles',
-              [Query.equal('userId', authUser.$id)]
-            );
-            
-            console.log('Admin check query response:', response);
-            
-            if (response && response.documents && response.documents.length > 0) {
-              const roleData = response.documents[0];
-              console.log('Role data from collection query:', roleData);
-              const isAdminUser = roleData.role === 'admin';
-              console.log('Is admin user:', isAdminUser);
-              setIsAdmin(isAdminUser);
-              // Persist admin status
-              localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(isAdminUser));
-            } else {
-              console.log('No role data found, setting admin status to false');
-              setIsAdmin(false);
-              // Persist admin status
-              localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(false));
-            }
-          } catch (error: any) {
-            console.error('User roles collection query failed:', error);
-            console.error('Error details:', {
-              message: error.message,
-              code: error.code,
-              response: error.response
-            });
-            
-            // Retry once if it's a network/connection error and we haven't retried yet
-            if (retryCount === 0 && (error.message.includes('network') || error.message.includes('connection'))) {
-              console.log('Retrying admin status check due to network error...');
-              setTimeout(() => checkAdminStatus(userId, 1), 1000);
-              return;
-            }
-            
-            console.log('Setting admin status to false due to error');
-            setIsAdmin(false);
-          }
-          
+      // Use provided userId or get current user
+      let authUser;
+      if (userId) {
+        authUser = { $id: userId };
+      } else {
+        try {
+          authUser = await account.get();
+        } catch (error) {
+          console.log('No authenticated user found');
+          setIsAdmin(false);
           setHasCheckedAdmin(true);
-        })(),
-        timeoutPromise
-      ]);
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-      if (error.message === 'Admin check timeout') {
-        console.log('Admin check timed out, setting to false');
+          return;
+        }
       }
+      
+      if (!authUser || !authUser.$id) {
+        console.log('No valid user found');
+        setIsAdmin(false);
+        setHasCheckedAdmin(true);
+        return;
+      }
+
+      console.log('Checking admin status for user:', authUser.$id);
+
+      // Use Appwrite functions SDK for role validation
+      const functionId = import.meta.env.VITE_APPWRITE_VALIDATE_ROLE_FUNCTION_ID || 'validate-role';
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify({
+          userId: authUser.$id,
+          requiredRole: 'admin'
+        })
+      );
+
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed with status: ${execution.status}`);
+      }
+
+      // Check if responseBody exists and is not empty
+      if (!execution.responseBody) {
+        console.error('Function execution returned empty response');
+        setIsAdmin(false);
+        setHasCheckedAdmin(true);
+        return;
+      }
+
+      const data = JSON.parse(execution.responseBody);
+      const isAdminUser = data.hasRole && data.role === 'admin';
+      
+      console.log('Is admin user:', isAdminUser);
+      setIsAdmin(isAdminUser);
+      // Persist admin status
+      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(isAdminUser));
+      
+      setHasCheckedAdmin(true);
+    } catch (error: any) {
+      console.error('Error checking admin status:', error);
       setIsAdmin(false);
+      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(false));
       setHasCheckedAdmin(true);
     }
   }, []);
