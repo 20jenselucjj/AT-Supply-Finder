@@ -39,7 +39,7 @@ const NotFound = lazy(() => import("./pages/public/NotFound"));
 const Contact = lazy(() => import("./pages/public/Contact"));
 const About = lazy(() => import("./pages/public/About"));
 const AffiliateDisclosure = lazy(() => import("./pages/public/AffiliateDisclosure"));
-const TestSystemSettings = lazy(() => import("./pages/TestSystemSettings"));
+
 
 import AdminRoute from "./components/layout/AdminRoute";
 import { Navigate } from "react-router-dom";
@@ -99,7 +99,7 @@ const App = () => {
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/about" element={<About />} />
                           <Route path="/affiliate-disclosure" element={<AffiliateDisclosure />} />
-                          <Route path="/test-system-settings" element={<TestSystemSettings />} />
+
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </Suspense>
