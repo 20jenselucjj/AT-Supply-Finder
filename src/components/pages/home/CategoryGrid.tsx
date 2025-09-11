@@ -1,5 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { databases } from "@/lib/api/appwrite";
+import { Query } from "appwrite";
 import { 
   Bandage, 
   Syringe, 
@@ -11,13 +14,13 @@ import {
   FileText
 } from "lucide-react";
 
-const categories = [
+const baseCategoriesConfig = [
   {
     name: "Wound Care & Dressings",
     description: "Bandages, gauze, and dressings for wound treatment.",
     icon: Bandage,
     slug: "wound-care-dressings",
-    priceFrom: "$9.99",
+    dbCategory: "First Aid & Wound Care",
     popular: true,
   },
   {
@@ -25,7 +28,7 @@ const categories = [
     description: "Medical tapes and elastic wraps for support and securing dressings.",
     icon: Package,
     slug: "tapes-wraps",
-    priceFrom: "$7.99",
+    dbCategory: "Taping & Bandaging",
     popular: false,
   },
   {
@@ -33,7 +36,7 @@ const categories = [
     description: "Cleaning solutions and ointments for wound care.",
     icon: Syringe,
     slug: "antiseptics-ointments",
-    priceFrom: "$5.99",
+    dbCategory: "Antiseptics & Ointments",
     popular: true,
   },
   {
@@ -41,7 +44,7 @@ const categories = [
     description: "Medications for pain and common symptoms.",
     icon: Pill,
     slug: "pain-relief",
-    priceFrom: "$4.99",
+    dbCategory: "Over-the-Counter Medication",
     popular: false,
   },
   {
@@ -49,7 +52,7 @@ const categories = [
     description: "Essential tools for first aid treatment.",
     icon: Scissors,
     slug: "instruments-tools",
-    priceFrom: "$12.99",
+    dbCategory: "Instruments & Tools",
     popular: false,
   },
   {
@@ -57,7 +60,7 @@ const categories = [
     description: "Supplies for emergency situations and serious injuries.",
     icon: Shield,
     slug: "trauma-emergency",
-    priceFrom: "$15.99",
+    dbCategory: "Emergency Care",
     popular: false,
   },
   {
@@ -65,7 +68,7 @@ const categories = [
     description: "Gloves, masks, and sanitizers for protection.",
     icon: Shield,
     slug: "ppe",
-    priceFrom: "$8.99",
+    dbCategory: "Personal Protection Equipment (PPE)",
     popular: true,
   },
   {
@@ -73,7 +76,7 @@ const categories = [
     description: "Guides and essentials for first aid preparedness.",
     icon: FileText,
     slug: "information-essentials",
-    priceFrom: "$3.99",
+    dbCategory: "Documentation & Communication",
     popular: false,
   },
 ];
@@ -81,6 +84,104 @@ const categories = [
 // Using custom CSS animations instead of Framer Motion
 
 const CategoryGrid = () => {
+  const [categories, setCategories] = useState(baseCategoriesConfig.map(cat => ({ ...cat, priceFrom: "Loading...", loading: true })));
+
+  // Fetch minimum price for each category
+  const fetchCategoryPricing = async () => {
+    console.log('Starting to fetch category pricing...');
+    
+    // Map display category names to database category names
+    const categoryMapping: Record<string, string> = {
+      "Wound Care & Dressings": "First Aid & Wound Care",
+      "Antiseptics & Ointments": "Antiseptics & Ointments",
+      "Tapes & Wraps": "Taping & Bandaging",
+      "Instruments & Tools": "Instruments & Tools",
+      "Pain & Symptom Relief": "Over-the-Counter Medication",
+      "Trauma & Emergency": "Emergency Care",
+      "Personal Protection Equipment (PPE)": "Personal Protection Equipment (PPE)",
+      "First Aid Information & Essentials": "Documentation & Communication",
+      "Hot & Cold Therapy": "Hot & Cold Therapy",
+      "Hydration & Nutrition": "Hydration & Nutrition",
+      "Miscellaneous & General": "Miscellaneous & General"
+    };
+    
+    const updatedCategories = await Promise.all(
+      baseCategoriesConfig.map(async (category) => {
+        try {
+          const databaseCategory = categoryMapping[category.name] || category.dbCategory;
+          console.log(`Fetching products for category: ${category.name} (DB: ${databaseCategory})`);
+          // Query products for this category
+          const response = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            [
+              Query.equal('category', databaseCategory),
+              Query.limit(50)
+            ]
+          );
+          console.log(`Response for ${category.name}:`, response);
+
+          if (response.documents && response.documents.length > 0) {
+            // Collect all prices from both direct price field and offers array
+            const allPrices: number[] = [];
+            
+            response.documents.forEach((product: any) => {
+              // Add direct price if available
+              if (product.price && product.price > 0) {
+                allPrices.push(product.price);
+              }
+              
+              // Add prices from offers array if available
+              if (product.offers && Array.isArray(product.offers)) {
+                product.offers.forEach((offer: any) => {
+                  if (offer.price && offer.price > 0) {
+                    allPrices.push(offer.price);
+                  }
+                });
+              }
+            });
+            
+            if (allPrices.length > 0) {
+              const minPrice = Math.min(...allPrices);
+              const maxPrice = Math.max(...allPrices);
+              
+              // Show range if min and max are different, otherwise show single price
+              const priceDisplay = minPrice === maxPrice 
+                ? `$${minPrice.toFixed(2)}`
+                : `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
+              
+              return {
+                ...category,
+                priceFrom: priceDisplay,
+                loading: false
+              };
+            }
+          }
+          
+          // Fallback if no products found
+          return {
+            ...category,
+            priceFrom: "View Products",
+            loading: false
+          };
+        } catch (error) {
+          console.error(`Error fetching pricing for ${category.name}:`, error);
+          return {
+            ...category,
+            priceFrom: "View Products",
+            loading: false
+          };
+        }
+      })
+    );
+    
+    setCategories(updatedCategories);
+  };
+
+  useEffect(() => {
+    fetchCategoryPricing();
+  }, []);
+
   return (
     <div className="container mx-auto py-16 bg-gradient-to-br from-background to-secondary/70 rounded-xl border border-border shadow-md padding-container">
       <div className="max-w-2xl mb-12">
@@ -90,7 +191,7 @@ const CategoryGrid = () => {
         </p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in">
-        {categories.map(({ name, description, icon: Icon, slug, priceFrom, popular }) => (
+        {categories.map(({ name, description, icon: Icon, slug, priceFrom, popular, loading }) => (
           <Link to={`/catalog?cat=${slug}`} key={name}>
             <div className="h-full relative pro-card animate-scale">
               {popular && (
@@ -112,7 +213,11 @@ const CategoryGrid = () => {
                       {description}
                     </p>
                     <div className="text-sm font-semibold text-primary bg-primary/10 inline-block px-3 py-1 rounded-full">
-                      From {priceFrom}
+                      {loading ? (
+                        <span className="animate-pulse">Loading...</span>
+                      ) : (
+                        priceFrom.startsWith('$') ? `From ${priceFrom}` : priceFrom
+                      )}
                     </div>
                   </div>
                 </div>
