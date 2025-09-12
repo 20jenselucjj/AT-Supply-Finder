@@ -1,0 +1,29 @@
+{
+    "projectId": "68af870000012641090a",
+    "endpoint": "https://nyc.cloud.appwrite.io/v1",
+    "functions": [
+        {
+            "$id": "68b211da003bfec2ae74",
+            "execute": [
+                "any"
+            ],
+            "name": "user-management",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-22",
+            "scopes": [
+                "users.read",
+                "users.write",
+                "documents.read",
+                "documents.write"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "index.js",
+            "commands": "",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/user-management"
+        }
+    ]
+}

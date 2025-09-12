@@ -128,11 +128,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             id: user.id || '',
             email: user.email || 'No email',
             $createdAt: user.$createdAt || new Date().toISOString(),
-            $lastSignInAt: user.accessedAt || null, // Use accessedAt for last sign in
+            $lastSignInAt: user.accessedAt || user.$lastSignInAt || null, // Use accessedAt or $lastSignInAt
             role: user.role || 'user',
             emailVerified: user.emailVerification ? true : false,
-            is_active: user.accessedAt ? 
-              new Date(user.accessedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
+            is_active: (user.accessedAt || user.$lastSignInAt) ? 
+              new Date(user.accessedAt || user.$lastSignInAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : 
               false
           }));
 
@@ -293,8 +293,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       // Create user using Appwrite function
       const { functions } = await import('@/lib/api/appwrite');
       
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+      
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
+      }
+      
       const execution = await functions.createExecution(
-        '68b211da003bfec2ae74', // user-management function ID
+        functionId,
         JSON.stringify({
           action: 'add',
           email: newUserEmail,
@@ -412,6 +419,62 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         throw new Error('You must be logged in to update users');
       }
 
+      // Handle role updates specifically
+      if (updates.role) {
+        const params = {
+          action: 'updateRole',
+          userId: userId,
+          newRole: updates.role,
+          requestorId: currentUser.$id
+        };
+        
+        console.log('Updating user role with params:', params);
+        
+        // Import the functions object from appwrite.ts
+        const { functions } = await import('@/lib/api/appwrite');
+        
+        // Get the function ID from environment variables
+        const functionId = import.meta.env.VITE_APPWRITE_LIST_USERS_FUNCTION_ID;
+        
+        if (!functionId) {
+          throw new Error('Missing Appwrite function ID in environment variables');
+        }
+        
+        // Execute the Appwrite function
+        const execution = await functions.createExecution(
+          functionId,
+          JSON.stringify(params),
+          false // synchronous execution
+        );
+        
+        if (execution.status !== 'completed') {
+          throw new Error(`Function execution failed: ${execution.status}`);
+        }
+        
+        // Parse the response
+        const responseData = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+        console.log('Update user role response:', responseData);
+        
+        // Handle both success and error responses
+        if (responseData.success === false) {
+          throw new Error(responseData.error || responseData.message || 'Function execution failed');
+        }
+        
+        // Update the selectedUser if it matches the updated user
+        if (selectedUser && selectedUser.id === userId) {
+          setSelectedUser(prevUser => prevUser ? { ...prevUser, role: updates.role } : null);
+        }
+        
+        return responseData;
+      }
+      
+      // For other updates, we'll need to implement additional backend actions
+      // For now, throw an error for unsupported updates
+      const supportedUpdates = Object.keys(updates).filter(key => key !== 'role');
+      if (supportedUpdates.length > 0) {
+        throw new Error(`Update operations for ${supportedUpdates.join(', ')} are not yet implemented`);
+      }
+      
       const params = {
         action: 'update',
         userId: userId,
@@ -525,6 +588,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       
       await updateUser(userId, { role: newRole });
       toast.success('User role updated successfully');
+      
+      // Refresh the user list to ensure UI is in sync with backend
+      await fetchUsers(currentPage, filters);
     } catch (error: any) {
       // Revert the UI change if the update fails
       setUsers(prevUsers => 
