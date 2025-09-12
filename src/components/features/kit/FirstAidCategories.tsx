@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Cross } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 
 export interface FirstAidCategory {
@@ -208,7 +208,10 @@ const FirstAidCategories = ({ onCategorySelect }: FirstAidCategoriesProps) => {
   return (
     <div className="space-y-4">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Build Your First Aid Kit</h2>
+        <h2 className="text-2xl font-bold mb-2 flex items-center gap-3">
+          Build Your First Aid Kit
+          <Cross className="h-6 w-6 text-red-500 animate-pulse" />
+        </h2>
         <p className="text-muted-foreground">
           Select components for each category to build a comprehensive first aid kit.
         </p>

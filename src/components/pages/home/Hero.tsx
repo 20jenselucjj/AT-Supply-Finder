@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Cross } from "lucide-react";
 import { useCallback } from "react";
 import { motion } from "framer-motion";
 
@@ -43,8 +43,9 @@ const Hero = () => {
       <div className="container mx-auto py-8 md:py-12 lg:py-16">
         <div className="mx-auto max-w-4xl text-center animate-fade-in">
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight stagger-item text-foreground flex items-center justify-center gap-4" style={{ fontFamily: 'var(--font-heading)' }}>
             Build Your <span className="text-red-500 animate-pulse">First Aid Kit</span>
+            <Cross className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 text-red-500 animate-pulse" />
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto stagger-item" style={{ fontFamily: 'var(--font-body)' }}>
             Compare medical supplies across <strong className="font-semibold">trusted vendors</strong> and build your first aid kit at competitive prices.
