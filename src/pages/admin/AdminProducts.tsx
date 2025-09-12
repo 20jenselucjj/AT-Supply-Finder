@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import ProductManagement from '@/components/pages/admin/ProductManagement';
+import ProductManagement from '@/components/pages/admin/product-management';
 import { databases, account } from '@/lib/api/appwrite';
 
 const AdminProducts = () => {

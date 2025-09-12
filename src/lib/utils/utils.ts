@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Debounce function for rate limiting
+export const debounce = (func: (...args: any[]) => void, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
 // Basic currency formatter (USD for now) centralizing logic for easier future i18n.
 export function formatCurrency(value: number, currency: string = 'USD', locale: string = 'en-US') {
   if (isNaN(value)) return ''

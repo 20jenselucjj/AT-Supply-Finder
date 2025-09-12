@@ -159,23 +159,20 @@ const SiteHeader = () => {
           </nav>
         )}
 
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button asChild variant="hero" className="hidden md:flex">
-            <Link to="/catalog">Browse</Link>
-          </Button>
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
-            variant="outline"
+            variant="default"
             aria-label={user ? "User profile" : "Login"}
             onClick={handleProfileClick}
-            className="px-3 sm:px-4"
+            className="px-4 sm:px-5 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {user ? "Profile" : "Login"}
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             onClick={toggleTheme}
-            className="px-3 sm:px-4"
+            className="px-4 sm:px-5 bg-secondary hover:bg-secondary/80"
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
