@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ProductCardSkeleton, ProductTableSkeleton, SearchSkeleton } from './components/ProductCardSkeleton';
 import { ProductForm } from '@/components/pages/admin/ProductForm';
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
