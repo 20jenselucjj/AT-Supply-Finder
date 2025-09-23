@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { ProductCardSkeleton, ProductTableSkeleton, SearchSkeleton } from './components/ProductCardSkeleton';
 import { ProductForm } from '@/components/pages/admin/ProductForm';
+import { AmazonProductSelectionModal } from '@/components/pages/admin/AmazonProductSelectionModal';
 
 export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProducts, onProductCountChange }) => {
   const productsPerPage = 10;
@@ -33,6 +34,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
   const [isDeleting, setIsDeleting] = useState(false);
   const [isImportProductsOpen, setIsImportProductsOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isAmazonProductsOpen, setIsAmazonProductsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   
   // Bulk update state
@@ -689,6 +691,11 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     await handleCreateProduct();
   };
 
+  // Handle Amazon products modal
+  const handleAmazonProducts = () => {
+    setIsAmazonProductsOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -714,6 +721,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
               />
             </DialogContent>
           </Dialog>
+
+          {/* Amazon Product Selection Modal */}
+          <AmazonProductSelectionModal
+            open={isAmazonProductsOpen}
+            onOpenChange={setIsAmazonProductsOpen}
+          />
           <SearchAndActions
             searchTerm={searchTerm}
             setSearchTerm={handleSearchInputChange}
@@ -737,6 +750,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             setIsAddProductOpen={setIsAddProductOpen}
             isImportProductsOpen={isImportProductsOpen}
             setIsImportProductsOpen={setIsImportProductsOpen}
+            isAmazonProductsOpen={isAmazonProductsOpen}
+            setIsAmazonProductsOpen={setIsAmazonProductsOpen}
             handleCSVImport={handleCSVImport}
             productForm={productForm}
             setProductForm={setProductForm}
@@ -744,6 +759,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
             handleEnhanceWithAI={handleEnhanceWithAI}
             isLoadingProductInfo={isLoadingProductInfo}
             handleAddProduct={handleAddProduct}
+            handleAmazonProducts={handleAmazonProducts}
             handleKeyPress={handleKeyPress}
           />
           

@@ -14,7 +14,8 @@ import {
   Search,
   ChevronDown,
   X,
-  MoreHorizontal
+  MoreHorizontal,
+  Package
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,6 +48,8 @@ interface SearchAndActionsProps {
   setIsAddProductOpen: (value: boolean) => void;
   isImportProductsOpen: boolean;
   setIsImportProductsOpen: (value: boolean) => void;
+  isAmazonProductsOpen: boolean;
+  setIsAmazonProductsOpen: (value: boolean) => void;
   handleCSVImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   productForm: any;
   setProductForm: (value: any) => void;
@@ -54,6 +57,7 @@ interface SearchAndActionsProps {
   handleEnhanceWithAI: () => void;
   isLoadingProductInfo: boolean;
   handleAddProduct: () => void;
+  handleAmazonProducts: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }
 
@@ -80,6 +84,8 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   setIsAddProductOpen,
   isImportProductsOpen,
   setIsImportProductsOpen,
+  isAmazonProductsOpen,
+  setIsAmazonProductsOpen,
   handleCSVImport,
   productForm,
   setProductForm,
@@ -87,6 +93,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   handleEnhanceWithAI,
   isLoadingProductInfo,
   handleAddProduct,
+  handleAmazonProducts,
   handleKeyPress
 }) => {
   const clearSearch = () => {
@@ -228,6 +235,15 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
               >
                 <Plus className="h-4 w-4" />
                 Add Product
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={handleAmazonProducts}
+                className="gap-2 font-medium shadow-sm hover:shadow-md transition-shadow"
+              >
+                <Package className="h-4 w-4" />
+                Create Amazon Products
               </Button>
             </>
           )}
