@@ -1,4 +1,25 @@
-import { Product, VendorOffer } from './types';
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  brand: string;
+  rating: number;
+  price: number;
+  features: string[];
+  offers: VendorOffer[];
+  imageUrl: string;
+  asin: string;
+  affiliateLink: string;
+  dimensions: string;
+  weight: string;
+  material: string;
+}
+
+interface VendorOffer {
+  vendor: string;
+  price: number;
+  url: string;
+}
 import { databases } from './appwrite';
 
 interface ProductCache {
@@ -147,8 +168,8 @@ class AmazonProductService {
     // Parse features if it's a string
     let features: string[] = [];
     if (typeof dbProduct.features === 'string') {
-      // If features is a comma-separated string, split it
-      features = dbProduct.features.split(',').map((f: string) => f.trim()).filter(Boolean);
+      // Database stores features with '..' separator, split by double periods
+      features = dbProduct.features.split('..').map((f: string) => f.trim()).filter(Boolean);
     } else if (Array.isArray(dbProduct.features)) {
       features = dbProduct.features;
     }

@@ -136,7 +136,7 @@ export const CatalogRefactored = () => {
         dimensions: product.dimensions || '',
         weight: product.weight || '',
         material: product.material || '',
-        features: Array.isArray(product.features) ? product.features : (typeof product.features === 'string' && product.features.trim() !== '' ? product.features.split(',').map(f => f.trim()) : []),
+        features: Array.isArray(product.features) ? product.features : (typeof product.features === 'string' && product.features.trim() !== '' ? product.features.split('..').map(f => f.trim()) : []),
         price: product.price,
         affiliateLink: product.affiliateLink,
         offers: product.price ? [{

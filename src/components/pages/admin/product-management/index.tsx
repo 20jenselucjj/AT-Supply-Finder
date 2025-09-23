@@ -283,7 +283,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         title: productForm.name,
         brand: productForm.brand,
         category: reverseCategoryMapping[productForm.category] || productForm.category,
-        features: productForm.features ? productForm.features.split('\n') : [],
+        features: productForm.features ? productForm.features.split('\n').filter(f => f.trim()) : [],
         dimensions: productForm.dimensions,
         weight: productForm.weight,
         material: productForm.material
@@ -620,9 +620,9 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       weight: product.weight || '',
       material: product.material || '',
       features: Array.isArray(product.features) 
-        ? product.features.join(', ') 
+        ? product.features.join('\n') 
         : typeof product.features === 'string' 
-          ? product.features 
+          ? product.features.split('..').join('\n')
           : '',
       image_url: product.imageUrl || '',
       asin: product.asin || '',

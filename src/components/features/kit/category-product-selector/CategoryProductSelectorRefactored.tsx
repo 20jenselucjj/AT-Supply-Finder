@@ -94,7 +94,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
         features: Array.isArray(product.features) 
           ? product.features 
           : (typeof product.features === 'string' && product.features.trim() !== '' 
-            ? product.features.split(',').map(f => f.trim()) 
+            ? product.features.split('..').map(f => f.trim()) 
             : []),
         imageUrl: product.imageUrl,
         rating: product.rating || 0,

@@ -154,7 +154,7 @@ const Catalog = () => {
         // Convert features string to array if needed
         let features: string[] = [];
         if (typeof product.features === 'string' && product.features.trim() !== '') {
-          features = product.features.split(',').map((f: string) => f.trim());
+          features = product.features.split('..').map((f: string) => f.trim());
         } else if (Array.isArray(product.features)) {
           features = product.features;
         }

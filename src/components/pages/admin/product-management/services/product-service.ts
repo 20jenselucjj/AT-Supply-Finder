@@ -126,7 +126,7 @@ export const productService = {
         features: Array.isArray(product.features) 
           ? product.features 
           : typeof product.features === 'string' 
-            ? product.features.split('\n').filter((f: string) => f.trim()) 
+            ? product.features.split('..').filter((f: string) => f.trim()) 
             : [],
         imageUrl: product.imageUrl,
         asin: product.asin,
@@ -262,7 +262,7 @@ export const productService = {
         dimensions: productData.dimensions || null,
         weight: productData.weight || null,
         material: productData.material || null,
-        features: productData.features || null,
+        features: productData.features ? productData.features.replace(/\n/g, '..') : null,
         imageUrl: productData.image_url || null,
         asin: productData.asin || null,
         affiliateLink: productData.affiliate_link || null
@@ -326,7 +326,7 @@ export const productService = {
         dimensions: productData.dimensions || null,
         weight: productData.weight || null,
         material: productData.material || null,
-        features: productData.features || null,
+        features: productData.features ? productData.features.replace(/\n/g, '..') : null,
         imageUrl: productData.image_url || null,
         asin: productData.asin || null,
         affiliateLink: productData.affiliate_link || null

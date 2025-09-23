@@ -46,7 +46,7 @@ export const formatProductForDisplay = (product: any) => {
     features: Array.isArray(product.features) 
       ? product.features 
       : typeof product.features === 'string' 
-        ? product.features.split('\n').filter((f: string) => f.trim()) 
+        ? product.features.split('..').filter((f: string) => f.trim()) 
         : []
   };
 };

@@ -91,7 +91,7 @@ export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }
           dimensions: doc.dimensions,
           weight: doc.weight,
           material: doc.material,
-          features: doc.features ? doc.features.split(', ') : [],
+          features: doc.features ? doc.features.split('..') : [],
           imageUrl: doc.imageUrl,
           asin: doc.asin,
           affiliateLink: doc.affiliateLink,

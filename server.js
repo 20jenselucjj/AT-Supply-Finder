@@ -442,7 +442,7 @@ app.post('/api/import-amazon-products', async (req, res) => {
       const reviewCount = product.ItemInfo?.ProductInfo?.Reviews?.TotalReviews?.DisplayValue || null;
       
       // Extract dimensions and weight
-      const dimensions = product.ItemInfo?.ProductInfo?.ItemDimensions?.DisplayValue || null;
+      let dimensions = product.ItemInfo?.ProductInfo?.ItemDimensions?.DisplayValue || null;
       const weight = product.ItemInfo?.ProductInfo?.PackageDimensions?.Weight?.DisplayValue || null;
       
       // Extract quantity information but we'll store it in dimensions if needed
@@ -502,7 +502,6 @@ app.post('/api/import-amazon-products', async (req, res) => {
         category: category,
         brand: brandString,
         rating: rating || 0,
-        reviewCount: reviewCount || 0,
         price: price || 0,
         features: featuresString,
         imageUrl: imageUrl || '',
