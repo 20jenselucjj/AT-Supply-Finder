@@ -13,10 +13,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
+import { useProductRefresh } from '@/context/product-refresh-context';
+import { productService } from '@/components/pages/admin/product-management/services/product-service';
 
 interface AmazonProductSelectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onProductsImported?: () => void;
 }
 
 // Define the 11 first aid categories from the existing system
@@ -37,8 +40,10 @@ const FIRST_AID_CATEGORIES = [
 export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalProps> = ({
   open,
   onOpenChange,
+  onProductsImported,
 }) => {
   const { isAdmin } = useRBAC();
+  const { triggerProductRefresh } = useProductRefresh();
   // State for selected categories
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -99,11 +104,12 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
         throw new Error('Missing Appwrite function ID in environment variables');
       }
       
-      // Prepare the request data
+      // Prepare the request data with duplicate check enabled
       const requestData = {
         selectedCategories,
         productsPerCategory,
-        action: 'import' // Specify the action for the function
+        action: 'import',
+        checkDuplicates: true // Enable duplicate checking
       };
       
       // Execute the Appwrite function
@@ -127,7 +133,18 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
       }
       
       if (result.success) {
-        toast.success(result.message || 'Products imported successfully');
+        const successMessage = result.message || 'Products imported successfully';
+        const duplicateInfo = result.duplicatesSkipped ? ` (${result.duplicatesSkipped} duplicates skipped)` : '';
+        toast.success(`${successMessage}${duplicateInfo}`);
+        
+        // Trigger product refresh to update the product list
+        triggerProductRefresh();
+        
+        // Call the callback to refresh data
+        if (onProductsImported) {
+          onProductsImported();
+        }
+        
         handleCancel();
       } else {
         throw new Error(result.error || 'Failed to import products');

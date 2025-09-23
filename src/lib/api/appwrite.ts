@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, Functions } from 'appwrite';
+import { Client, Account, Databases, Storage, Functions, Query } from 'appwrite';
 
 // Validate that required environment variables are present
 const requiredEnvVars = [
@@ -29,4 +29,4 @@ export const storage = new Storage(client);
 export const functions = new Functions(client);
 
 // Export client for debugging
-export { client };
+export { client, Query };

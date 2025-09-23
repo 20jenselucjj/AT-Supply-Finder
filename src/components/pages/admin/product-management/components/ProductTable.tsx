@@ -151,9 +151,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
         : typeof product.features === 'string'
           ? product.features
           : '',
-      imageUrl: product.imageUrl || '',
+      image_url: product.imageUrl || '',
       asin: product.asin || '',
-      affiliateLink: product.affiliateLink || ''
+      affiliate_link: product.affiliateLink || ''
     });
     setIsEditDialogOpen(true);
   };

@@ -122,6 +122,7 @@ export const useProductData = (productsPerPage: number) => {
     brands,
     materials,
     fetchProducts,
+    fetchCategories,
     createProduct,
     updateProduct,
     deleteProduct,

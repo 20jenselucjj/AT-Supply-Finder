@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { Product, KitItem } from './types';
+import type { Product, KitItem } from '../types/types';
 
 interface GeminiConfig {
   apiKey: string;
@@ -12,6 +12,8 @@ interface KitGenerationRequest {
   kitType?: 'basic' | 'travel' | 'workplace' | 'outdoor' | 'pediatric';
   scenario?: string;
   budget?: number;
+  sportType?: string;
+  skillLevel?: string;
 }
 
 interface GeneratedKit {
@@ -30,7 +32,7 @@ class GeminiService {
 
   constructor(config: GeminiConfig) {
     this.client = new GoogleGenerativeAI(config.apiKey);
-    this.model = config.model || 'gemini-2.0-flash-exp';
+    this.model = config.model || 'gemini-2.5-flash';
     this.cleanupCache(); // Clean up expired cache entries periodically
   }
 
@@ -270,10 +272,14 @@ Guidelines:
           product_name: product.name,
           product_brand: product.brand,
           product_category: product.category,
-          product_image_url: product.image_url,
+          product_image_url: product.image_url || product.imageUrl,
+          name: product.name,
+          category: product.category,
+          brand: product.brand,
           quantity: item.quantity || 1,
-          price: product.vendor_offers?.[0]?.price || 0,
-          notes: item.reason || '',
+          price: product.vendor_offers?.[0]?.price || product.price || 0,
+          imageUrl: product.image_url || product.imageUrl,
+          offers: product.vendor_offers || product.offers || [],
           reasoning: item.reason || ''
         };
       });

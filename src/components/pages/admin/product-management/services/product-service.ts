@@ -1,4 +1,4 @@
-import { databases } from '@/lib/api/appwrite';
+import { databases, Query } from '@/lib/api/appwrite';
 import { logger } from '@/lib/utils/logger';
 import { ProductData } from '../types';
 
@@ -163,6 +163,42 @@ export const productService = {
     } catch (error) {
       console.error('Error fetching products:', error);
       throw error;
+    }
+  },
+
+  checkExistingASINs: async (asins: string[]): Promise<Set<string>> => {
+    try {
+      if (asins.length === 0) {
+        return new Set();
+      }
+
+      // Check each ASIN individually to avoid SDK issues with bulk queries on regional endpoints
+      const existingASINs = new Set<string>();
+      
+      for (const asin of asins) {
+        try {
+          const response = await databases.listDocuments(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            'products',
+            [
+              Query.equal('asin', asin),
+              Query.limit(1)
+            ]
+          );
+
+          if (response.documents && response.documents.length > 0) {
+            existingASINs.add(asin);
+          }
+        } catch (error) {
+          console.warn(`Failed to check ASIN ${asin}:`, error);
+          // Continue checking other ASINs even if one fails
+        }
+      }
+
+      return existingASINs;
+    } catch (error) {
+      console.error('Error checking existing ASINs:', error);
+      return new Set();
     }
   },
 

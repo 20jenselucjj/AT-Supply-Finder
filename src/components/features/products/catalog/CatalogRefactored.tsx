@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
+import { useProductRefresh } from "@/context/product-refresh-context";
 import {
   Sheet,
   SheetContent,
@@ -38,6 +39,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 export const CatalogRefactored = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const [params, setParams] = useSearchParams();
+  const { refreshTrigger } = useProductRefresh();
   const [products, setProducts] = useState<Product[]>(() => {
     // Initialize from cache if available and not expired
     try {
@@ -183,7 +185,7 @@ export const CatalogRefactored = () => {
   // Load products from database
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+  }, [loadProducts, refreshTrigger]);
 
   // Load categories
   useEffect(() => {

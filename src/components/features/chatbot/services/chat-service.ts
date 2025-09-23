@@ -200,7 +200,7 @@ export const generateFirstAidKit = async (
 
   const geminiService = new GeminiService({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
-    model: 'gemini-2.0-flash-exp'
+    model: 'gemini-2.5-flash'
   });
 
   // Search for relevant products using enhanced RAG
@@ -215,13 +215,14 @@ export const generateFirstAidKit = async (
       kitType: context.kitType as any,
       scenario: context.scenario,
       budget: context.budget,
-      groupSize: context.groupSize,
       duration: context.duration,
-      specialNeeds: context.specialNeeds,
-      onProgress
+      specialNeeds: context.specialNeeds
     });
   } catch (openRouterError) {
-    console.warn('OpenRouter failed, falling back to Gemini:', openRouterError);
+    console.warn('OpenRouter failed, falling back to Gemini 2.5 Pro:', openRouterError);
+    // Notify user about the fallback
+    onProgress?.('fallback', 30, 'OpenRouter unavailable, switching to Gemini 2.5 Pro...');
+    
     // Fallback to Gemini service
     try {
       generatedKit = await geminiService.generateFirstAidKit({
@@ -229,11 +230,12 @@ export const generateFirstAidKit = async (
         availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
         kitType: context.kitType as any,
         scenario: context.scenario,
-        budget: context.budget,
-        onProgress
+        budget: context.budget
       });
     } catch (geminiError) {
       console.warn('Gemini failed, falling back to rule-based generation:', geminiError);
+      onProgress?.('fallback', 50, 'AI services unavailable, using rule-based generation...');
+      
       // Final fallback to rule-based generation
       try {
         generatedKit = openRouterService.generateFallbackKit({
@@ -247,6 +249,85 @@ export const generateFirstAidKit = async (
       } catch (ruleBasedError) {
         console.error('All AI services failed:', ruleBasedError);
         throw new Error('Failed to generate first aid kit with all available methods. Please try again later.');
+      }
+    }
+  }
+
+  return generatedKit;
+};
+
+export const generateTrainingKit = async (
+  userQuery: string,
+  products: Product[],
+  sportType?: string,
+  skillLevel?: string,
+  budget?: number,
+  groupSize?: number,
+  duration?: string,
+  specialNeeds?: string[],
+  onProgress?: ChatProgressCallback
+): Promise<GeneratedKit> => {
+  const openRouterService = new OpenRouterService({ 
+    apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+    model: 'deepseek/deepseek-chat-v3.1:free'
+  });
+
+  const geminiService = new GeminiService({
+    apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
+    model: 'gemini-2.5-flash'
+  });
+
+  // Search for relevant products using enhanced RAG
+  const relevantProducts = await openRouterService.searchProducts(userQuery, products);
+  
+  // Try to generate training kit using OpenRouter first
+  let generatedKit: GeneratedKit;
+  try {
+    generatedKit = await openRouterService.generateTrainingKit({
+      userQuery,
+      availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
+      sportType,
+      skillLevel,
+      budget,
+      groupSize,
+      duration,
+      specialNeeds,
+      onProgress
+    });
+  } catch (openRouterError) {
+    console.warn('OpenRouter failed, falling back to Gemini 2.5 Pro for training kit:', openRouterError);
+    // Notify user about the fallback
+    onProgress?.('fallback', 30, 'OpenRouter unavailable, switching to Gemini 2.5 Pro for training kit...');
+    
+    // Fallback to Gemini service
+    try {
+      generatedKit = await geminiService.generateTrainingKit({
+        userQuery,
+        availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
+        sportType,
+        skillLevel,
+        budget,
+        groupSize,
+        duration,
+        specialNeeds,
+        onProgress
+      });
+    } catch (geminiError) {
+      console.warn('Gemini failed, falling back to rule-based generation for training kit:', geminiError);
+      onProgress?.('fallback', 50, 'AI services unavailable, using rule-based generation for training kit...');
+      
+      // Final fallback to rule-based generation
+      try {
+        generatedKit = openRouterService.generateFallbackKit({
+          userQuery,
+          availableProducts: relevantProducts.slice(0, 50),
+          kitType: 'basic' as any,
+          scenario: sportType,
+          budget
+        });
+      } catch (ruleBasedError) {
+        console.error('All AI services failed for training kit:', ruleBasedError);
+        throw new Error('Failed to generate training kit with all available methods. Please try again later.');
       }
     }
   }

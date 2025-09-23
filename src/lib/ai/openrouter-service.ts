@@ -1,4 +1,4 @@
-import type { Product, KitItem } from './types';
+import type { Product, KitItem } from '../types/types';
 
 interface OpenRouterConfig {
   apiKey: string;
@@ -16,6 +16,8 @@ interface KitGenerationRequest {
   duration?: string;
   specialNeeds?: string[];
   onProgress?: (stage: string, progress: number, message: string) => void;
+  sportType?: string;
+  skillLevel?: string;
 }
 
 interface GeneratedKit {
@@ -431,7 +433,6 @@ class OpenRouterService {
           imageUrl: product.imageUrl || product.image_url || '/placeholder.svg',
           quantity,
           price: product.price || product.offers?.[0]?.price || 0,
-          notes: `Essential item for ${categoryId.replace('-', ' ')}`,
           reasoning: `Selected as essential item for ${categoryId.replace('-', ' ')}`,
           asin: product.asin,
           offers: product.offers || []
@@ -504,7 +505,6 @@ class OpenRouterService {
         imageUrl: product.imageUrl || product.image_url || '/placeholder.svg',
         quantity: 1 * quantityMultiplier,
         price: product.price || product.offers?.[0]?.price || 0,
-        notes: `Added for ${kitType} kit type`,
         reasoning: `Selected based on ${kitType} kit type requirements`,
         asin: product.asin,
         offers: product.offers || []

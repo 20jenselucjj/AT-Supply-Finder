@@ -227,7 +227,7 @@ app.post('/api/import-amazon-products', async (req, res) => {
     console.log('🔄 Starting Amazon product import process');
     console.log('📝 Request body:', JSON.stringify(req.body, null, 2));
 
-    const { selectedCategories, productsPerCategory } = req.body;
+    const { selectedCategories, productsPerCategory, checkDuplicates = true } = req.body;
 
     console.log('🔍 Validating request parameters...');
     console.log('📂 Selected categories:', selectedCategories);
@@ -259,10 +259,19 @@ app.post('/api/import-amazon-products', async (req, res) => {
     
     // Initialize Appwrite client
     const client = new Client();
+    
+    // Use global endpoint to avoid "request cannot have request body" error with regional endpoints
+    const endpoint = process.env.APPWRITE_FUNCTION_API_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+    
+    // Ensure we're using the global endpoint, not regional ones that can cause issues
+    const globalEndpoint = endpoint.replace('nyc.cloud.appwrite.io', 'cloud.appwrite.io');
+    
     client
-      .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+      .setEndpoint(globalEndpoint)
       .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID)
       .setKey(process.env.APPWRITE_API_KEY || process.env.VITE_APPWRITE_API_KEY);
+      
+    console.log('🔧 Appwrite client configured with endpoint:', globalEndpoint);
 
     const databases = new Databases(client);
     
@@ -336,45 +345,101 @@ app.post('/api/import-amazon-products', async (req, res) => {
     
     console.log(`Found ${allProducts.length} products from Amazon`);
     
-    // Get existing products from database to check for duplicates
-    // Use Appwrite function environment variable if available, otherwise fall back to VITE variable
-    const databaseId = process.env.APPWRITE_FUNCTION_DATABASE_ID || process.env.VITE_APPWRITE_DATABASE_ID;
+    let uniqueProducts = allProducts;
+    let duplicatesSkipped = 0;
     
-    if (!databaseId) {
-      throw new Error('Database ID not found in environment variables. Please set either APPWRITE_FUNCTION_DATABASE_ID or VITE_APPWRITE_DATABASE_ID.');
+    // Only check for duplicates if checkDuplicates is enabled
+    if (checkDuplicates) {
+      console.log('🔍 Duplicate checking is enabled');
+      
+      // Get existing products from database to check for duplicates
+      // Use Appwrite function environment variable if available, otherwise fall back to VITE variable
+      const databaseId = process.env.APPWRITE_FUNCTION_DATABASE_ID || process.env.VITE_APPWRITE_DATABASE_ID;
+      
+      if (!databaseId) {
+        throw new Error('Database ID not found in environment variables. Please set either APPWRITE_FUNCTION_DATABASE_ID or VITE_APPWRITE_API_KEY.');
+      }
+      
+      console.log('🔍 Attempting to check for duplicates using individual ASIN lookups...');
+      console.log('⚠️  Note: Using individual queries to bypass node-appwrite v9.0.0 SDK bug with listDocuments on regional endpoints');
+      
+      // Function to check if a specific ASIN exists in the database
+      const checkASINExists = async (asin) => {
+        try {
+          const result = await databases.listDocuments(
+            databaseId,
+            'products',
+            [
+              Query.equal('asin', asin),
+              Query.limit(1)
+            ]
+          );
+          return result.documents.length > 0;
+        } catch (error) {
+          console.warn(`Failed to check ASIN ${asin}:`, error.message);
+          return false; // Assume it doesn't exist if we can't check
+        }
+      };
+      
+      // Check duplicates for each product individually
+      let duplicateCheckFailures = 0;
+      const totalChecks = allProducts.length;
+      
+      // Filter out duplicates using individual ASIN checks
+      const duplicateCheckPromises = allProducts.map(async (product) => {
+        if (!product.ASIN) {
+          return { product, isDuplicate: false };
+        }
+        
+        try {
+          const exists = await checkASINExists(product.ASIN);
+          if (exists) {
+            console.log(`🔍 Found duplicate ASIN: ${product.ASIN}`);
+            duplicatesSkipped++;
+            return { product, isDuplicate: true };
+          }
+          return { product, isDuplicate: false };
+        } catch (error) {
+          duplicateCheckFailures++;
+          console.warn(`⚠️  Failed to check ASIN ${product.ASIN}, assuming not duplicate:`, error.message);
+          return { product, isDuplicate: false };
+        }
+      });
+      
+      console.log(`🔍 Checking ${totalChecks} products for duplicates...`);
+      const duplicateCheckResults = await Promise.all(duplicateCheckPromises);
+      
+      // Calculate failure rate
+      const failureRate = duplicateCheckFailures / totalChecks;
+      console.log(`📊 Duplicate check results: ${duplicateCheckFailures}/${totalChecks} checks failed (${(failureRate * 100).toFixed(1)}%)`);
+      
+      // If more than 50% of checks failed, stop the import to prevent duplicates
+      if (failureRate > 0.5) {
+        console.error('❌ DUPLICATE CHECKING UNRELIABLE - STOPPING IMPORT TO PREVENT DUPLICATES');
+        console.error(`More than 50% of duplicate checks failed (${duplicateCheckFailures}/${totalChecks})`);
+        console.error('This indicates a persistent issue with the database connection or SDK bug');
+        
+        return res.status(500).json({
+          success: false,
+          error: 'Duplicate checking failed - import stopped to prevent duplicate products',
+          details: {
+            totalProducts: allProducts.length,
+            duplicateCheckFailures,
+            failureRate: `${(failureRate * 100).toFixed(1)}%`,
+            suggestion: 'Please check your database connection and try again'
+          }
+        });
+      }
+      
+      // Filter out duplicates
+      uniqueProducts = duplicateCheckResults
+        .filter(result => !result.isDuplicate)
+        .map(result => result.product);
+      
+      console.log(`✅ Found ${uniqueProducts.length} unique products to import, ${duplicatesSkipped} duplicates skipped`);
+    } else {
+      console.log('⚠️ Duplicate checking is disabled - all products will be imported');
     }
-    
-    const existingProductsResponse = await databases.listDocuments(
-      databaseId,
-      'products',
-      [Query.limit(1000)] // Get all products to check for duplicates
-    );
-    
-    const existingProducts = existingProductsResponse.documents;
-    const existingASINs = new Set(existingProducts.map(p => p.asin).filter(Boolean));
-    const existingNames = new Set(existingProducts.map(p => p.name).filter(Boolean));
-    
-    console.log(`Found ${existingASINs.size} existing ASINs and ${existingNames.size} existing product names`);
-    
-    // Filter out duplicates
-    const uniqueProducts = allProducts.filter(product => {
-      // Check if product ASIN already exists
-      if (product.ASIN && existingASINs.has(product.ASIN)) {
-        console.log(`Skipping product with existing ASIN: ${product.ASIN}`);
-        return false;
-      }
-      
-      // Check if product name already exists
-      const productName = product.ItemInfo?.Title?.DisplayValue;
-      if (productName && existingNames.has(productName)) {
-        console.log(`Skipping product with existing name: ${productName}`);
-        return false;
-      }
-      
-      return true;
-    });
-    
-    console.log(`Found ${uniqueProducts.length} unique products to import`);
     
     // Map Amazon data fields to local product fields
     const productsToCreate = uniqueProducts.map(product => {
@@ -446,7 +511,6 @@ app.post('/api/import-amazon-products', async (req, res) => {
       
       // Extract reviews/ratings
       const rating = product.ItemInfo?.ProductInfo?.AverageRating?.DisplayValue || null;
-      const reviewCount = product.ItemInfo?.ProductInfo?.Reviews?.TotalReviews?.DisplayValue || null;
       
       // Extract dimensions and weight
       let dimensions = product.ItemInfo?.ProductInfo?.ItemDimensions?.DisplayValue || null;
@@ -569,6 +633,7 @@ app.post('/api/import-amazon-products', async (req, res) => {
       message: `Successfully imported ${createdProducts.length} products from Amazon`,
       createdCount: createdProducts.length,
       failedCount: failedProducts.length,
+      duplicatesSkipped: duplicatesSkipped,
       failedProducts: failedProducts.map(fp => ({
         productName: fp.product.name,
         error: fp.error

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Search, Package, Star, Plus, Minus, Filter, Grid, List, ChevronUp, ChevronDown, Check } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types/types";
-import { databases } from "@/lib/api/appwrite";
+import { databases, Query } from "@/lib/api/appwrite";
 import { FIRST_AID_CATEGORIES, type FirstAidCategory } from "./FirstAidCategories";
 import ProductSpecifications from "./ProductSpecifications";
 import VendorComparison from "./VendorComparison";
@@ -63,9 +63,9 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         return;
       }
 
-      // Query products from Appwrite database
+      // Query products from Appwrite database using proper SDK Query objects
       let queries = [];
-      queries.push(JSON.stringify({ method: 'equal', attribute: 'category', values: [productCategory] }));
+      queries.push(Query.equal('category', productCategory));
 
       // Add search query if provided (fixed: using searchTerm instead of searchQuery)
       if (searchTerm) {
@@ -75,26 +75,26 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
 
       // Add brand filter if not 'all'
       if (brandFilter !== 'all') {
-        queries.push(JSON.stringify({ method: 'equal', attribute: 'brand', values: [brandFilter] }));
+        queries.push(Query.equal('brand', brandFilter));
       }
 
       // Add price range filters
       if (priceRange.min) {
-        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'price', values: [parseFloat(priceRange.min)] }));
+        queries.push(Query.greaterThanEqual('price', parseFloat(priceRange.min)));
       }
       if (priceRange.max) {
-        queries.push(JSON.stringify({ method: 'lessThanEqual', attribute: 'price', values: [parseFloat(priceRange.max)] }));
+        queries.push(Query.lessThanEqual('price', parseFloat(priceRange.max)));
       }
 
       // Add rating filter
       if (ratingFilter !== 'any') {
         const minRating = parseInt(ratingFilter);
-        queries.push(JSON.stringify({ method: 'greaterThanEqual', attribute: 'rating', values: [minRating] }));
+        queries.push(Query.greaterThanEqual('rating', minRating));
       }
 
       // Add limit and order
-      queries.push(JSON.stringify({ method: 'limit', values: [50] }));
-      queries.push(JSON.stringify({ method: 'orderDesc', attribute: '$createdAt' }));
+      queries.push(Query.limit(50));
+      queries.push(Query.orderDesc('$createdAt'));
 
       console.log('Appwrite query:', queries);
 

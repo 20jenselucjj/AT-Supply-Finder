@@ -510,7 +510,9 @@ export default async function scrapeAmazonProduct(req, res) {
 
     // Enhance product data with AI if API key is available
     const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-    if (openRouterApiKey) {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    
+    if (openRouterApiKey || geminiApiKey) {
       try {
         console.log('Enhancing product data with AI...');
         const enhancedProductData = await enhanceProductWithAI({
@@ -519,7 +521,7 @@ export default async function scrapeAmazonProduct(req, res) {
           features: productData.features, // Ensure features are passed correctly
           dimensions: productData.dimensions, // Pass dimensions for sizing information
           weight: productData.weight // Pass weight information
-        }, openRouterApiKey);
+        }, openRouterApiKey, geminiApiKey);
         
         // Merge enhanced data with original data
         Object.assign(productData, enhancedProductData);

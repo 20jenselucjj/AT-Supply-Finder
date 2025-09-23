@@ -74,11 +74,19 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     brands,
     materials,
     fetchProducts,
+    fetchCategories,
     createProduct,
     updateProduct,
     deleteProduct,
     bulkDeleteProducts
   } = useProductData(productsPerPage);
+
+  // Handle Amazon products import callback
+  const handleAmazonProductsImported = () => {
+    // Refresh the product list and categories after Amazon import
+    fetchProducts(currentPage);
+    fetchCategories();
+  };
 
   const {
     searchTerm,
@@ -253,11 +261,12 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     setIsLoadingProductInfo(true);
     
     try {
-      // Get OpenRouter API key from environment
+      // Get API keys from environment
       const openRouterApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+      const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
       
-      if (!openRouterApiKey) {
-        toast.error('OpenRouter API key not configured');
+      if (!openRouterApiKey && !geminiApiKey) {
+        toast.error('No AI API keys configured. Please set either OpenRouter or Gemini API key.');
         return;
       }
       
@@ -289,8 +298,17 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         material: productForm.material
       };
       
-      // Call the AI enhancement function
-      const enhancedData = await enhanceProductWithAI(productData, openRouterApiKey);
+      // Provide user feedback based on available AI services
+      if (openRouterApiKey && geminiApiKey) {
+        toast.info('Enhancing with OpenRouter AI...');
+      } else if (openRouterApiKey) {
+        toast.info('Enhancing with OpenRouter AI...');
+      } else if (geminiApiKey) {
+        toast.info('Enhancing with Gemini AI...');
+      }
+      
+      // Call the AI enhancement function with fallback support
+      const enhancedData = await enhanceProductWithAI(productData, openRouterApiKey, geminiApiKey);
       
       // Map database category names to friendly names
       const categoryMapping: Record<string, string> = {
@@ -306,7 +324,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         "Miscellaneous & General": "Miscellaneous & General"
       };
       
-      // Update form with AI-enhanced data
+      // Update form with AI-enhanced data (preserve all existing fields)
       setProductForm(prev => ({
         ...prev,
         name: enhancedData.name || prev.name,
@@ -314,7 +332,15 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         material: enhancedData.material || prev.material,
         // If quantity is found, we might want to use it instead of weight
         weight: enhancedData.quantity || prev.weight,
-        features: enhancedData.features || prev.features
+        features: enhancedData.features || prev.features,
+        // Preserve all other existing fields that shouldn't be overwritten by AI
+        image_url: prev.image_url,
+        affiliate_link: prev.affiliate_link,
+        asin: prev.asin,
+        brand: prev.brand,
+        rating: prev.rating,
+        price: prev.price,
+        dimensions: prev.dimensions
       }));
       
       toast.success('Product information enhanced with AI successfully!');
@@ -726,6 +752,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           <AmazonProductSelectionModal
             open={isAmazonProductsOpen}
             onOpenChange={setIsAmazonProductsOpen}
+            onProductsImported={handleAmazonProductsImported}
           />
           <SearchAndActions
             searchTerm={searchTerm}

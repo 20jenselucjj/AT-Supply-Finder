@@ -8,6 +8,7 @@ import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react
 import { useSearchParams, Link } from "react-router-dom";
 import { useKit } from "@/context/kit-context";
 import { useFavorites } from "@/context/favorites-context";
+import { useProductRefresh } from "@/context/product-refresh-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sheet,
@@ -48,6 +49,7 @@ const Catalog = () => {
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const [params, setParams] = useSearchParams();
   const { favorites } = useFavorites(); // Add this to access favorites
+  const { refreshTrigger } = useProductRefresh();
   const [products, setProducts] = useState<Product[]>(() => {
     // Initialize from cache if available and not expired
     try {
@@ -235,7 +237,7 @@ const Catalog = () => {
   // Load products from database
   useEffect(() => {
     loadProducts();
-  }, [loadProducts]);
+  }, [loadProducts, refreshTrigger]);
 
   // Load categories
   useEffect(() => {
