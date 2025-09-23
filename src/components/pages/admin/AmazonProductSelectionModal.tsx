@@ -89,26 +89,45 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
       setIsImporting(true);
       toast.info('Importing products from Amazon...');
       
-      // Call the API endpoint to import products
-      const response = await fetch('http://localhost:3001/api/import-amazon-products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          selectedCategories,
-          productsPerCategory
-        }),
-      });
+      // Import the functions object from appwrite.ts
+      const { functions } = await import('@/lib/api/appwrite');
       
-      const result = await response.json();
+      // Get the function ID from environment variables
+      const functionId = import.meta.env.VITE_APPWRITE_AMAZON_PA_API_FUNCTION_ID;
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to import products');
+      if (!functionId) {
+        throw new Error('Missing Appwrite function ID in environment variables');
+      }
+      
+      // Prepare the request data
+      const requestData = {
+        selectedCategories,
+        productsPerCategory,
+        action: 'import' // Specify the action for the function
+      };
+      
+      // Execute the Appwrite function
+      const execution = await functions.createExecution(
+        functionId,
+        JSON.stringify(requestData),
+        false // synchronous execution
+      );
+      
+      if (execution.status !== 'completed') {
+        throw new Error(`Function execution failed: ${execution.status}`);
+      }
+      
+      // Parse the response
+      const result = execution.responseBody ? JSON.parse(execution.responseBody) : {};
+      console.log('Amazon PA API response:', result);
+      
+      // Handle both success and error responses
+      if (result.success === false) {
+        throw new Error(result.error || result.message || 'Failed to import products');
       }
       
       if (result.success) {
-        toast.success(result.message);
+        toast.success(result.message || 'Products imported successfully');
         handleCancel();
       } else {
         throw new Error(result.error || 'Failed to import products');

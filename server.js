@@ -260,9 +260,9 @@ app.post('/api/import-amazon-products', async (req, res) => {
     // Initialize Appwrite client
     const client = new Client();
     client
-      .setEndpoint(process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-      .setProject(process.env.VITE_APPWRITE_PROJECT_ID)
-      .setKey(process.env.VITE_APPWRITE_API_KEY);
+      .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
+      .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY || process.env.VITE_APPWRITE_API_KEY);
 
     const databases = new Databases(client);
     
@@ -337,8 +337,15 @@ app.post('/api/import-amazon-products', async (req, res) => {
     console.log(`Found ${allProducts.length} products from Amazon`);
     
     // Get existing products from database to check for duplicates
+    // Use Appwrite function environment variable if available, otherwise fall back to VITE variable
+    const databaseId = process.env.APPWRITE_FUNCTION_DATABASE_ID || process.env.VITE_APPWRITE_DATABASE_ID;
+    
+    if (!databaseId) {
+      throw new Error('Database ID not found in environment variables. Please set either APPWRITE_FUNCTION_DATABASE_ID or VITE_APPWRITE_DATABASE_ID.');
+    }
+    
     const existingProductsResponse = await databases.listDocuments(
-      process.env.VITE_APPWRITE_DATABASE_ID,
+      databaseId,
       'products',
       [Query.limit(1000)] // Get all products to check for duplicates
     );
@@ -530,7 +537,7 @@ app.post('/api/import-amazon-products', async (req, res) => {
       const batchPromises = batch.map(async (product) => {
         try {
           const createdProduct = await databases.createDocument(
-            process.env.VITE_APPWRITE_DATABASE_ID,
+            databaseId,
             'products',
             ID.unique(),
             product
