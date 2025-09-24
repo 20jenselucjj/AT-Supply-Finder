@@ -1,6 +1,44 @@
 {
     "projectId": "68af870000012641090a",
     "endpoint": "https://nyc.cloud.appwrite.io/v1",
+    "projectName": "AT Supply Finder",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "sites": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": true,
+                "phone": true,
+                "invites": true,
+                "anonymous": true,
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
     "functions": [
         {
             "$id": "68b211da003bfec2ae74",
@@ -22,8 +60,933 @@
             "timeout": 15,
             "entrypoint": "index.js",
             "commands": "",
-            "specification": "s-1vcpu-512mb",
+            "specification": "s-0.5vcpu-512mb",
             "path": "functions/user-management"
+        },
+        {
+            "$id": "validate-role",
+            "execute": [
+                "any"
+            ],
+            "name": "Role Validation",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-22",
+            "scopes": [
+                "documents.read",
+                "documents.write",
+                "databases.read",
+                "collections.read"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "validate-role.js",
+            "commands": "npm install",
+            "specification": "s-0.5vcpu-512mb",
+            "path": "functions/Role Validation"
+        },
+        {
+            "$id": "amazon-pa-api",
+            "execute": [
+                "any"
+            ],
+            "name": "Amazon PA API",
+            "enabled": true,
+            "logging": true,
+            "runtime": "node-22",
+            "scopes": [],
+            "events": [],
+            "schedule": "",
+            "timeout": 30,
+            "entrypoint": "src/index.js",
+            "commands": "",
+            "specification": "s-1vcpu-512mb",
+            "path": "functions/Amazon PA API"
+        }
+    ],
+    "sites": [
+        {
+            "$id": "68b0a44500095ca9f39c",
+            "name": "AT-Supply-Finder",
+            "enabled": true,
+            "logging": true,
+            "framework": "vite",
+            "timeout": 30,
+            "installCommand": "npm install",
+            "buildCommand": "npm run build",
+            "outputDirectory": "./dist",
+            "specification": "s-1vcpu-512mb",
+            "buildRuntime": "node-22",
+            "adapter": "static",
+            "fallbackFile": "index.html",
+            "path": "sites/AT-Supply-Finder"
+        }
+    ],
+    "tablesDB": [
+        {
+            "$id": "atSupplyFinder",
+            "name": "AT Supply Finder",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "userKits",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "User Kits",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "kitData",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isPublic",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "user",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "users",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "userKits",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_user_kits_user_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_user_kits_created_at",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_user_kits_is_public",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "userFavorites",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "User Favorites",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "productId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "userFavorites",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                },
+                {
+                    "key": "user",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "users",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "userFavorites",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_user_favorites_user_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_user_favorites_product_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "auditLogs",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"any\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Audit Logs",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "action",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "entityType",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "entityId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "details",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "ipAddress",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 45,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userAgent",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "user",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "users",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "auditLogs",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                },
+                {
+                    "key": "timestamp",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_audit_logs_user_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_audit_logs_action",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_audit_logs_entity_type",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_audit_logs_timestamp",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "userRoles",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "User Roles",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "role",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "user",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "users",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "userRoles",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_user_roles_user_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_user_roles_role",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "starterKitTemplates",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Starter Kit Templates",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "estimatedCost",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "products",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_starter_kit_templates_category",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "products",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Products",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "category",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "brand",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "rating",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "price",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "dimensions",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "weight",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "material",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "asin",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "affiliateLink",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "features",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "qty",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 1
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_products_category",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_products_brand",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "templateProducts",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Template Products",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "templateId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "productId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "quantity",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": null
+                },
+                {
+                    "key": "isRequired",
+                    "type": "boolean",
+                    "required": true,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "notes",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "template",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "starterKitTemplates",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "templateProducts",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                },
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "templateProducts",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_template_products_template_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_template_products_product_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "vendorOffers",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Vendor Offers",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "productId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "vendorName",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "url",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "price",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "product",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "products",
+                    "relationType": "manyToOne",
+                    "twoWay": false,
+                    "twoWayKey": "vendorOffers",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "idx_vendor_offers_product_id",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                },
+                {
+                    "key": "idx_vendor_offers_product",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "users",
+            "$permissions": [
+                "read(\"any\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Users",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "systemSettings",
+            "$permissions": [],
+            "databaseId": "atSupplyFinder",
+            "name": "System Settings",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "settingsType",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "settingsData",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "settingsTypeIndex",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "chatHistory",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
+            ],
+            "databaseId": "atSupplyFinder",
+            "name": "Chat History",
+            "enabled": true,
+            "columns": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "messages",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 1000000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId",
+                    "type": "key",
+                    "status": "available",
+                    "orders": []
+                }
+            ]
+        }
+    ],
+    "buckets": [
+        {
+            "$id": "productImages",
+            "$permissions": [],
+            "fileSecurity": false,
+            "name": "Product Images",
+            "enabled": true,
+            "maximumFileSize": 50000000,
+            "allowedFileExtensions": [],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
         }
     ]
 }

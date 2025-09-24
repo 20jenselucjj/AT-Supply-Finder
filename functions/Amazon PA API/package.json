@@ -1,0 +1,15 @@
+{
+  "name": "amazon-pa-api",
+  "version": "1.0.0",
+  "description": "Amazon Product Advertising API integration for Appwrite",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "paapi5-nodejs-sdk": "^1.1.0",
+    "dotenv": "^16.0.3",
+    "node-appwrite": "^9.0.0"
+  }
+}

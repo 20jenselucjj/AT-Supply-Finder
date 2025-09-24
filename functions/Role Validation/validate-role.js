@@ -27,16 +27,10 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    const client = new Client();
-  
-  // Use global endpoint to avoid "request cannot have request body" error with regional endpoints
-  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
-  const globalEndpoint = endpoint.replace('nyc.cloud.appwrite.io', 'cloud.appwrite.io');
-  
-  client
-    .setEndpoint(globalEndpoint)
-    .setProject(process.env.APPWRITE_PROJECT_ID || '68af870000012641090a')
-    .setKey(process.env.APPWRITE_API_KEY);
+    const client = new Client()
+      .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://nyc.cloud.appwrite.io/v1')
+      .setProject(process.env.APPWRITE_PROJECT_ID || '68af870000012641090a')
+      .setKey(process.env.APPWRITE_API_KEY);
 
     const databases = new Databases(client);
 

@@ -1,0 +1,11 @@
+{
+  "name": "amazon-pa-api",
+  "runtime": "node-22.0",
+  "path": "functions/amazon-pa-api",
+  "entrypoint": "src/index.js",
+  "execute": ["any"],
+  "events": [],
+  "schedule": "",
+  "timeout": 30,
+  "enabled": true
+}

@@ -195,7 +195,7 @@ export const generateFirstAidKit = async (
 ): Promise<GeneratedKit> => {
   const openRouterService = new OpenRouterService({ 
     apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
-    model: 'deepseek/deepseek-chat-v3.1:free'
+    model: 'x-ai/grok-4-fast:free'
   });
 
   const geminiService = new GeminiService({
@@ -269,7 +269,7 @@ export const generateTrainingKit = async (
 ): Promise<GeneratedKit> => {
   const openRouterService = new OpenRouterService({ 
     apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
-    model: 'deepseek/deepseek-chat-v3.1:free'
+    model: 'x-ai/grok-4-fast:free'
   });
 
   const geminiService = new GeminiService({
