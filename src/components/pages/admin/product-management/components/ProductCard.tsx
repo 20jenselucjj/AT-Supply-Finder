@@ -43,33 +43,9 @@ interface ProductCardProps {
   isLoadingProductInfo: boolean;
   categories: string[];
   brands: string[];
+  productForm: any;
+  setProductForm: (value: any) => void;
 }
-
-// Status badge component for product status
-const StatusBadge: React.FC<{ status?: string; rating?: number | null }> = ({ status, rating }) => {
-  const getStatusColor = () => {
-    if (rating && rating >= 4.5) return 'bg-green-100 text-green-800 border-green-200';
-    if (rating && rating >= 3.5) return 'bg-blue-100 text-blue-800 border-blue-200';
-    if (rating && rating >= 2.5) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-gray-100 text-gray-800 border-gray-200';
-  };
-
-  const getStatusText = () => {
-    if (rating && rating >= 4.5) return 'Excellent';
-    if (rating && rating >= 3.5) return 'Good';
-    if (rating && rating >= 2.5) return 'Average';
-    return 'Needs Review';
-  };
-
-  return (
-    <Badge
-      variant="outline"
-      className={`text-xs font-medium ${getStatusColor()}`}
-    >
-      {getStatusText()}
-    </Badge>
-  );
-};
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
@@ -83,10 +59,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   handleEnhanceWithAI,
   isLoadingProductInfo,
   categories,
-  brands
+  brands,
+  productForm,
+  setProductForm
 }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editProductForm, setEditProductForm] = useState<any>({});
 
   const handleEditClick = () => {
     // Map database category names to friendly names
@@ -103,11 +80,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       "Miscellaneous & General": "Miscellaneous & General"
     };
 
-    setEditProductForm({
+    setProductForm({
       name: product.name,
       category: categoryMapping[product.category] || product.category,
       brand: product.brand,
-      rating: product.rating?.toString() || '',
       price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
       weight: product.weight || '',
@@ -126,7 +102,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleSaveEdit = async () => {
     try {
-      await updateProduct(product.id, editProductForm);
+      await updateProduct(product.id, productForm);
       setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Error updating product:', error);
@@ -238,9 +214,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Product details */}
           <div className="p-4 space-y-4">
-            {/* Status and key info */}
+            {/* Key info without status badge */}
             <div className="flex items-center justify-between">
-              <StatusBadge rating={product.rating} />
               {product.affiliateLink && (
                 <Badge variant="secondary" className="text-xs">
                   Amazon
@@ -248,7 +223,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </div>
 
-            {/* Product info grid */}
+            {/* Product info grid - removed rating row */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="space-y-1">
                  <div className="text-xs text-muted-foreground font-medium">Category</div>
@@ -261,13 +236,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground font-medium">Brand</div>
                 <div className="font-medium text-xs">{product.brand}</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground font-medium">Rating</div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                  <span className="text-sm font-medium">{product.rating || 'N/A'}</span>
-                </div>
               </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground font-medium">Price</div>
@@ -336,8 +304,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <DialogTitle>Edit Product</DialogTitle>
           </DialogHeader>
           <ProductForm
-            productForm={editProductForm}
-            setProductForm={setEditProductForm}
+            productForm={productForm}
+            setProductForm={setProductForm}
             handleAffiliateLinkChange={handleAffiliateLinkChange}
             handleEnhanceWithAI={handleEnhanceWithAI}
             isLoadingProductInfo={isLoadingProductInfo}

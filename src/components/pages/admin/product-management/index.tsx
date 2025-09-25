@@ -879,6 +879,8 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
                     isLoadingProductInfo={isLoadingProductInfo}
                     categories={categories}
                     brands={brands}
+                    productForm={productForm}
+                    setProductForm={setProductForm}
                   />
                 ))}
 

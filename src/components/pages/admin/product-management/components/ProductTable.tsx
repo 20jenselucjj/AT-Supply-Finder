@@ -90,7 +90,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
   const [editingField, setEditingField] = useState<{id: string, field: string} | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentEditingProduct, setCurrentEditingProduct] = useState<ProductData | null>(null);
-  const [editProductForm, setEditProductForm] = useState<any>({});
   const [sortConfig, setSortConfig] = useState<{
     key: keyof ProductData;
     direction: 'asc' | 'desc';
@@ -112,7 +111,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       "Miscellaneous & General": "Miscellaneous & General"
     };
 
-    setEditProductForm({
+    setProductForm({
       name: product.name,
       category: categoryMapping[product.category] || product.category,
       brand: product.brand,
@@ -136,7 +135,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
     if (!currentEditingProduct) return;
 
     try {
-      await updateProduct(currentEditingProduct.id, editProductForm);
+      await updateProduct(currentEditingProduct.id, productForm);
       setIsEditDialogOpen(false);
       setCurrentEditingProduct(null);
     } catch (error) {
@@ -370,8 +369,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
           </DialogHeader>
           {currentEditingProduct && (
             <ProductForm
-              productForm={editProductForm}
-              setProductForm={setEditProductForm}
+              productForm={productForm}
+              setProductForm={setProductForm}
               handleAffiliateLinkChange={handleAffiliateLinkChange}
               handleEnhanceWithAI={handleEnhanceWithAI}
               isLoadingProductInfo={isLoadingProductInfo}
