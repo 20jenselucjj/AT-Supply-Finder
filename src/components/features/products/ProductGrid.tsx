@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
-import { Plus, Minus, Heart, Star } from 'lucide-react';
+import { Plus, Minus, Heart } from 'lucide-react';
 import { useFavorites } from '@/context/favorites-context';
 import { Badge } from '@/components/ui/badge';
 
@@ -125,14 +125,7 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
                   ${bestPrice.toFixed(2)}
                 </span>
                 
-                {product.rating && product.rating > 0 ? (
-                  <div className="flex items-center bg-secondary/60 px-2 py-1 rounded-full text-xs">
-                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                    <span className="font-medium">{product.rating.toFixed(1)}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No ratings</span>
-                )}
+
               </div>
             </div>
             

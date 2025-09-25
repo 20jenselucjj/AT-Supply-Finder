@@ -58,7 +58,6 @@ export const ProductQuickView = ({
                 {product.dimensions && <div className="xs:col-span-2"><span className="text-muted-foreground">Dimensions:</span> {product.dimensions}</div>}
                 {product.weight && <div><span className="text-muted-foreground">Qty:</span> {product.weight}</div>}
                 {product.material && <div><span className="text-muted-foreground">Material:</span> {product.material}</div>}
-                <div><span className="text-muted-foreground">Rating:</span> {product.rating || 'N/A'}</div>
               </div>
             </div>
 

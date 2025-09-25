@@ -3,7 +3,6 @@ interface Product {
   name: string;
   category: string;
   brand: string;
-  rating: number;
   price: number;
   features: string[];
   offers: VendorOffer[];
@@ -179,7 +178,6 @@ class AmazonProductService {
       name: dbProduct.name,
       category: dbProduct.category,
       brand: dbProduct.brand,
-      rating: dbProduct.rating,
       price: dbProduct.price,
       features: features,
       offers: [], // Appwrite doesn't have direct relationships like Supabase, so we'll need to fetch offers separately if needed

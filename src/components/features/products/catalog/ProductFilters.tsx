@@ -80,7 +80,6 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
                     <SelectItem value="relevance">Relevance</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Top Rated</SelectItem>
                     <SelectItem value="newest">Newest</SelectItem>
                   </SelectContent>
                 </Select>
@@ -113,7 +112,6 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
             <SelectItem value="relevance">Relevance</SelectItem>
             <SelectItem value="price-low">Price: Low to High</SelectItem>
             <SelectItem value="price-high">Price: High to Low</SelectItem>
-            <SelectItem value="rating">Top Rated</SelectItem>
             <SelectItem value="newest">Newest</SelectItem>
           </SelectContent>
         </Select>

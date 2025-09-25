@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Star, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useKit } from '@/context/kit-context';
 import { useFavorites } from '@/context/favorites-context';
 
@@ -80,12 +80,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductS
                       {product.name}
                     </div>
                     <div className="text-sm text-muted-foreground">{product.brand}</div>
-                    {product.rating && product.rating > 0 ? (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs">{product.rating.toFixed(1)}</span>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               </TableCell>

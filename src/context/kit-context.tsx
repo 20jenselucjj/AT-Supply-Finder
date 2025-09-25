@@ -10,7 +10,6 @@ export interface KitItem {
   name: string;
   category: string;
   brand: string;
-  rating?: number;
   features?: string[];
   offers: VendorOffer[];
   imageUrl?: string;

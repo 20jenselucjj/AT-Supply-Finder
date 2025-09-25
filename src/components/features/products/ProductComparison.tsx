@@ -8,7 +8,7 @@ export const ProductComparison = ({ products, onClose }: {
   if (products.length < 2) return null;
 
   const attributes = [
-    'name', 'brand', 'rating', 'price', 'dimensions', 'weight', 'material'
+    'name', 'brand', 'price', 'dimensions', 'weight', 'material'
   ];
 
   const getPrice = (p: Product) => Math.min(...p.offers.map(o => o.price));
@@ -43,7 +43,6 @@ export const ProductComparison = ({ products, onClose }: {
 
             <div className="space-y-1 text-sm">
               <div><span className="font-medium">Brand:</span> {product.brand}</div>
-              <div><span className="font-medium">Rating:</span> {product.rating || 'N/A'}</div>
               <div><span className="font-medium">Price:</span> ${getPrice(product).toFixed(2)}</div>
               {product.dimensions && <div><span className="font-medium">Dimensions:</span> {product.dimensions}</div>}
               {product.weight && <div>{product.weight}</div>}

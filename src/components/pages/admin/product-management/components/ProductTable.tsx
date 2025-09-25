@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Edit,
   Trash2,
-  Star,
   DollarSign,
   ExternalLink,
   ChevronDown,
@@ -66,31 +65,7 @@ interface ProductTableProps {
   updateProduct: (id: string, data: any) => Promise<void>;
 }
 
-// Status badge component for product status
-const StatusBadge: React.FC<{ status?: string; rating?: number | null }> = ({ status, rating }) => {
-  const getStatusColor = () => {
-    if (rating && rating >= 4.5) return 'bg-green-100 text-green-800 border-green-200';
-    if (rating && rating >= 3.5) return 'bg-blue-100 text-blue-800 border-blue-200';
-    if (rating && rating >= 2.5) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-gray-100 text-gray-800 border-gray-200';
-  };
 
-  const getStatusText = () => {
-    if (rating && rating >= 4.5) return 'Excellent';
-    if (rating && rating >= 3.5) return 'Good';
-    if (rating && rating >= 2.5) return 'Average';
-    return 'Needs Review';
-  };
-
-  return (
-    <Badge
-      variant="outline"
-      className={`text-xs font-medium ${getStatusColor()}`}
-    >
-      {getStatusText()}
-    </Badge>
-  );
-};
 
 export const ProductTable: React.FC<ProductTableProps> = ({
   products,
@@ -141,7 +116,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       name: product.name,
       category: categoryMapping[product.category] || product.category,
       brand: product.brand,
-      rating: product.rating?.toString() || '',
       price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
       weight: product.weight || '',
@@ -258,16 +232,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
               <TableHead>
                 <Button
                   variant="ghost"
-                  onClick={() => handleSort('rating')}
-                  className="h-auto p-0 font-semibold hover:bg-transparent"
-                >
-                  Rating
-                  {getSortIcon('rating')}
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
                   onClick={() => handleSort('price')}
                   className="h-auto p-0 font-semibold hover:bg-transparent"
                 >
@@ -311,9 +275,18 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                        {product.name}
-                      </div>
+                      {product.affiliateLink ? (
+                        <button
+                          onClick={() => window.open(product.affiliateLink, '_blank')}
+                          className="font-medium text-sm group-hover:text-primary transition-colors text-left hover:underline cursor-pointer"
+                        >
+                          {product.name}
+                        </button>
+                      ) : (
+                        <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                          {product.name}
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground">
                         ASIN: {product.asin || 'N/A'}
                       </div>
@@ -339,15 +312,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <span className="font-medium">{product.brand}</span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                      <span className="font-medium">{product.rating || 'N/A'}</span>
-                    </div>
-                    <StatusBadge rating={product.rating} />
-                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

@@ -3,7 +3,6 @@ export interface ProductData {
   name: string;
   category: string;
   brand: string;
-  rating: number | null;
   price: number | null;
   dimensions: string | null;
   weight: string | null;
@@ -24,8 +23,6 @@ export interface ProductManagementProps {
 export interface AdvancedFilters {
   minPrice?: number;
   maxPrice?: number;
-  minRating?: number;
-  maxRating?: number;
   brand: string;
   material: string;
   weight: string;

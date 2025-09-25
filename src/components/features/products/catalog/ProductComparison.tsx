@@ -52,7 +52,6 @@ export const ProductComparison = ({ products, onClose }: ProductComparisonProps)
 
             <div className="space-y-1 text-sm">
               <div><span className="font-medium">Brand:</span> {product.brand}</div>
-              <div><span className="font-medium">Rating:</span> {product.rating || 'N/A'}</div>
               <div><span className="font-medium">Price:</span> ${getPrice(product).toFixed(2)}</div>
               {product.dimensions && <div><span className="font-medium">Dimensions:</span> {product.dimensions}</div>}
               {product.weight && <div><span className="font-medium">Qty:</span> {product.weight}</div>}

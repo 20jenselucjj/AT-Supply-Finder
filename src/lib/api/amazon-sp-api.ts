@@ -7,7 +7,6 @@ interface AmazonProduct {
   brand?: string;
   category?: string;
   price?: number;
-  rating?: number;
   imageUrl?: string;
   features?: string[];
   dimensions?: string;

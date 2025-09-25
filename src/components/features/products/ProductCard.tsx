@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useKit } from "@/context/kit-context";
 import { useFavorites } from "@/context/favorites-context";
 import { Product } from "@/lib/types/types";
-import { Heart, Star } from "lucide-react";
+import { Heart } from "lucide-react";
 
 const currency = (n: number) => `$${n.toFixed(2)}`;
 
@@ -201,25 +201,7 @@ const ProductCard = ({ product, price, loading = false }: { product: Product, pr
               )}
             </div>
             
-            {product.rating && product.rating > 0 && !loading && (
-              <div className="flex items-center mt-2">
-                <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${
-                        i < Math.floor(product.rating || 0)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300 dark:text-gray-600"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {product.rating.toFixed(1)}
-                </span>
-              </div>
-            )}
+
           </div>
           
           <div className="text-right md:min-w-[100px]">

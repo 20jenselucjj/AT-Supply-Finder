@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useKit } from '@/context/kit-context';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, Heart, Star } from 'lucide-react';
+import { Plus, Minus, Heart } from 'lucide-react';
 import { useFavorites } from '@/context/favorites-context';
 
 interface ProductListMobileProps {
@@ -75,14 +75,6 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                   
                   <div className="text-xs text-muted-foreground mb-2 flex flex-wrap gap-2 items-center">
                     <span className="font-medium">{product.brand}</span>
-                    {product.rating && product.rating > 0 ? (
-                      <span className="inline-flex items-center gap-1 bg-secondary/60 px-1.5 py-0.5 rounded-full">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-[10px] font-medium">{product.rating.toFixed(1)}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground">No ratings</span>
-                    )}
                   </div>
                   
                   <div className="mb-2">

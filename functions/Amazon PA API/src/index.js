@@ -333,41 +333,57 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     const allProducts = [];
     const errors = [];
 
-    // Process each category
+    // Process each category with improved duplicate handling
     for (const categoryId of selectedCategories) {
       try {
         const searchTerms = CATEGORY_SEARCH_TERMS[categoryId] || ['medical supplies'];
         const productsForCategory = [];
         
+        let attempts = 0;
+        const maxAttempts = 3;
+        let itemsPerSearch = productsPerCategory * 2; // Start with 2x to account for duplicates
+        
         // Try each search term for the category until we get enough products
-        for (const searchTerm of searchTerms) {
-          if (productsForCategory.length >= productsPerCategory) break;
+        while (productsForCategory.length < productsPerCategory && attempts < maxAttempts) {
+          attempts++;
+          console.log(`Attempt ${attempts} for category ${categoryId}, fetching ${itemsPerSearch} items`);
           
-          try {
-            // Call the searchProducts function directly with parameters
-            const searchResult = await searchProducts(searchTerm, 'HealthPersonalCare',
-              Math.min(productsPerCategory, 10));
+          for (const searchTerm of searchTerms) {
+            if (productsForCategory.length >= productsPerCategory) break;
             
-            if (searchResult?.SearchResult?.Items) {
-              // Add products to our collection, avoiding duplicates
-              for (const item of searchResult.SearchResult.Items) {
-                // Check if we already have this product (by ASIN)
-                const exists = productsForCategory.some(p => p.ASIN === item.ASIN) || 
-                              allProducts.some(p => p.ASIN === item.ASIN);
-                
-                if (!exists && productsForCategory.length < productsPerCategory) {
-                  productsForCategory.push(item);
+            try {
+              // Call the searchProducts function directly with parameters
+              const searchResult = await searchProducts(searchTerm, 'HealthPersonalCare',
+                Math.min(itemsPerSearch, 10));
+              
+              if (searchResult?.SearchResult?.Items) {
+                // Add products to our collection, avoiding duplicates
+                for (const item of searchResult.SearchResult.Items) {
+                  // Check if we already have this product (by ASIN)
+                  const exists = productsForCategory.some(p => p.ASIN === item.ASIN) || 
+                                allProducts.some(p => p.ASIN === item.ASIN);
+                  
+                  if (!exists && productsForCategory.length < productsPerCategory) {
+                    productsForCategory.push(item);
+                  }
                 }
               }
+            } catch (searchError) {
+              console.warn(`Search failed for term "${searchTerm}" (attempt ${attempts}):`, searchError.message);
+              // Continue with next search term
             }
-          } catch (searchError) {
-            console.warn(`Search failed for term "${searchTerm}":`, searchError.message);
-            // Continue with next search term
+          }
+          
+          // If we still don't have enough, increase search size for next attempt
+          if (productsForCategory.length < productsPerCategory) {
+            itemsPerSearch = Math.min(itemsPerSearch * 2, 50); // Cap at 50 to avoid API limits
           }
         }
         
-        // Add category products to all products
-        allProducts.push(...productsForCategory);
+        // Take only the requested number of products for this category
+        const productsToAdd = productsForCategory.slice(0, productsPerCategory);
+        allProducts.push(...productsToAdd);
+        console.log(`Final count for category ${categoryId}: ${productsToAdd.length} products`);
       } catch (categoryError) {
         console.error(`Error processing category ${categoryId}:`, categoryError);
         errors.push(`Error processing category ${categoryId}: ${categoryError.message}`);
@@ -444,8 +460,31 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     
     console.log(`Found ${uniqueProducts.length} unique products to import`);
     
+    // Get detailed product information using GetItems
+    let detailedProducts = uniqueProducts;
+    if (uniqueProducts.length > 0) {
+      try {
+        console.log('🔍 Fetching detailed product information...');
+        const asins = uniqueProducts.map(p => p.ASIN).filter(Boolean);
+        
+        if (asins.length > 0) {
+          const detailedResponse = await getItemDetails(asins);
+          
+          if (detailedResponse?.ItemsResult?.Items) {
+            console.log(`✅ Got detailed information for ${detailedResponse.ItemsResult.Items.length} products`);
+            detailedProducts = detailedResponse.ItemsResult.Items;
+          } else {
+            console.warn('⚠️  GetItems response did not contain detailed product data, using original search results');
+          }
+        }
+      } catch (detailError) {
+        console.warn('⚠️  Failed to get detailed product information:', detailError.message);
+        console.warn('Proceeding with original search results');
+      }
+    }
+    
     // Map Amazon data fields to local product fields
-    const productsToCreate = uniqueProducts.map(product => {
+    const productsToCreate = detailedProducts.map(product => {
       // Extract category from the selected categories based on search terms
       // This is a simplified approach - in a real implementation, you might want to use browse nodes
       let category = 'Miscellaneous & General'; // Default category
@@ -512,9 +551,7 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
                       product.Images?.Primary?.Small?.URL || 
                       null;
       
-      // Extract reviews/ratings
-      const rating = product.ItemInfo?.ProductInfo?.AverageRating?.DisplayValue || null;
-      const reviewCount = product.ItemInfo?.ProductInfo?.Reviews?.TotalReviews?.DisplayValue || null;
+
       
       // Extract dimensions and weight
       let dimensions = product.ItemInfo?.ProductInfo?.ItemDimensions?.DisplayValue || null;
@@ -563,10 +600,10 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
         dimensions = `${quantity} ct`;
       }
 
-      // Create the product object
+      // Create the product object - only include attributes that exist in database schema
       return {
         name: productTitle.substring(0, 255),
-        description: productFeatures.join('; ').substring(0, 1000),
+        description: productFeatures.join('; ').substring(0, 2000), // Updated to match schema limit
         category: category,
         price: price,
         imageUrl: imageUrl,
@@ -574,13 +611,11 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
         material: material,
         dimensions: dimensions,
         weight: weight,
-        rating: rating,
-        reviewCount: reviewCount,
+
         asin: product.ASIN,
-        source: 'amazon',
-        sourceUrl: `https://www.amazon.com/dp/${product.ASIN}?tag=${process.env.AMAZON_PA_PARTNER_TAG}`,
-        lastUpdated: new Date().toISOString(),
-        inStock: true
+        affiliateLink: `https://www.amazon.com/dp/${product.ASIN}?tag=${process.env.AMAZON_PA_PARTNER_TAG}`,
+        features: productFeatures.slice(0, 3).join('; ').substring(0, 1000), // Add features field
+        qty: quantity || 1 // Default quantity to 1 if not found
       };
     });
     
@@ -599,6 +634,7 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
         console.log('Collection ID: products');
         console.log('Document ID:', 'ID.unique()');
         console.log('Product data keys:', Object.keys(product));
+
         
         const createdProduct = await databases.createDocument(
           databaseId,
@@ -607,7 +643,6 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
           product
         );
         console.log(`✅ Successfully created product: ${product.name}`);
-        createdCount++;
         
         createdProducts.push(createdProduct);
         console.log(`Created product: ${product.name} (${product.asin})`);

@@ -13,10 +13,8 @@ export interface ProductFiltersProps {
   setBrandFilter: (brand: string) => void;
   priceRange: { min: string; max: string };
   setPriceRange: (range: { min: string; max: string }) => void;
-  ratingFilter: string;
-  setRatingFilter: (rating: string) => void;
-  sortBy: "name" | "price" | "rating" | "brand";
-  setSortBy: (sort: "name" | "price" | "rating" | "brand") => void;
+  sortBy: "name" | "price" | "brand";
+  setSortBy: (sort: "name" | "price" | "brand") => void;
   sortDirection: "asc" | "desc";
   setSortDirection: (direction: "asc" | "desc") => void;
   availableBrands: string[];
@@ -45,10 +43,10 @@ export interface ProductTableViewProps {
   handleQuantityChange: (product: Product, change: number) => void;
   formatCurrency: (price: number) => string;
   setSelectedProduct: (product: Product | null) => void;
-  sortBy: "name" | "price" | "rating" | "brand";
+  sortBy: "name" | "price" | "brand";
   sortDirection: "asc" | "desc";
-  handleSort: (field: "name" | "price" | "rating" | "brand") => void;
-  getSortIcon: (field: "name" | "price" | "rating" | "brand") => JSX.Element | null;
+  handleSort: (field: "name" | "price" | "brand") => void;
+  getSortIcon: (field: "name" | "price" | "brand") => JSX.Element | null;
 }
 
 export interface ProductCardProps {
@@ -79,8 +77,8 @@ export interface ViewToggleProps {
 }
 
 export interface SortSelectProps {
-  sortBy: "name" | "price" | "rating" | "brand";
-  setSortBy: (sort: "name" | "price" | "rating" | "brand") => void;
+  sortBy: "name" | "price" | "brand";
+  setSortBy: (sort: "name" | "price" | "brand") => void;
 }
 
 export interface HeaderProps {
@@ -93,6 +91,6 @@ export interface HeaderProps {
 export interface SearchBarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  sortBy: "name" | "price" | "rating" | "brand";
-  setSortBy: (sort: "name" | "price" | "rating" | "brand") => void;
+  sortBy: "name" | "price" | "brand";
+  setSortBy: (sort: "name" | "price" | "brand") => void;
 }
