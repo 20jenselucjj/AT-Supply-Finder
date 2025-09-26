@@ -122,7 +122,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={clearSearch}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                  className="absolute right-2 top-0 h-full w-8 p-0 py-2 hover:bg-destructive/10 hover:text-destructive"
                 >
                   <X className="h-3 w-3" />
                 </Button>

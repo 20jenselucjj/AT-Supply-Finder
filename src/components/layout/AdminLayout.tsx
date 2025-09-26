@@ -14,7 +14,7 @@ import { useTheme } from '@/context/theme-context';
 import { logger } from '@/lib/utils/logger';
 import { useRBAC } from '@/hooks/use-rbac';
 import { LayoutDashboard, Users, Package, BarChart3, Settings, Menu, LogOut, Moon, Sun, Wrench, ChevronDown, FileBarChart, ShieldAlert, Mail } from 'lucide-react';
-import { NotificationsPanel } from '@/components/pages/admin/NotificationsPanel';
+
 import { cn } from '@/lib/utils/utils';
 
 interface SidebarItem {
@@ -444,7 +444,6 @@ data-tooltip-position="right"
             <div className="flex items-center gap-2">
               {/* Search Bar removed */}
               
-              <NotificationsPanel />
               {/* Mobile Toggle Button Removed */}
             </div>
           </div>
