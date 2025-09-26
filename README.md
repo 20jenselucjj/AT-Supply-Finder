@@ -1,93 +1,115 @@
 # AT Supply Finder
 
-## Project info
+## Overview
 
-**URL**: https://at-supply-finder.example.com
+AT Supply Finder is a web application designed to help users discover, search, and source assistive technology (AT) supplies. It integrates with Amazon's Product Advertising API and Selling Partner API for real-time product searches, pricing, and scraping capabilities. The platform features user authentication, an admin dashboard for management, favorites functionality, and role-based access control.
 
-## How can I edit this code?
+Built with modern frontend technologies and Appwrite as the backend-as-a-service for database, authentication, and cloud functions.
 
-There are several ways of editing your application.
+## Features
 
-**Use your preferred IDE**
+- **User Authentication**: Secure login and registration using Appwrite.
+- **Product Search**: Search assistive technology products via Amazon APIs.
+- **Favorites Management**: Save and manage favorite products.
+- **Admin Panel**: Manage users, products, and system settings.
+- **Role-Based Access**: Different permissions for users, admins, etc.
+- **Responsive UI**: Modern interface with Tailwind CSS and shadcn/ui components.
+- **Cloud Functions**: Serverless functions for Amazon integration and AI product enhancement.
 
-You can clone this repo and push changes. Pushed changes will be reflected in your deployed application.
+## Technologies
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React with TypeScript, Vite for build tool
+- **UI/Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Appwrite (Databases, Auth, Functions)
+- **Integrations**: Amazon PA API, Amazon SP API, Supabase (partial)
+- **Other**: Node.js for functions, ESLint for code quality
 
-Follow these steps:
+## Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js (v18+) and npm
+- Appwrite project set up with databases and functions enabled
+- Amazon Developer Account for PA API credentials
+- Environment variables configured (e.g., Appwrite endpoint, Amazon API keys)
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. Clone the repository:
+   ```sh
+git clone <YOUR_GIT_REPO_URL>
+cd AT-Supply-Finder
+   ```
+
+2. Install dependencies:
+   ```sh
+npm install
+   ```
+
+3. Set up Appwrite:
+   - Create databases, collections, and attributes as per the project requirements (see `functions/` for migrations).
+   - Deploy cloud functions using Appwrite CLI.
+
+4. Configure environment variables in `.env` (create if needed):
+   - `VITE_APPWRITE_ENDPOINT`
+   - `VITE_APPWRITE_PROJECT_ID`
+   - Amazon API keys
+
+5. Run the development server:
+   ```sh
 npm run dev
+   ```
+   Open [http://localhost:5173](http://localhost:5173) to view it.
+
+### Running Functions
+
+For Appwrite functions:
+```sh
+# Install Appwrite CLI
+npm install -g appwrite-cli
+
+# Deploy functions
+appwrite functions create --functionId "amazon-pa-search" --name "Amazon PA Search" --runtime "node-18.0"
+# Add code and deploy
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `src/`: React application source
+  - `components/`: UI components, including features, layout, pages, ui
+  - `context/`: React contexts for auth, favorites, theme, etc.
+  - `hooks/`: Custom hooks like use-rbac, use-toast
+  - `lib/`: Utilities, API clients, types, Supabase integration
+  - `pages/`: Page components (Admin, auth, public, user)
+- `functions/`: Appwrite cloud functions
+  - `Amazon PA API/`: Product search functions
+  - `Role Validation/`: User role checks
+  - `amazon/`: Scraping and API scripts
+  - `user-management/`: User listing and management
+  - `utils/`: AI product enhancer
+- `public/`: Static assets (logo, favicon)
+- `server.js`: Possibly for SSR or API proxy (if used)
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **Frontend**: Deploy to Vercel or Netlify by connecting the repo.
+- **Functions**: Deploy via Appwrite Console or CLI.
+- **Database**: Use Appwrite's hosted service.
 
-## What technologies are used for this project?
+For custom domains, configure in your hosting provider's settings.
 
-This project is built with:
+## Contributing
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Appwrite (Backend as a Service)
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## System Settings
+## License
 
-The admin panel includes a fully functional system settings module that uses Appwrite as the backend service for data persistence.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Features
+---
 
-- Security Settings: Configure authentication, access control, and security policies
-- Notification Settings: Manage alerts and notification channels
-- Appearance Settings: Customize the look and feel of the admin interface
-- System Configuration: Configure general system settings and preferences
-- Database Settings: Configure database connection and performance settings
-- System Health Monitoring: View real-time system performance metrics
-
-### Setup
-
-To initialize the system settings in Appwrite, run:
-
-```bash
-npm run setup:system-settings
-```
-
-This will create the necessary collection and documents in your Appwrite database.
-
-### Security
-
-- Only administrators can access and modify system settings
-- All settings changes are logged in the audit trail
-- Data validation ensures only valid settings are saved
-
-## How can I deploy this project?
-
-You can deploy this project to any platform that supports Node.js applications, such as Vercel, Netlify, or AWS.
-
-## Can I connect a custom domain to my project?
-
-Yes, you can connect a custom domain to your deployed project. The process will depend on your hosting provider.
+*Note: Update the placeholders like `<YOUR_GIT_REPO_URL>` with actual values.*
