@@ -41,7 +41,7 @@ const Build = () => {
     
     if (kitData && aiGenerated) {
       try {
-        const parsedKit = JSON.parse(decodeURIComponent(kitData));
+        const parsedKit = JSON.parse(kitData);
         console.log('AI Generated Kit Data:', parsedKit); // Debug log
         if (Array.isArray(parsedKit) && parsedKit.length > 0) {
           // Clear existing kit and add AI-generated items

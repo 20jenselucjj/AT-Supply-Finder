@@ -227,11 +227,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="space-y-1">
                  <div className="text-xs text-muted-foreground font-medium">Category</div>
-                 <div className="flex justify-center">
-                   <Badge variant="outline" className="text-xs">
-                     {product.category}
-                   </Badge>
-                 </div>
+                 <Badge variant="outline" className="text-xs w-fit max-w-full whitespace-normal break-words">
+                   {product.category}
+                 </Badge>
                </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground font-medium">Brand</div>

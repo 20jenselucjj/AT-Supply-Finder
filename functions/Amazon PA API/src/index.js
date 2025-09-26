@@ -7,20 +7,259 @@ import { Client, Databases, Query, ID } from 'node-appwrite';
 // We've worked around this by skipping GET-based database tests and proceeding directly to
 // POST/PUT operations (create/update) which work correctly.
 
-// Map first aid categories to Amazon search terms
-const CATEGORY_SEARCH_TERMS = {
-  'wound-care-dressings': ['bandages', 'gauze', 'wound care', 'medical tape'],
-  'tapes-wraps': ['medical tape', 'elastic bandage', 'ace bandage', 'wraps'],
-  'antiseptics-ointments': ['antiseptic', 'ointment', 'hydrogen peroxide', 'alcohol swabs'],
-  'pain-relief': ['pain relief', 'ibuprofen', 'acetaminophen', 'aspirin'],
-  'instruments-tools': ['medical scissors', 'tweezers', 'thermometer', 'medical tools'],
-  'trauma-emergency': ['emergency kit', 'first aid kit', 'emergency supplies', 'trauma supplies'],
-  'ppe': ['nitrile gloves', 'face mask', 'safety goggles', 'ppe'],
-  'information-essentials': ['first aid manual', 'emergency guide', 'medical reference'],
-  'hot-cold-therapy': ['ice pack', 'heat pack', 'hot cold therapy', 'compress'],
-  'hydration-nutrition': ['electrolyte drink', 'hydration tablets', 'energy bar', 'sports drink'],
-  'miscellaneous': ['medical supplies', 'first aid supplies', 'health supplies']
+// Enhanced first aid category mapping with specific search terms and validation
+export const FIRST_AID_CATEGORIES = {
+  'wound-care-dressings': {
+    searchTerms: [
+      'adhesive bandages', 'band aid', 'gauze pads', 'sterile gauze', 'non-adherent pads',
+      'eye pads sterile', 'rolled gauze', 'liquid bandage', 'skin adhesive', 'wound dressing',
+      'medical bandages', 'first aid bandages', 'sterile pads', 'wound care pads'
+    ],
+    requiredKeywords: ['bandage', 'gauze', 'pad', 'dressing', 'sterile', 'wound', 'adhesive bandage'],
+    specificItems: [
+      'band-aid', 'bandaid', 'adhesive bandage', 'gauze pad', 'sterile gauze', 'non-adherent pad',
+      'eye pad', 'rolled gauze', 'liquid bandage', 'skin adhesive', 'knuckle bandage', 'fingertip bandage',
+      'wound dressing', 'sterile pad', 'medical bandage', 'first aid bandage', 'butterfly bandage',
+      'fabric bandage', 'plastic bandage', 'waterproof bandage', 'transparent bandage', 'island dressing'
+    ],
+    exclusions: [
+      'tape measure', 'duct tape', 'electrical tape', 'packaging tape', 'scotch tape', 'masking tape',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears', 'probe',
+      'medical tape', 'athletic tape', 'elastic bandage', 'ace bandage', 'cohesive wrap',
+      'compression wrap', 'kinesiology tape', 'pre-wrap', 'self-adhering wrap'
+    ]
+  },
+  'tapes-wraps': {
+    searchTerms: [
+      'medical tape', 'elastic bandage', 'ace bandage', 'cohesive wrap', 'athletic tape',
+      'pre-wrap', 'self-adhering bandage', 'medical wrap', 'compression bandage', 'kinesiology tape'
+    ],
+    requiredKeywords: ['tape', 'wrap', 'elastic', 'cohesive', 'athletic', 'compression', 'self-adhering'],
+    specificItems: [
+      'medical tape', 'adhesive tape', 'elastic bandage', 'ace bandage', 'cohesive wrap', 'athletic tape',
+      'pre-wrap', 'self-adhering wrap', 'compression wrap', 'medical wrap', 'kinesiology tape',
+      'sports tape', 'zinc oxide tape', 'cloth tape', 'paper tape', 'silk tape', 'elastic wrap',
+      'compression bandage', 'self-adhesive wrap', 'cohesive bandage', 'vet wrap'
+    ],
+    exclusions: [
+      'duct tape', 'electrical tape', 'packaging tape', 'scotch tape', 'masking tape', 'painter tape',
+      'scissors', 'tweezers', 'thermometer', 'shears', 'tools', 'instruments', 'probe',
+      'adhesive bandage', 'band-aid', 'bandaid', 'gauze pad', 'sterile gauze', 'wound dressing',
+      'sterile pad', 'non-adherent pad', 'eye pad', 'liquid bandage', 'skin adhesive'
+    ]
+  },
+  'antiseptics-ointments': {
+    searchTerms: [
+      'antibiotic ointment', 'antiseptic wipes', 'alcohol prep pads', 'hydrogen peroxide',
+      'burn gel', 'hydrocortisone cream', 'wound wash', 'antiseptic towelettes', 'first aid ointment',
+      'triple antibiotic', 'neosporin', 'bacitracin', 'povidone iodine', 'benzalkonium chloride'
+    ],
+    requiredKeywords: ['antiseptic', 'ointment', 'alcohol', 'hydrogen peroxide', 'burn', 'hydrocortisone', 'antibiotic', 'cream', 'gel', 'wipe'],
+    specificItems: [
+      'antibiotic ointment', 'antiseptic wipe', 'alcohol prep pad', 'hydrogen peroxide',
+      'burn gel', 'burn cream', 'hydrocortisone cream', 'wound wash', 'antiseptic towelette',
+      'triple antibiotic ointment', 'neosporin', 'bacitracin', 'povidone iodine', 'benzalkonium chloride',
+      'isopropyl alcohol', 'rubbing alcohol', 'wound cleanser', 'saline wound wash', 'betadine',
+      'first aid cream', 'topical antibiotic', 'antimicrobial gel', 'wound care gel', 'healing ointment'
+    ],
+    exclusions: [
+      'cosmetic cream', 'beauty product', 'hair product', 'shampoo', 'conditioner', 'lotion',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears', 'probe',
+      'bandage', 'gauze', 'tape', 'wrap', 'adhesive bandage', 'medical tape', 'elastic bandage',
+      'sunscreen', 'moisturizer', 'face cream', 'body cream', 'anti-aging cream'
+    ]
+  },
+  'pain-relief': {
+    searchTerms: [
+      'ibuprofen', 'acetaminophen', 'aspirin', 'antihistamine', 'antacid', 'pain reliever',
+      'oral rehydration salts', 'sting relief', 'bite relief', 'allergy relief', 'tylenol', 'advil',
+      'benadryl', 'diphenhydramine', 'loratadine', 'cetirizine', 'famotidine', 'ranitidine'
+    ],
+    requiredKeywords: ['ibuprofen', 'acetaminophen', 'aspirin', 'antihistamine', 'antacid', 'pain', 'relief', 'medication', 'tablet', 'capsule'],
+    specificItems: [
+      'ibuprofen', 'acetaminophen', 'aspirin', 'antihistamine', 'antacid', 'pain reliever',
+      'oral rehydration', 'sting relief', 'bite relief', 'allergy relief', 'tylenol', 'advil',
+      'benadryl', 'diphenhydramine', 'loratadine', 'cetirizine', 'famotidine', 'ranitidine',
+      'pain medication', 'allergy medication', 'anti-inflammatory', 'fever reducer', 'headache relief',
+      'muscle pain relief', 'joint pain relief', 'oral medication', 'over-the-counter medication'
+    ],
+    exclusions: [
+      'prescription', 'controlled substance', 'narcotic', 'opioid', 'prescription medication',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears', 'probe',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'topical',
+      'cold pack', 'hot pack', 'compress', 'heating pad', 'ice pack'
+    ]
+  },
+  'instruments-tools': {
+    searchTerms: [
+      'trauma shears', 'medical scissors', 'tweezers fine point', 'safety pins', 'splinter probe',
+      'digital thermometer', 'penlight', 'flashlight medical', 'CPR face shield', 'resuscitation mask',
+      'emt scissors', 'surgical scissors', 'first aid scissors', 'medical tweezers', 'splinter remover'
+    ],
+    requiredKeywords: ['scissors', 'tweezers', 'thermometer', 'flashlight', 'penlight', 'shears', 'probe', 'shield', 'instrument', 'tool', 'medical tool'],
+    specificItems: [
+      'trauma shears', 'medical scissors', 'surgical scissors', 'emt scissors', 'first aid scissors',
+      'tweezers', 'fine-point tweezers', 'medical tweezers', 'precision tweezers', 'splinter tweezers',
+      'safety pins', 'splinter probe', 'splinter remover', 'tick remover', 'lancet', 'blood lancet',
+      'digital thermometer', 'medical thermometer', 'infrared thermometer', 'forehead thermometer',
+      'penlight', 'medical flashlight', 'pupil light', 'diagnostic light', 'examination light',
+      'CPR face shield', 'resuscitation mask', 'pocket mask', 'rescue breathing mask',
+      'medical tools', 'first aid tools', 'emergency scissors', 'bandage scissors', 'nurse scissors',
+      'stethoscope', 'blood pressure cuff', 'pulse oximeter', 'otoscope', 'ophthalmoscope'
+    ],
+    exclusions: [
+      'kitchen scissors', 'craft scissors', 'hair scissors', 'nail scissors', 'office scissors',
+      'tape', 'bandage', 'wrap', 'adhesive tape', 'medical tape', 'elastic bandage', 'gauze',
+      'ointment', 'cream', 'gel', 'antiseptic', 'alcohol', 'hydrogen peroxide', 'wipe',
+      'adhesive bandage', 'band-aid', 'sterile pad', 'wound dressing', 'cohesive wrap',
+      'compression wrap', 'kinesiology tape', 'athletic tape', 'pre-wrap'
+    ]
+  },
+  'trauma-emergency': {
+    searchTerms: [
+      'instant cold pack', 'emergency blanket', 'triangular bandage', 'sam splint', 'tourniquet',
+      'emergency supplies', 'trauma kit', 'shock blanket', 'hypothermia blanket', 'sling bandage',
+      'emergency splint', 'trauma bandage', 'hemostatic agent', 'quick clot', 'combat gauze'
+    ],
+    requiredKeywords: ['cold pack', 'emergency', 'triangular', 'splint', 'tourniquet', 'trauma', 'shock', 'hypothermia', 'hemostatic', 'combat'],
+    specificItems: [
+      'instant cold pack', 'emergency blanket', 'triangular bandage', 'sam splint', 'tourniquet',
+      'shock blanket', 'hypothermia blanket', 'emergency sling', 'trauma bandage', 'israeli bandage',
+      'emergency splint', 'finger splint', 'wrist splint', 'ankle splint', 'cervical collar',
+      'hemostatic agent', 'quick clot', 'combat gauze', 'hemostatic gauze', 'blood stopper',
+      'emergency tourniquet', 'tactical tourniquet', 'trauma shears', 'emergency scissors',
+      'space blanket', 'mylar blanket', 'survival blanket', 'rescue blanket'
+    ],
+    exclusions: [
+      'camping gear', 'hiking equipment', 'outdoor recreation', 'sleeping bag', 'tent',
+      'regular scissors', 'craft scissors', 'office supplies', 'household items',
+      'adhesive bandage', 'band-aid', 'gauze pad', 'medical tape', 'elastic bandage',
+      'ointment', 'cream', 'antiseptic', 'alcohol', 'hydrogen peroxide', 'wipe',
+      'thermometer', 'tweezers', 'safety pins', 'splinter probe'
+    ]
+  },
+  'ppe': {
+    searchTerms: [
+      'nitrile gloves', 'vinyl gloves', 'medical face mask', 'hand sanitizer', 'biohazard bags',
+      'disposable gloves', 'medical gloves', 'safety gloves', 'protective equipment', 'latex gloves',
+      'surgical mask', 'n95 mask', 'face shield', 'safety goggles', 'protective gown'
+    ],
+    requiredKeywords: ['gloves', 'mask', 'sanitizer', 'biohazard', 'protective', 'safety', 'medical', 'disposable', 'ppe'],
+    specificItems: [
+      'nitrile gloves', 'vinyl gloves', 'latex gloves', 'medical gloves', 'disposable gloves',
+      'examination gloves', 'surgical gloves', 'powder-free gloves', 'sterile gloves',
+      'medical mask', 'face mask', 'surgical mask', 'n95 mask', 'kn95 mask', 'respirator mask',
+      'face shield', 'protective face shield', 'safety goggles', 'protective eyewear',
+      'hand sanitizer', 'alcohol sanitizer', 'sanitizing gel', 'hand disinfectant',
+      'biohazard bag', 'medical waste bag', 'specimen bag', 'infectious waste bag',
+      'protective gown', 'isolation gown', 'disposable gown', 'medical apron',
+      'shoe covers', 'boot covers', 'hair net', 'bouffant cap', 'surgical cap'
+    ],
+    exclusions: [
+      'fashion mask', 'costume mask', 'decorative mask', 'cloth mask', 'bandana',
+      'work gloves', 'gardening gloves', 'winter gloves', 'leather gloves', 'cotton gloves',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'antiseptic',
+      'sunglasses', 'reading glasses', 'prescription glasses', 'fashion eyewear'
+    ]
+  },
+  'information-essentials': {
+    searchTerms: [
+      'first aid guide', 'first aid manual', 'emergency contact cards', 'waterproof paper',
+      'medical log', 'first aid booklet', 'emergency reference', 'medical reference',
+      'emergency procedures', 'cpr instructions', 'medical forms', 'emergency cards'
+    ],
+    requiredKeywords: ['guide', 'manual', 'booklet', 'reference', 'emergency', 'first aid', 'medical', 'instructions', 'procedures'],
+    specificItems: [
+      'first aid guide', 'first aid manual', 'emergency guide', 'medical reference',
+      'first aid booklet', 'emergency contact', 'waterproof paper', 'medication log',
+      'emergency procedures', 'cpr instructions', 'medical forms', 'emergency cards',
+      'first aid instructions', 'emergency reference card', 'medical information card',
+      'allergy alert card', 'medical id card', 'emergency contact card', 'medical bracelet',
+      'waterproof notepad', 'emergency log', 'incident report forms', 'medical history forms'
+    ],
+    exclusions: [
+      'textbook', 'novel', 'fiction', 'entertainment', 'magazine', 'newspaper',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'antiseptic',
+      'medication', 'pills', 'tablets', 'capsules', 'gloves', 'mask', 'sanitizer',
+      'cookbook', 'recipe book', 'travel guide', 'phone book'
+    ]
+  },
+  'hot-cold-therapy': {
+    searchTerms: [
+      'instant cold compress', 'reusable gel pack', 'hot cold pack', 'topical analgesic',
+      'heat wrap', 'cold therapy', 'hot therapy', 'gel compress', 'ice pack', 'heating pack'
+    ],
+    requiredKeywords: ['cold', 'hot', 'compress', 'gel pack', 'therapy', 'analgesic', 'heat', 'ice pack', 'thermal'],
+    specificItems: [
+      'instant cold compress', 'reusable gel pack', 'hot cold pack', 'topical analgesic',
+      'heat wrap', 'cold compress', 'gel compress', 'ice pack', 'instant ice pack',
+      'reusable ice pack', 'gel ice pack', 'cold pack', 'instant cold pack',
+      'heating pack', 'heat pack', 'thermal pack', 'hot pack', 'instant heat pack',
+      'microwaveable heat pack', 'self-heating pack', 'chemical heat pack',
+      'cold therapy pack', 'hot therapy pack', 'thermal therapy', 'cryotherapy pack'
+    ],
+    exclusions: [
+      'heating pad', 'electric blanket', 'space heater', 'electric heating pad',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'antiseptic',
+      'medication', 'pills', 'tablets', 'capsules', 'ibuprofen', 'acetaminophen',
+      'cooler', 'refrigerator', 'freezer', 'ice maker'
+    ]
+  },
+  'hydration-nutrition': {
+    searchTerms: [
+      'electrolyte powder', 'energy gel packets', 'emergency water tablets', 'glucose tablets',
+      'hydration tablets', 'electrolyte drink', 'emergency nutrition', 'rehydration salts',
+      'oral rehydration solution', 'emergency food', 'survival food', 'energy bars'
+    ],
+    requiredKeywords: ['electrolyte', 'energy', 'glucose', 'hydration', 'water', 'emergency', 'nutrition', 'rehydration', 'survival'],
+    specificItems: [
+      'electrolyte powder', 'energy gel', 'water tablets', 'glucose tablets',
+      'hydration tablets', 'rehydration salts', 'emergency nutrition', 'emergency food',
+      'oral rehydration solution', 'electrolyte drink mix', 'hydration drink mix',
+      'emergency water purification', 'water purification tablets', 'emergency rations',
+      'survival food bars', 'energy bars', 'emergency energy', 'glucose gel',
+      'dextrose tablets', 'emergency glucose', 'hypoglycemia treatment'
+    ],
+    exclusions: [
+      'protein powder', 'vitamin supplement', 'meal replacement', 'diet supplement',
+      'weight loss supplement', 'bodybuilding supplement', 'whey protein', 'creatine',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'antiseptic',
+      'regular food', 'snacks', 'candy', 'soda', 'juice', 'coffee', 'tea'
+    ]
+  },
+  'miscellaneous': {
+    searchTerms: [
+      'first aid kit bag', 'disposable towels', 'plastic waste bags', 'emergency whistle',
+      'medical supplies', 'first aid supplies', 'emergency supplies', 'medical kit case',
+      'first aid organizer', 'emergency kit bag', 'medical storage'
+    ],
+    requiredKeywords: ['first aid', 'medical', 'emergency', 'disposable', 'whistle', 'supplies', 'kit', 'bag', 'case'],
+    specificItems: [
+      'first aid bag', 'medical bag', 'disposable towels', 'waste bags', 'emergency whistle',
+      'medical supplies', 'first aid supplies', 'first aid kit case', 'medical kit bag',
+      'emergency kit bag', 'first aid organizer', 'medical storage bag', 'trauma bag',
+      'emt bag', 'medical case', 'first aid pouch', 'emergency pouch', 'medical organizer',
+      'disposable wipes', 'cleaning wipes', 'disinfectant wipes', 'medical waste container',
+      'sharps container', 'emergency blanket storage', 'first aid kit refill'
+    ],
+    exclusions: [
+      'regular towels', 'bath towels', 'kitchen towels', 'sports whistle', 'toy whistle',
+      'scissors', 'tweezers', 'thermometer', 'tools', 'instruments', 'shears',
+      'bandage', 'gauze', 'tape', 'wrap', 'ointment', 'cream', 'gel', 'antiseptic',
+      'medication', 'pills', 'tablets', 'capsules', 'gloves', 'mask', 'sanitizer',
+      'backpack', 'suitcase', 'luggage', 'purse', 'wallet', 'regular bag'
+    ]
+  }
 };
+
+// Legacy mapping for backward compatibility
+const CATEGORY_SEARCH_TERMS = Object.fromEntries(
+  Object.entries(FIRST_AID_CATEGORIES).map(([key, value]) => [key, value.searchTerms])
+);
 
 // Initialize the API client
 const getApiClient = () => {
@@ -46,7 +285,7 @@ const getApiClient = () => {
 };
 
 // Search for products using PA API 5.0 SDK
-const searchProductsInternal = (keywords, searchIndex = 'All', itemCount = 10) => {
+const searchProductsInternal = (keywords, searchIndex = 'All', itemCount = 10, itemPage = 1) => {
   return new Promise((resolve, reject) => {
     try {
       const api = getApiClient();
@@ -60,6 +299,7 @@ const searchProductsInternal = (keywords, searchIndex = 'All', itemCount = 10) =
       searchItemsRequest.Keywords = keywords;
       searchItemsRequest.SearchIndex = searchIndex;
       searchItemsRequest.ItemCount = itemCount;
+      searchItemsRequest.ItemPage = itemPage;
       
       // Set resources to return
       searchItemsRequest.Resources = [
@@ -176,7 +416,7 @@ const getItemDetails = (itemIds) => {
 };
 
 // Search products by category or keywords
-const searchProducts = async (keywordsOrCategory, searchIndex = 'HealthPersonalCare', itemCount = 10) => {
+const searchProducts = async (keywordsOrCategory, searchIndex = 'HealthPersonalCare', itemCount = 10, itemPage = 1) => {
   // Check if first parameter is a category or keywords
   let keywords;
   let actualSearchIndex = searchIndex;
@@ -193,7 +433,7 @@ const searchProducts = async (keywordsOrCategory, searchIndex = 'HealthPersonalC
   }
   
   try {
-    const response = await searchProductsInternal(keywords, actualSearchIndex, itemCount);
+    const response = await searchProductsInternal(keywords, actualSearchIndex, itemCount, itemPage);
     return response;
   } catch (error) {
     console.error('Error searching products:', error);
@@ -299,14 +539,8 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
       console.log('Using database ID:', databaseId);
       console.log('Endpoint:', endpoint);
       
-      // Skip database operations that use GET requests due to node-appwrite v9.0.0 bug with regional endpoints
-      // The bug causes "request cannot have request body" error for ALL GET requests with regional endpoints
-      console.log('⚠️  Skipping database connection test due to node-appwrite v9.0.0 SDK bug with regional endpoints');
-      console.log('All GET requests (listCollections, listDocuments) fail with "request cannot have request body" error');
-      console.log('Proceeding with import process - database operations will be tested during product creation');
-      
-      // Instead of testing with GET requests, we'll test the connection during the actual import
-      // by attempting to create/update documents, which use POST/PUT requests that work fine
+      const collections = await databases.listCollections(databaseId);
+      console.log('✅ Database connection successful. Found collections:', collections.total);
       
     } catch (testError) {
       console.error('Database connection test failed:', testError.message);
@@ -333,76 +567,12 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     const allProducts = [];
     const errors = [];
 
-    // Process each category with improved duplicate handling
-    for (const categoryId of selectedCategories) {
-      try {
-        const searchTerms = CATEGORY_SEARCH_TERMS[categoryId] || ['medical supplies'];
-        const productsForCategory = [];
-        
-        let attempts = 0;
-        const maxAttempts = 3;
-        let itemsPerSearch = productsPerCategory * 2; // Start with 2x to account for duplicates
-        
-        // Try each search term for the category until we get enough products
-        while (productsForCategory.length < productsPerCategory && attempts < maxAttempts) {
-          attempts++;
-          console.log(`Attempt ${attempts} for category ${categoryId}, fetching ${itemsPerSearch} items`);
-          
-          for (const searchTerm of searchTerms) {
-            if (productsForCategory.length >= productsPerCategory) break;
-            
-            try {
-              // Call the searchProducts function directly with parameters
-              const searchResult = await searchProducts(searchTerm, 'HealthPersonalCare',
-                Math.min(itemsPerSearch, 10));
-              
-              if (searchResult?.SearchResult?.Items) {
-                // Add products to our collection, avoiding duplicates
-                for (const item of searchResult.SearchResult.Items) {
-                  // Check if we already have this product (by ASIN)
-                  const exists = productsForCategory.some(p => p.ASIN === item.ASIN) || 
-                                allProducts.some(p => p.ASIN === item.ASIN);
-                  
-                  if (!exists && productsForCategory.length < productsPerCategory) {
-                    productsForCategory.push(item);
-                  }
-                }
-              }
-            } catch (searchError) {
-              console.warn(`Search failed for term "${searchTerm}" (attempt ${attempts}):`, searchError.message);
-              // Continue with next search term
-            }
-          }
-          
-          // If we still don't have enough, increase search size for next attempt
-          if (productsForCategory.length < productsPerCategory) {
-            itemsPerSearch = Math.min(itemsPerSearch * 2, 50); // Cap at 50 to avoid API limits
-          }
-        }
-        
-        // Take only the requested number of products for this category
-        const productsToAdd = productsForCategory.slice(0, productsPerCategory);
-        allProducts.push(...productsToAdd);
-        console.log(`Final count for category ${categoryId}: ${productsToAdd.length} products`);
-      } catch (categoryError) {
-        console.error(`Error processing category ${categoryId}:`, categoryError);
-        errors.push(`Error processing category ${categoryId}: ${categoryError.message}`);
-      }
-    }
-    
-    console.log(`Found ${allProducts.length} products from Amazon`);
-    
-    // Get existing products from database to check for duplicates
+    // Get existing products from database first to check for duplicates during search
     console.log(`Using database ID: ${databaseId}`);
     let existingProductsResponse;
     
-    // Handle the node-appwrite v9.0.0 GET request bug with regional endpoints
     try {
       console.log('Fetching existing products from collection: products');
-      console.log('Database ID:', databaseId);
-      console.log('Collection ID: products');
-      console.log('Query:', [Query.limit(1000)]);
-      
       existingProductsResponse = await databases.listDocuments(
         databaseId,
         'products',
@@ -410,26 +580,15 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
       );
       console.log(`Found ${existingProductsResponse.documents.length} existing products`);
     } catch (dbError) {
-      // Handle the specific "request cannot have request body" error from node-appwrite v9.0.0
+      console.error('Error fetching existing products:', dbError.message);
+      // If it's the old bug error, assume no products to avoid failure, but log it
       if (dbError.message.includes('request cannot have request body')) {
-        console.warn('⚠️  GET request failed due to node-appwrite v9.0.0 bug with regional endpoints');
-        console.warn('Assuming no existing products and proceeding with import');
-        console.warn('All products will be treated as new imports');
-        
-        // Return empty response to simulate no existing products
+        console.warn('⚠️  Encountered request body error; assuming no existing products and proceeding with import');
         existingProductsResponse = {
           documents: [],
           total: 0
         };
       } else {
-        console.error('Error fetching existing products:', dbError.message);
-        console.error('Full error object:', JSON.stringify(dbError, null, 2));
-        if (dbError.code) {
-          console.error('Error code:', dbError.code);
-        }
-        if (dbError.response) {
-          console.error('Error response:', dbError.response);
-        }
         throw new Error(`Failed to fetch existing products: ${dbError.message}`);
       }
     }
@@ -439,25 +598,353 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     const existingNames = new Set(existingProducts.map(p => p.name).filter(Boolean));
     
     console.log(`Found ${existingASINs.size} existing ASINs and ${existingNames.size} existing product names`);
-    
-    // Filter out duplicates
-    const uniqueProducts = allProducts.filter(product => {
-      // Check if product ASIN already exists
-      if (product.ASIN && existingASINs.has(product.ASIN)) {
-        console.log(`Skipping product with existing ASIN: ${product.ASIN}`);
+
+    // Enhanced function to search for alternative products when duplicates are found
+    const searchAlternativeProducts = async (categoryId, searchTerms, targetCount, existingASINs, existingNames, allFoundProducts) => {
+      const productsForCategory = [];
+      const maxAttempts = 50; // Maximum search attempts to find unique products
+      let attempts = 0;
+      
+      // Extended search terms for deeper searching
+      const extendedSearchTerms = [
+        ...searchTerms,
+        // Add variations and related terms
+        ...searchTerms.map(term => `${term} supplies`),
+        ...searchTerms.map(term => `${term} kit`),
+        ...searchTerms.map(term => `medical ${term}`),
+        ...searchTerms.map(term => `first aid ${term}`),
+        // Add brand-specific searches for more variety
+        'Johnson & Johnson', 'Band-Aid', '3M', 'Medline', 'Curad', 'Nexcare'
+      ];
+      
+      console.log(`🔍 Enhanced search for category ${categoryId} with ${extendedSearchTerms.length} search terms`);
+      
+      for (const searchTerm of extendedSearchTerms) {
+        if (productsForCategory.length >= targetCount || attempts >= maxAttempts) break;
+        
+        let page = 1;
+        const maxPages = 10; // Search deeper pages for each term
+        
+        while (page <= maxPages && productsForCategory.length < targetCount && attempts < maxAttempts) {
+          console.log(`🔎 Searching "${searchTerm}" page ${page} for category ${categoryId} (attempt ${attempts + 1}/${maxAttempts})`);
+          attempts++;
+          
+          try {
+            const searchResult = await searchProducts(searchTerm, 'HealthPersonalCare', 10, page);
+            
+            if (searchResult?.SearchResult?.Items) {
+              let foundNewProducts = false;
+              
+              // Add products to our collection, avoiding duplicates
+              for (const item of searchResult.SearchResult.Items) {
+                // Check if we already have this product (by ASIN or name)
+                const asinExists = existingASINs.has(item.ASIN) || 
+                                 productsForCategory.some(p => p.ASIN === item.ASIN) || 
+                                 allFoundProducts.some(p => p.ASIN === item.ASIN);
+                
+                const productName = item.ItemInfo?.Title?.DisplayValue;
+                const nameExists = productName && (existingNames.has(productName) || 
+                                 productsForCategory.some(p => p.ItemInfo?.Title?.DisplayValue === productName) ||
+                                 allFoundProducts.some(p => p.ItemInfo?.Title?.DisplayValue === productName));
+                
+                if (!asinExists && !nameExists && productsForCategory.length < targetCount) {
+                  // Enhanced validation - ensure product is relevant to category AND appropriate for first aid
+                  const isRelevant = checkProductRelevance(item, categoryId);
+                  const isValidFirstAid = validateFirstAidProduct(item);
+                  const matchesCategoryItems = validateCategorySpecificProduct(item, categoryId);
+                  
+                  if (isRelevant && isValidFirstAid && matchesCategoryItems) {
+                    productsForCategory.push(item);
+                    foundNewProducts = true;
+                    console.log(`✅ Found valid first aid product: ${productName} (ASIN: ${item.ASIN})`);
+                  } else {
+                    let reason = 'unknown';
+                    if (!isRelevant) reason = 'category relevance';
+                    else if (!isValidFirstAid) reason = 'first aid validation';
+                    else if (!matchesCategoryItems) reason = 'category-specific validation';
+                    console.log(`⚠️  Skipping product due to failed ${reason}: ${productName}`);
+                  }
+                }
+              }
+              
+              // If no new products found on this page, try next page but with less priority
+              if (!foundNewProducts) {
+                console.log(`No new unique products found on page ${page} for "${searchTerm}"`);
+              }
+            } else {
+              // No more results on this page, stop paging this term
+              console.log(`No results found for "${searchTerm}" page ${page}`);
+              break;
+            }
+          } catch (searchError) {
+            console.warn(`Search failed for term "${searchTerm}" page ${page}:`, searchError.message);
+            // Continue with next term instead of breaking
+            break;
+          }
+          
+          page++;
+          
+          // Add small delay to avoid rate limiting
+          if (attempts % 5 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      }
+      
+      console.log(`🎯 Found ${productsForCategory.length} unique products for category ${categoryId} after ${attempts} search attempts`);
+      return productsForCategory;
+    };
+
+    // Enhanced function to check if a product is relevant to the specific first aid category
+    const checkProductRelevance = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      // Get category configuration
+      const categoryConfig = FIRST_AID_CATEGORIES[categoryId];
+      if (!categoryConfig) {
+        console.warn(`Unknown category: ${categoryId}`);
         return false;
       }
       
-      // Check if product name already exists
-      const productName = product.ItemInfo?.Title?.DisplayValue;
-      if (productName && existingNames.has(productName)) {
-        console.log(`Skipping product with existing name: ${productName}`);
+      // Check for exclusions first - if any exclusion keyword is found, reject the product
+      const hasExclusions = categoryConfig.exclusions.some(exclusion => 
+        description.includes(exclusion.toLowerCase())
+      );
+      
+      if (hasExclusions) {
+        console.log(`❌ Product excluded due to exclusion keywords: ${title}`);
         return false;
       }
       
-      return true;
-    });
+      // Check for required keywords - at least 2 must match for strong relevance
+      const requiredMatches = categoryConfig.requiredKeywords.filter(keyword => 
+        description.includes(keyword.toLowerCase())
+      ).length;
+      
+      // Check for specific item matches - these are high-confidence matches
+      const specificMatches = categoryConfig.specificItems.filter(item => 
+        description.includes(item.toLowerCase())
+      ).length;
+      
+      // Product is relevant if:
+      // 1. It has at least 1 specific item match, OR
+      // 2. It has at least 2 required keyword matches
+      const isRelevant = specificMatches >= 1 || requiredMatches >= 2;
+      
+      if (!isRelevant) {
+        console.log(`⚠️ Product failed relevance check: ${title} (specific: ${specificMatches}, required: ${requiredMatches})`);
+      } else {
+        console.log(`✅ Product passed relevance check: ${title} (specific: ${specificMatches}, required: ${requiredMatches})`);
+      }
+      
+      return isRelevant;
+    };
     
+    // Additional function to validate product against first aid context
+    const validateFirstAidProduct = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      // General first aid context keywords that should be present
+      const firstAidContextKeywords = [
+        'first aid', 'medical', 'emergency', 'health', 'safety', 'care', 'treatment',
+        'wound', 'injury', 'trauma', 'rescue', 'hospital', 'clinic', 'sterile',
+        'disposable', 'single use', 'professional', 'healthcare'
+      ];
+      
+      // Check if the product has any first aid context
+      const hasFirstAidContext = firstAidContextKeywords.some(keyword => 
+        description.includes(keyword)
+      );
+      
+      // Additional validation for medical/health product indicators
+      const medicalIndicators = [
+        'fda', 'medical grade', 'hospital', 'clinical', 'sterile', 'latex free',
+        'hypoallergenic', 'antimicrobial', 'antiseptic', 'pharmaceutical'
+      ];
+      
+      const hasMedicalIndicators = medicalIndicators.some(indicator => 
+        description.includes(indicator)
+      );
+      
+      // Product should have either first aid context OR medical indicators
+      const isValidFirstAidProduct = hasFirstAidContext || hasMedicalIndicators;
+      
+      if (!isValidFirstAidProduct) {
+        console.log(`❌ Product failed first aid validation: ${title}`);
+      }
+      
+      return isValidFirstAidProduct;
+    };
+
+    // Comprehensive validation function to ensure products match typical items for their category
+    const validateCategorySpecificProduct = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      // Category-specific validation patterns based on typical items
+      const categoryValidation = {
+        'wound-care-dressings': {
+          mustHave: ['bandage', 'gauze', 'pad', 'dressing', 'adhesive', 'wound', 'sterile'],
+          typicalItems: [
+            'band-aid', 'band aid', 'adhesive bandage', 'gauze pad', 'sterile pad',
+            'non-adherent pad', 'eye pad', 'rolled gauze', 'liquid bandage',
+            'skin adhesive', 'wound dressing', 'medical tape'
+          ],
+          exclude: ['toy', 'costume', 'decoration', 'craft', 'art']
+        },
+        'tapes-wraps': {
+          mustHave: ['tape', 'wrap', 'bandage', 'elastic', 'cohesive', 'athletic'],
+          typicalItems: [
+            'medical tape', 'adhesive tape', 'elastic bandage', 'ace bandage',
+            'cohesive wrap', 'self-adhering', 'athletic tape', 'pre-wrap',
+            'compression wrap', 'support bandage'
+          ],
+          exclude: ['duct tape', 'electrical tape', 'packaging tape', 'craft tape']
+        },
+        'antiseptics-ointments': {
+          mustHave: ['antiseptic', 'ointment', 'cream', 'gel', 'wipe', 'alcohol', 'hydrogen'],
+          typicalItems: [
+            'antibiotic ointment', 'antiseptic wipe', 'alcohol pad', 'prep pad',
+            'hydrogen peroxide', 'wound wash', 'burn gel', 'burn cream',
+            'hydrocortisone', 'neosporin', 'bacitracin', 'iodine'
+          ],
+          exclude: ['cosmetic', 'beauty', 'lotion', 'moisturizer', 'perfume']
+        },
+        'pain-relief': {
+          mustHave: ['pain', 'relief', 'ibuprofen', 'acetaminophen', 'aspirin', 'antihistamine'],
+          typicalItems: [
+            'ibuprofen', 'acetaminophen', 'aspirin', 'tylenol', 'advil', 'motrin',
+            'antihistamine', 'benadryl', 'antacid', 'tums', 'pepto', 'oral rehydration',
+            'sting relief', 'bite relief', 'pain reliever'
+          ],
+          exclude: ['prescription', 'controlled', 'narcotic', 'supplement', 'vitamin']
+        },
+        'instruments-tools': {
+          mustHave: ['scissor', 'tweezer', 'thermometer', 'tool', 'instrument', 'medical'],
+          typicalItems: [
+            'trauma shears', 'medical scissors', 'tweezers', 'fine-point tweezers',
+            'safety pins', 'splinter probe', 'lancet', 'digital thermometer',
+            'flashlight', 'penlight', 'cpr mask', 'face shield', 'resuscitation'
+          ],
+          exclude: ['kitchen', 'craft', 'hobby', 'beauty', 'nail', 'hair']
+        },
+        'trauma-emergency': {
+          mustHave: ['emergency', 'trauma', 'cold pack', 'blanket', 'splint', 'tourniquet'],
+          typicalItems: [
+            'instant cold pack', 'emergency blanket', 'shock blanket', 'hypothermia',
+            'triangular bandage', 'sling', 'splint', 'sam splint', 'tourniquet',
+            'emergency tape', 'duct tape', 'trauma kit'
+          ],
+          exclude: ['camping', 'outdoor', 'survival', 'hiking', 'sports']
+        },
+        'ppe': {
+          mustHave: ['glove', 'mask', 'protection', 'ppe', 'sanitizer', 'biohazard'],
+          typicalItems: [
+            'nitrile gloves', 'vinyl gloves', 'medical gloves', 'face mask',
+            'surgical mask', 'hand sanitizer', 'biohazard bag', 'waste bag',
+            'protective equipment', 'disposable gloves'
+          ],
+          exclude: ['fashion', 'costume', 'cleaning', 'household', 'industrial']
+        },
+        'information-essentials': {
+          mustHave: ['guide', 'manual', 'book', 'card', 'information', 'reference'],
+          typicalItems: [
+            'first aid guide', 'first aid manual', 'emergency guide', 'reference card',
+            'instruction booklet', 'emergency contact', 'medication log',
+            'waterproof paper', 'emergency pen'
+          ],
+          exclude: ['novel', 'fiction', 'entertainment', 'game', 'puzzle']
+        },
+        'hot-cold-therapy': {
+          mustHave: ['cold', 'hot', 'therapy', 'compress', 'pack', 'gel', 'heat'],
+          typicalItems: [
+            'instant cold compress', 'cold pack', 'hot pack', 'gel pack',
+            'reusable pack', 'heat wrap', 'topical analgesic', 'cooling gel',
+            'heating pad', 'ice pack'
+          ],
+          exclude: ['food', 'beverage', 'cooking', 'kitchen', 'appliance']
+        },
+        'hydration-nutrition': {
+          mustHave: ['electrolyte', 'hydration', 'energy', 'glucose', 'water', 'nutrition'],
+          typicalItems: [
+            'electrolyte powder', 'electrolyte packet', 'energy gel', 'glucose tablets',
+            'emergency water', 'water tablets', 'rehydration salts', 'sports drink',
+            'energy bar', 'nutrition bar'
+          ],
+          exclude: ['candy', 'snack', 'junk food', 'soda', 'alcohol', 'coffee']
+        }
+      };
+      
+      const validation = categoryValidation[categoryId];
+      if (!validation) return true; // Allow if no specific validation defined
+      
+      // Check if product has at least one required term
+      const hasRequiredTerm = validation.mustHave.some(term => 
+        description.includes(term.toLowerCase())
+      );
+      
+      // Check if product matches typical items
+      const matchesTypicalItem = validation.typicalItems.some(item => 
+        description.includes(item.toLowerCase())
+      );
+      
+      // Check for exclusions
+      const hasExclusions = validation.exclude.some(exclusion => 
+        description.includes(exclusion.toLowerCase())
+      );
+      
+      // Product is valid if it has required terms OR matches typical items, AND has no exclusions
+      const isValid = (hasRequiredTerm || matchesTypicalItem) && !hasExclusions;
+      
+      if (!isValid) {
+        console.log(`❌ Product "${title}" failed category validation for ${categoryId}`);
+        console.log(`   Required term: ${hasRequiredTerm}, Typical item: ${matchesTypicalItem}, Exclusions: ${hasExclusions}`);
+      }
+      
+      return isValid;
+    };
+
+    // Process each category with enhanced duplicate handling and alternative product search
+    for (const categoryId of selectedCategories) {
+      try {
+        const searchTerms = CATEGORY_SEARCH_TERMS[categoryId] || ['medical supplies'];
+        
+        console.log(`🚀 Processing category: ${categoryId} (target: ${productsPerCategory} products)`);
+        
+        // Use enhanced search function to find alternative products
+        const productsForCategory = await searchAlternativeProducts(
+          categoryId, 
+          searchTerms, 
+          productsPerCategory, 
+          existingASINs, 
+          existingNames, 
+          allProducts
+        );
+        
+        // Add found products to the main collection
+        allProducts.push(...productsForCategory);
+        console.log(`✅ Final count for category ${categoryId}: ${productsForCategory.length} products`);
+        
+        // If we didn't find enough products, log a warning
+        if (productsForCategory.length < productsPerCategory) {
+          console.warn(`⚠️  Only found ${productsForCategory.length}/${productsPerCategory} unique products for category ${categoryId}`);
+        }
+        
+      } catch (categoryError) {
+        console.error(`❌ Error processing category ${categoryId}:`, categoryError);
+        errors.push(`Error processing category ${categoryId}: ${categoryError.message}`);
+      }
+    }
+    
+    console.log(`Found ${allProducts.length} products from Amazon`);
+    
+    // Since we already filtered duplicates during search, all products should be unique
+    const uniqueProducts = allProducts;
     console.log(`Found ${uniqueProducts.length} unique products to import`);
     
     // Get detailed product information using GetItems
@@ -489,46 +976,111 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
       // This is a simplified approach - in a real implementation, you might want to use browse nodes
       let category = 'Miscellaneous & General'; // Default category
       
-      // Try to match the product to a specific category based on keywords
+      // Enhanced category matching using the comprehensive first aid category system
       const title = product.ItemInfo?.Title?.DisplayValue || '';
       const features = product.ItemInfo?.Features?.DisplayValues || [];
       const description = [title, ...features].join(' ').toLowerCase();
       
-      // Map first aid categories to product categories
-      const categoryMap = {
-        'wound-care-dressings': ['bandage', 'gauze', 'wound', 'tape', 'adhesive'],
-        'tapes-wraps': ['tape', 'wrap', 'bandage', 'ace', 'elastic'],
-        'antiseptics-ointments': ['antiseptic', 'ointment', 'hydrogen peroxide', 'alcohol', 'swab'],
-        'pain-relief': ['pain', 'relief', 'ibuprofen', 'acetaminophen', 'aspirin'],
-        'instruments-tools': ['scissor', 'tweezer', 'thermometer', 'tool'],
-        'trauma-emergency': ['emergency', 'kit', 'trauma', 'supply'],
-        'ppe': ['glove', 'mask', 'goggle', 'ppe'],
-        'information-essentials': ['manual', 'guide', 'reference', 'book'],
-        'hot-cold-therapy': ['ice', 'heat', 'therapy', 'pack'],
-        'hydration-nutrition': ['electrolyte', 'hydration', 'energy', 'drink']
+      // Map to the friendly category names used in the UI
+      const friendlyCategoryMap = {
+        'wound-care-dressings': 'Wound Care & Dressings',
+        'tapes-wraps': 'Tapes & Wraps',
+        'antiseptics-ointments': 'Antiseptics & Ointments',
+        'pain-relief': 'Pain & Symptom Relief',
+        'instruments-tools': 'Instruments & Tools',
+        'trauma-emergency': 'Trauma & Emergency',
+        'ppe': 'Personal Protection Equipment (PPE)',
+        'information-essentials': 'First Aid Information & Essentials',
+        'hot-cold-therapy': 'Hot & Cold Therapy',
+        'hydration-nutrition': 'Hydration & Nutrition',
+        'miscellaneous': 'Miscellaneous & General'
       };
       
-      // Try to find a matching category
-      for (const [categoryId, keywords] of Object.entries(categoryMap)) {
-        if (keywords.some(keyword => description.includes(keyword))) {
-          // Map to the friendly category names used in the UI
-          const friendlyCategoryMap = {
-            'wound-care-dressings': 'Wound Care & Dressings',
-            'tapes-wraps': 'Tapes & Wraps',
-            'antiseptics-ointments': 'Antiseptics & Ointments',
-            'pain-relief': 'Pain & Symptom Relief',
-            'instruments-tools': 'Instruments & Tools',
-            'trauma-emergency': 'Trauma & Emergency',
-            'ppe': 'Personal Protection Equipment (PPE)',
-            'information-essentials': 'First Aid Information & Essentials',
-            'hot-cold-therapy': 'Hot & Cold Therapy',
-            'hydration-nutrition': 'Hydration & Nutrition',
-            'miscellaneous': 'Miscellaneous & General'
-          };
-          
-          category = friendlyCategoryMap[categoryId];
-          break;
+      // Try to find the best matching category using enhanced logic
+      let bestMatch = { categoryId: 'miscellaneous', score: 0 };
+      let categoryScores = [];
+      
+      for (const [categoryId, categoryConfig] of Object.entries(FIRST_AID_CATEGORIES)) {
+        let score = 0;
+        let specificMatches = 0;
+        let requiredMatches = 0;
+        let hasExclusions = false;
+        
+        // Check for exclusions first (disqualifies the category completely)
+        hasExclusions = categoryConfig.exclusions.some(exclusion => 
+          description.includes(exclusion.toLowerCase())
+        );
+        
+        if (hasExclusions) {
+          console.log(`❌ Category ${categoryId} excluded for "${title}" due to exclusion keywords`);
+          continue; // Skip this category entirely
         }
+        
+        // Check specific items (highest weight - these are exact matches)
+        const matchedSpecificItems = categoryConfig.specificItems.filter(item => 
+          description.includes(item.toLowerCase())
+        );
+        specificMatches = matchedSpecificItems.length;
+        
+        // Give very high score for specific item matches
+        score += specificMatches * 50;
+        
+        // Check required keywords (lower weight)
+        const matchedRequiredKeywords = categoryConfig.requiredKeywords.filter(keyword => 
+          description.includes(keyword.toLowerCase())
+        );
+        requiredMatches = matchedRequiredKeywords.length;
+        score += requiredMatches * 5;
+        
+        // Bonus points for multiple specific matches (indicates strong relevance)
+        if (specificMatches > 1) {
+          score += 25;
+        }
+        
+        // Bonus points if the product title contains category-specific terms
+        const titleLower = title.toLowerCase();
+        const titleSpecificMatches = categoryConfig.specificItems.filter(item => 
+          titleLower.includes(item.toLowerCase())
+        ).length;
+        score += titleSpecificMatches * 30; // Title matches are very important
+        
+        categoryScores.push({
+          categoryId,
+          score,
+          specificMatches,
+          requiredMatches,
+          titleSpecificMatches,
+          matchedItems: matchedSpecificItems,
+          matchedKeywords: matchedRequiredKeywords
+        });
+        
+        // Update best match if this category scores higher
+        if (score > bestMatch.score) {
+          bestMatch = { categoryId, score };
+        }
+      }
+      
+      // Log detailed scoring for debugging
+      if (categoryScores.length > 0) {
+        console.log(`🔍 Category scoring for "${title}":`);
+        categoryScores
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3) // Show top 3 matches
+          .forEach(cat => {
+            console.log(`   ${cat.categoryId}: ${cat.score} pts (specific: ${cat.specificMatches}, required: ${cat.requiredMatches}, title: ${cat.titleSpecificMatches})`);
+            if (cat.matchedItems.length > 0) {
+              console.log(`     Matched items: ${cat.matchedItems.join(', ')}`);
+            }
+          });
+      }
+      
+      // Only assign a specific category if we have a good match (score > 25)
+      // With the new scoring system: 1 specific match = 50 pts, title match = 30 pts
+      if (bestMatch.score > 25) {
+        category = friendlyCategoryMap[bestMatch.categoryId];
+        console.log(`📂 Categorized "${title}" as "${category}" (score: ${bestMatch.score})`);
+      } else {
+        console.log(`📂 Product "${title}" assigned to Miscellaneous (low score: ${bestMatch.score})`);
       }
       
       // Extract features from the product
@@ -622,8 +1174,6 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     console.log(`Prepared ${productsToCreate.length} products for database insertion`);
     
     // Insert products into database
-    // Note: createDocument() uses POST requests which work fine with regional endpoints
-    // Only GET requests (listDocuments, listCollections) are affected by the node-appwrite v9.0.0 bug
     const createdProducts = [];
     const creationErrors = [];
     

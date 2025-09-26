@@ -299,7 +299,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
-                    <Badge variant="outline" className="w-fit">
+                    <Badge variant="outline" className="w-fit max-w-full text-center whitespace-normal break-words">
                       {product.category}
                     </Badge>
                     {product.material && (
