@@ -300,7 +300,6 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
                 <SelectItem value="$createdAt">Date Created</SelectItem>
                 <SelectItem value="name">Name</SelectItem>
                 <SelectItem value="price">Price</SelectItem>
-                <SelectItem value="rating">Rating</SelectItem>
               </SelectContent>
             </Select>
           </div>

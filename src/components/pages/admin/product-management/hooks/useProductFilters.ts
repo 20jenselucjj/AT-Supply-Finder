@@ -4,7 +4,7 @@ export const useProductFilters = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<'$createdAt'>('$createdAt');
+  const [sortBy, setSortBy] = useState<string>('$createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   // Advanced filters state

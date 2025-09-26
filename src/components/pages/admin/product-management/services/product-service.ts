@@ -68,17 +68,17 @@ export const productService = {
         }));
       }
 
-      // Apply sorting
-      if (sortBy === '$createdAt') {
+      // Apply sorting - handle all sort criteria
+      if (sortBy && sortOrder) {
         if (sortOrder === 'asc') {
           queries.push(JSON.stringify({ 
             method: 'orderAsc', 
-            attribute: '$createdAt' 
+            attribute: sortBy 
           }));
         } else {
           queries.push(JSON.stringify({ 
             method: 'orderDesc', 
-            attribute: '$createdAt' 
+            attribute: sortBy 
           }));
         }
       }
