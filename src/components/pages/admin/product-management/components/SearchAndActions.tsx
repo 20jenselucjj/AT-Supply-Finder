@@ -50,6 +50,8 @@ interface SearchAndActionsProps {
   setIsImportProductsOpen: (value: boolean) => void;
   isAmazonProductsOpen: boolean;
   setIsAmazonProductsOpen: (value: boolean) => void;
+  isSearchAmazonOpen: boolean;
+  setIsSearchAmazonOpen: (value: boolean) => void;
   handleCSVImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   productForm: any;
   setProductForm: (value: any) => void;
@@ -58,6 +60,7 @@ interface SearchAndActionsProps {
   isLoadingProductInfo: boolean;
   handleAddProduct: () => void;
   handleAmazonProducts: () => void;
+  handleSearchAmazon: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
 }
 
@@ -86,6 +89,8 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   setIsImportProductsOpen,
   isAmazonProductsOpen,
   setIsAmazonProductsOpen,
+  isSearchAmazonOpen,
+  setIsSearchAmazonOpen,
   handleCSVImport,
   productForm,
   setProductForm,
@@ -94,6 +99,7 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   isLoadingProductInfo,
   handleAddProduct,
   handleAmazonProducts,
+  handleSearchAmazon,
   handleKeyPress
 }) => {
   const clearSearch = () => {
@@ -244,6 +250,16 @@ export const SearchAndActions: React.FC<SearchAndActionsProps> = ({
               >
                 <Package className="h-4 w-4" />
                 Create Amazon Products
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={handleSearchAmazon}
+                className="gap-2 font-medium shadow-sm hover:shadow-md transition-shadow"
+                variant="outline"
+              >
+                <Search className="h-4 w-4" />
+                Search Amazon Products
               </Button>
             </>
           )}

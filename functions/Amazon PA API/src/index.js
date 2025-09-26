@@ -602,91 +602,114 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
     // Enhanced function to search for alternative products when duplicates are found
     const searchAlternativeProducts = async (categoryId, searchTerms, targetCount, existingASINs, existingNames, allFoundProducts) => {
       const productsForCategory = [];
-      const maxAttempts = 50; // Maximum search attempts to find unique products
+      const maxAttempts = 80; // Increased maximum search attempts
       let attempts = 0;
       
-      // Extended search terms for deeper searching
+      // Get category configuration for enhanced search terms
+      const categoryConfig = FIRST_AID_CATEGORIES[categoryId];
+      
+      // Extended search terms for deeper searching - include specific items and required keywords
       const extendedSearchTerms = [
         ...searchTerms,
+        // Add category-specific items as search terms
+        ...(categoryConfig?.specificItems || []).slice(0, 10), // Top 10 specific items
+        ...(categoryConfig?.requiredKeywords || []).slice(0, 8), // Top 8 required keywords
         // Add variations and related terms
         ...searchTerms.map(term => `${term} supplies`),
         ...searchTerms.map(term => `${term} kit`),
         ...searchTerms.map(term => `medical ${term}`),
         ...searchTerms.map(term => `first aid ${term}`),
         // Add brand-specific searches for more variety
-        'Johnson & Johnson', 'Band-Aid', '3M', 'Medline', 'Curad', 'Nexcare'
+        'Johnson & Johnson', 'Band-Aid', '3M', 'Medline', 'Curad', 'Nexcare', 'McKesson', 'Cardinal Health'
       ];
       
-      console.log(`🔍 Enhanced search for category ${categoryId} with ${extendedSearchTerms.length} search terms`);
+      // Multiple search indexes to try
+      const searchIndexes = ['HealthPersonalCare', 'Industrial', 'All'];
       
-      for (const searchTerm of extendedSearchTerms) {
-        if (productsForCategory.length >= targetCount || attempts >= maxAttempts) break;
+      console.log(`🔍 Enhanced search for category ${categoryId} with ${extendedSearchTerms.length} search terms across ${searchIndexes.length} indexes`);
+      
+      for (const searchIndex of searchIndexes) {
+        if (productsForCategory.length >= targetCount) break;
         
-        let page = 1;
-        const maxPages = 10; // Search deeper pages for each term
+        console.log(`🔍 Searching in ${searchIndex} index for category ${categoryId}`);
         
-        while (page <= maxPages && productsForCategory.length < targetCount && attempts < maxAttempts) {
-          console.log(`🔎 Searching "${searchTerm}" page ${page} for category ${categoryId} (attempt ${attempts + 1}/${maxAttempts})`);
-          attempts++;
+        for (const searchTerm of extendedSearchTerms) {
+          if (productsForCategory.length >= targetCount || attempts >= maxAttempts) break;
           
-          try {
-            const searchResult = await searchProducts(searchTerm, 'HealthPersonalCare', 10, page);
+          let page = 1;
+          const maxPages = searchIndex === 'HealthPersonalCare' ? 15 : 8; // More pages for health index
+          
+          while (page <= maxPages && productsForCategory.length < targetCount && attempts < maxAttempts) {
+            console.log(`🔎 Searching "${searchTerm}" page ${page} in ${searchIndex} for category ${categoryId} (attempt ${attempts + 1}/${maxAttempts})`);
+            attempts++;
             
-            if (searchResult?.SearchResult?.Items) {
-              let foundNewProducts = false;
+            try {
+              const searchResult = await searchProducts(searchTerm, searchIndex, 10, page);
               
-              // Add products to our collection, avoiding duplicates
-              for (const item of searchResult.SearchResult.Items) {
-                // Check if we already have this product (by ASIN or name)
-                const asinExists = existingASINs.has(item.ASIN) || 
-                                 productsForCategory.some(p => p.ASIN === item.ASIN) || 
-                                 allFoundProducts.some(p => p.ASIN === item.ASIN);
+              if (searchResult?.SearchResult?.Items) {
+                let foundNewProducts = false;
                 
-                const productName = item.ItemInfo?.Title?.DisplayValue;
-                const nameExists = productName && (existingNames.has(productName) || 
-                                 productsForCategory.some(p => p.ItemInfo?.Title?.DisplayValue === productName) ||
-                                 allFoundProducts.some(p => p.ItemInfo?.Title?.DisplayValue === productName));
-                
-                if (!asinExists && !nameExists && productsForCategory.length < targetCount) {
-                  // Enhanced validation - ensure product is relevant to category AND appropriate for first aid
-                  const isRelevant = checkProductRelevance(item, categoryId);
-                  const isValidFirstAid = validateFirstAidProduct(item);
-                  const matchesCategoryItems = validateCategorySpecificProduct(item, categoryId);
+                // Add products to our collection, avoiding duplicates
+                for (const item of searchResult.SearchResult.Items) {
+                  // Check if we already have this product (by ASIN or name)
+                  const asinExists = existingASINs.has(item.ASIN) || 
+                                   productsForCategory.some(p => p.ASIN === item.ASIN) || 
+                                   allFoundProducts.some(p => p.ASIN === item.ASIN);
                   
-                  if (isRelevant && isValidFirstAid && matchesCategoryItems) {
-                    productsForCategory.push(item);
-                    foundNewProducts = true;
-                    console.log(`✅ Found valid first aid product: ${productName} (ASIN: ${item.ASIN})`);
-                  } else {
-                    let reason = 'unknown';
-                    if (!isRelevant) reason = 'category relevance';
-                    else if (!isValidFirstAid) reason = 'first aid validation';
-                    else if (!matchesCategoryItems) reason = 'category-specific validation';
-                    console.log(`⚠️  Skipping product due to failed ${reason}: ${productName}`);
+                  const productName = item.ItemInfo?.Title?.DisplayValue;
+                  const nameExists = productName && (existingNames.has(productName) || 
+                                   productsForCategory.some(p => p.ItemInfo?.Title?.DisplayValue === productName) ||
+                                   allFoundProducts.some(p => p.ItemInfo?.Title?.DisplayValue === productName));
+                  
+                  if (!asinExists && !nameExists && productsForCategory.length < targetCount) {
+                    // Use enhanced validation functions for more lenient matching
+                    const isRelevantEnhanced = checkProductRelevanceEnhanced(item, categoryId);
+                    const isValidFirstAidEnhanced = validateFirstAidProductEnhanced(item, categoryId);
+                    const matchesCategoryItemsEnhanced = validateCategorySpecificProductEnhanced(item, categoryId);
+                    
+                    // Try enhanced validation first, fall back to standard if needed
+                    const isRelevant = isRelevantEnhanced || checkProductRelevance(item, categoryId);
+                    const isValidFirstAid = isValidFirstAidEnhanced || validateFirstAidProduct(item, categoryId);
+                    const matchesCategoryItems = matchesCategoryItemsEnhanced || validateCategorySpecificProduct(item, categoryId);
+                    
+                    if (isRelevant && isValidFirstAid && matchesCategoryItems) {
+                      productsForCategory.push(item);
+                      foundNewProducts = true;
+                      const validationType = isRelevantEnhanced ? 'enhanced' : 'standard';
+                      console.log(`✅ Found valid first aid product (${validationType}): ${productName} (ASIN: ${item.ASIN})`);
+                    } else {
+                      let reason = 'unknown';
+                      if (!isRelevant) reason = 'category relevance';
+                      else if (!isValidFirstAid) reason = 'first aid validation';
+                      else if (!matchesCategoryItems) reason = 'category-specific validation';
+                      console.log(`⚠️  Skipping product due to failed ${reason}: ${productName}`);
+                    }
                   }
                 }
+                
+                // If no new products found on this page, try next page but with less priority
+                if (!foundNewProducts) {
+                  console.log(`No new unique products found on page ${page} for "${searchTerm}" in ${searchIndex}`);
+                  // Skip to next term if no results found on first 3 pages
+                  if (page >= 3) break;
+                }
+              } else {
+                // No more results on this page, stop paging this term
+                console.log(`No results found for "${searchTerm}" page ${page} in ${searchIndex}`);
+                break;
               }
-              
-              // If no new products found on this page, try next page but with less priority
-              if (!foundNewProducts) {
-                console.log(`No new unique products found on page ${page} for "${searchTerm}"`);
-              }
-            } else {
-              // No more results on this page, stop paging this term
-              console.log(`No results found for "${searchTerm}" page ${page}`);
+            } catch (searchError) {
+              console.warn(`Search failed for term "${searchTerm}" page ${page} in ${searchIndex}:`, searchError.message);
+              // Continue with next term instead of breaking
               break;
             }
-          } catch (searchError) {
-            console.warn(`Search failed for term "${searchTerm}" page ${page}:`, searchError.message);
-            // Continue with next term instead of breaking
-            break;
-          }
-          
-          page++;
-          
-          // Add small delay to avoid rate limiting
-          if (attempts % 5 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            page++;
+            
+            // Add small delay to avoid rate limiting
+            if (attempts % 5 === 0) {
+              await new Promise(resolve => setTimeout(resolve, 150));
+            }
           }
         }
       }
@@ -778,6 +801,133 @@ const importAmazonProducts = async (selectedCategories, productsPerCategory) => 
       }
       
       return isValidFirstAidProduct;
+    };
+
+    // Enhanced validation functions with more lenient criteria
+    const checkProductRelevanceEnhanced = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      const categoryConfig = FIRST_AID_CATEGORIES[categoryId];
+      if (!categoryConfig) return false;
+      
+      // More lenient keyword matching - check for partial matches
+      const hasRequiredKeyword = categoryConfig.requiredKeywords.some(keyword => {
+        const keywordLower = keyword.toLowerCase();
+        // Check for exact match or partial match (for compound words)
+        return description.includes(keywordLower) || 
+               description.includes(keywordLower.replace(/\s+/g, '')) ||
+               keywordLower.split(' ').some(part => part.length > 3 && description.includes(part));
+      });
+      
+      // Enhanced specific item matching with fuzzy matching
+      const matchesSpecificItem = categoryConfig.specificItems.some(item => {
+        const itemLower = item.toLowerCase();
+        return description.includes(itemLower) || 
+               description.includes(itemLower.replace(/[-\s]/g, '')) ||
+               itemLower.split(/[-\s]/).some(part => part.length > 3 && description.includes(part));
+      });
+      
+      // Check for hard exclusions only (more lenient)
+      const hardExclusions = ['toy', 'game', 'craft', 'beauty', 'cosmetic', 'kitchen', 'food', 'beverage'];
+      const hasHardExclusions = hardExclusions.some(exclusion => 
+        description.includes(exclusion.toLowerCase())
+      );
+      
+      // More lenient: accept if ANY criteria is met and no hard exclusions
+      const isRelevant = (hasRequiredKeyword || matchesSpecificItem) && !hasHardExclusions;
+      
+      return isRelevant;
+    };
+
+    const validateFirstAidProductEnhanced = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      // Expanded first aid context keywords
+      const firstAidContextKeywords = [
+        'first aid', 'medical', 'emergency', 'health', 'safety', 'care', 'treatment',
+        'wound', 'injury', 'trauma', 'rescue', 'hospital', 'clinic', 'sterile',
+        'disposable', 'single use', 'professional', 'healthcare', 'therapeutic',
+        'clinical', 'surgical', 'diagnostic', 'protective', 'hygienic'
+      ];
+      
+      // Check if the product has any first aid context (more lenient)
+      const hasFirstAidContext = firstAidContextKeywords.some(keyword => 
+        description.includes(keyword)
+      );
+      
+      // Additional validation for medical/health product indicators
+      const medicalIndicators = [
+        'fda', 'medical grade', 'hospital', 'clinical', 'sterile', 'latex free',
+        'hypoallergenic', 'antimicrobial', 'antiseptic', 'pharmaceutical',
+        'ce marked', 'iso certified', 'medical device', 'health care'
+      ];
+      
+      const hasMedicalIndicators = medicalIndicators.some(indicator => 
+        description.includes(indicator)
+      );
+      
+      // More lenient: accept if has context OR indicators OR is in health category
+      const isValidFirstAidProduct = hasFirstAidContext || hasMedicalIndicators || 
+        description.includes('health') || description.includes('medical');
+      
+      return isValidFirstAidProduct;
+    };
+
+    const validateCategorySpecificProductEnhanced = (product, categoryId) => {
+      const title = product.ItemInfo?.Title?.DisplayValue || '';
+      const features = product.ItemInfo?.Features?.DisplayValues || [];
+      const description = [title, ...features].join(' ').toLowerCase();
+      
+      const categoryConfig = FIRST_AID_CATEGORIES[categoryId];
+      if (!categoryConfig) return false;
+      
+      // Enhanced scoring system with lower thresholds
+      let score = 0;
+      
+      // Score for specific items (high value)
+      categoryConfig.specificItems.forEach(item => {
+        const itemLower = item.toLowerCase();
+        if (description.includes(itemLower)) {
+          score += 15;
+        } else if (description.includes(itemLower.replace(/[-\s]/g, ''))) {
+          score += 10;
+        } else {
+          // Partial word matching
+          const words = itemLower.split(/[-\s]/);
+          words.forEach(word => {
+            if (word.length > 3 && description.includes(word)) {
+              score += 3;
+            }
+          });
+        }
+      });
+      
+      // Score for required keywords (medium value)
+      categoryConfig.requiredKeywords.forEach(keyword => {
+        const keywordLower = keyword.toLowerCase();
+        if (description.includes(keywordLower)) {
+          score += 8;
+        } else if (keywordLower.split(' ').some(part => part.length > 3 && description.includes(part))) {
+          score += 4;
+        }
+      });
+      
+      // Penalty for exclusions (but not disqualifying)
+      const softExclusions = categoryConfig.exclusions.filter(ex => 
+        !['toy', 'game', 'craft', 'beauty', 'cosmetic'].includes(ex.toLowerCase())
+      );
+      softExclusions.forEach(exclusion => {
+        if (description.includes(exclusion.toLowerCase())) {
+          score -= 5;
+        }
+      });
+      
+      // Lower threshold for acceptance (was 25, now 15)
+      return score >= 15;
     };
 
     // Comprehensive validation function to ensure products match typical items for their category
@@ -1254,7 +1404,21 @@ export default async ({ req, res, log, error }) => {
     switch (action) {
       case 'search':
         if (keywords) {
-          result = await searchProductsInternal(keywords, searchIndex, itemCount);
+          const rawResult = await searchProductsInternal(keywords, searchIndex, itemCount);
+          // Format the response for frontend consumption
+          if (rawResult && rawResult.SearchResult && rawResult.SearchResult.Items) {
+            result = {
+              products: rawResult.SearchResult.Items,
+              totalResults: rawResult.SearchResult.TotalResultCount || 0,
+              searchTerms: keywords
+            };
+          } else {
+            result = {
+              products: [],
+              totalResults: 0,
+              searchTerms: keywords
+            };
+          }
         } else if (category) {
           result = await searchProducts(category, searchIndex, itemCount);
         } else {
@@ -1262,6 +1426,53 @@ export default async ({ req, res, log, error }) => {
             error: 'Please provide either category or keywords parameter' 
           }, 400);
         }
+        break;
+        
+      case 'fetch':
+        if (!selectedCategories || !productsPerCategory) {
+          return res.json({ 
+            error: 'selectedCategories and productsPerCategory are required for fetch' 
+          }, 400);
+        }
+        
+        // Fetch products for pre-approval workflow
+        const fetchedProducts = [];
+        
+        for (const category of selectedCategories) {
+          if (!FIRST_AID_CATEGORIES[category]) {
+            log(`Warning: Unknown category ${category}, skipping`);
+            continue;
+          }
+          
+          const categoryConfig = FIRST_AID_CATEGORIES[category];
+          const searchTerms = categoryConfig.searchTerms;
+          
+          // Use a random search term for this category
+          const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
+          
+          try {
+            const rawResult = await searchProductsInternal(randomTerm, 'HealthPersonalCare', productsPerCategory);
+            
+            if (rawResult && rawResult.SearchResult && rawResult.SearchResult.Items) {
+              const categoryProducts = rawResult.SearchResult.Items.map(item => ({
+                ...item,
+                category: category,
+                searchTerm: randomTerm
+              }));
+              
+              fetchedProducts.push(...categoryProducts);
+            }
+          } catch (err) {
+            log(`Error fetching products for category ${category}:`, err.message);
+          }
+        }
+        
+        // Format the response for frontend consumption
+        result = {
+          products: fetchedProducts,
+          totalResults: fetchedProducts.length,
+          searchTerms: selectedCategories.join(', ')
+        };
         break;
         
       case 'details':
@@ -1284,7 +1495,7 @@ export default async ({ req, res, log, error }) => {
         
       default:
         return res.json({ 
-          error: 'Invalid action. Supported actions: search, details, import' 
+          error: 'Invalid action. Supported actions: search, fetch, details, import' 
         }, 400);
     }
 

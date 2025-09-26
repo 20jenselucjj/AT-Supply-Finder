@@ -298,7 +298,10 @@ export const productService = {
         dimensions: productData.dimensions || null,
         weight: productData.weight || null,
         material: productData.material || null,
-        features: productData.features ? productData.features.replace(/\n/g, '..') : null,
+        features: productData.features ? 
+          (Array.isArray(productData.features) ? 
+            productData.features.join('..') : 
+            productData.features.replace(/\n/g, '..')) : null,
         imageUrl: productData.image_url || null,
         asin: productData.asin || null,
         affiliateLink: productData.affiliate_link || null
@@ -362,7 +365,10 @@ export const productService = {
         dimensions: productData.dimensions || null,
         weight: productData.weight || null,
         material: productData.material || null,
-        features: productData.features ? productData.features.replace(/\n/g, '..') : null,
+        features: productData.features ? 
+          (Array.isArray(productData.features) ? 
+            productData.features.join('..') : 
+            productData.features.replace(/\n/g, '..')) : null,
         imageUrl: productData.image_url || null,
         asin: productData.asin || null,
         affiliateLink: productData.affiliate_link || null

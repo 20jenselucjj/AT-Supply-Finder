@@ -15,6 +15,27 @@ import { toast } from 'sonner';
 import { useRBAC } from '@/hooks/use-rbac';
 import { useProductRefresh } from '@/context/product-refresh-context';
 import { productService } from '@/components/pages/admin/product-management/services/product-service';
+import { ProductApprovalModal } from './ProductApprovalModal';
+
+// Amazon Product interface for approval
+interface AmazonProduct {
+  asin: string;
+  title: string;
+  price?: string;
+  rating?: number;
+  reviewCount?: number;
+  imageUrl?: string;
+  detailPageURL?: string;
+  category?: string;
+  description?: string;
+  features?: string[];
+  brand?: string;
+  availability?: string;
+  dimensions?: string;
+  weight?: string;
+  material?: string;
+  qty?: number;
+}
 
 interface AmazonProductSelectionModalProps {
   open: boolean;
@@ -53,6 +74,10 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
   // State for loading
   const [isImporting, setIsImporting] = useState(false);
 
+  // State for fetched products and approval modal
+  const [fetchedProducts, setFetchedProducts] = useState<AmazonProduct[]>([]);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+
   // Handle category selection
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     if (checked) {
@@ -71,11 +96,11 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
     }
   };
 
-  // Validate and submit form
+  // Fetch products for approval
   const handleSubmit = async () => {
     // Check if user has admin permissions
     if (!isAdmin) {
-      toast.error('You do not have permission to import Amazon products');
+      toast.error('You do not have permission to fetch Amazon products');
       return;
     }
     
@@ -92,7 +117,7 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
     
     try {
       setIsImporting(true);
-      toast.info('Importing products from Amazon...');
+      toast.info('Fetching products from Amazon for review...');
       
       // Import the functions object from appwrite.ts
       const { functions } = await import('@/lib/api/appwrite');
@@ -104,12 +129,12 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
         throw new Error('Missing Appwrite function ID in environment variables');
       }
       
-      // Prepare the request data with duplicate check enabled
+      // Prepare the request data for fetching products (not importing)
       const requestData = {
         selectedCategories,
         productsPerCategory,
-        action: 'import',
-        checkDuplicates: true // Enable duplicate checking
+        action: 'fetch', // Use the new 'fetch' action for category-based product fetching
+        category: selectedCategories[0] // Use first category for now, we'll enhance this later
       };
       
       // Execute the Appwrite function
@@ -129,38 +154,109 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
       
       // Handle both success and error responses
       if (result.success === false) {
-        throw new Error(result.error || result.message || 'Failed to import products');
+        throw new Error(result.error || result.message || 'Failed to fetch products');
       }
       
-      if (result.success) {
-        const successMessage = result.message || 'Products imported successfully';
-        const duplicateInfo = result.duplicatesSkipped ? ` (${result.duplicatesSkipped} duplicates skipped)` : '';
-        toast.success(`${successMessage}${duplicateInfo}`);
+      // Check if we have products in the response
+      if (result.products && Array.isArray(result.products) && result.products.length > 0) {
+        // Transform the products to match our AmazonProduct interface
+        const transformedProducts: AmazonProduct[] = result.products.map((product: any) => {
+          // Extract price properly
+          let price = '';
+          if (product.price) {
+            price = product.price.toString();
+          } else if (product.Offers?.Listings?.[0]?.Price?.DisplayAmount) {
+            price = product.Offers.Listings[0].Price.DisplayAmount;
+          } else if (product.Offers?.Listings?.[0]?.Price?.Amount) {
+            price = `$${product.Offers.Listings[0].Price.Amount}`;
+          }
+
+          // Extract features properly
+          let features = [];
+          if (product.features && Array.isArray(product.features)) {
+            features = product.features;
+          } else if (product.ItemInfo?.Features?.DisplayValues) {
+            features = product.ItemInfo.Features.DisplayValues;
+          }
+
+          // Extract dimensions and other product info
+          const dimensions = product.dimensions || 
+                           product.ItemInfo?.ProductInfo?.ItemDimensions?.DisplayValue || 
+                           '';
+
+          const weight = product.weight || 
+                        product.ItemInfo?.ProductInfo?.ItemDimensions?.Weight?.DisplayValue || 
+                        '';
+
+          const material = product.material || '';
+
+          // Extract quantity information
+          let qty = product.qty || 1;
+          if (!product.qty && product.name) {
+            const quantityMatch = product.name.match(/(\d+)\s*(?:Count|Pack|Pack of|Packaging|Pieces|Ct|Pc)/i);
+            if (quantityMatch) {
+              qty = parseInt(quantityMatch[1]);
+            }
+          }
+
+          return {
+            asin: product.asin || product.ASIN || '',
+            title: product.name || product.title || product.ItemInfo?.Title?.DisplayValue || 'Unknown Product',
+            price: price,
+            rating: product.rating || 0,
+            reviewCount: product.reviewCount || 0,
+            imageUrl: product.imageUrl || product.Images?.Primary?.Large?.URL || product.Images?.Primary?.Medium?.URL || '',
+            detailPageURL: product.affiliateLink || product.detailPageURL || product.DetailPageURL || '',
+            category: product.category || selectedCategories[0] || 'Miscellaneous & General',
+            description: product.description || features.join('. ') || '',
+            features: features,
+            brand: product.brand || product.ItemInfo?.ByLineInfo?.Brand?.DisplayValue || '',
+            availability: product.availability || 'Available',
+            dimensions: dimensions,
+            weight: weight,
+            material: material,
+            qty: qty
+          };
+        });
         
-        // Trigger product refresh to update the product list
-        triggerProductRefresh();
-        
-        // Call the callback to refresh data
-        if (onProductsImported) {
-          onProductsImported();
-        }
-        
-        handleCancel();
+        setFetchedProducts(transformedProducts);
+        setShowApprovalModal(true);
+        toast.success(`Found ${transformedProducts.length} products for review`);
       } else {
-        throw new Error(result.error || 'Failed to import products');
+        toast.error('No products found for the selected categories');
       }
     } catch (error: any) {
-      console.error('Error importing Amazon products:', error);
-      toast.error(`Failed to import products: ${error.message}`);
+      console.error('Error fetching Amazon products:', error);
+      toast.error(`Failed to fetch products: ${error.message}`);
     } finally {
       setIsImporting(false);
     }
+  };
+
+  // Handle products approved from the approval modal
+  const handleProductsApproved = (approvedProducts: AmazonProduct[]) => {
+    // Clear the fetched products and close approval modal
+    setFetchedProducts([]);
+    setShowApprovalModal(false);
+    
+    // Trigger product refresh to update the product list
+    triggerProductRefresh();
+    
+    // Call the callback to refresh data
+    if (onProductsImported) {
+      onProductsImported();
+    }
+    
+    // Close the main modal
+    handleCancel();
   };
 
   // Reset form and close modal
   const handleCancel = () => {
     setSelectedCategories([]);
     setProductsPerCategory(5);
+    setFetchedProducts([]);
+    setShowApprovalModal(false);
     onOpenChange(false);
   };
 
@@ -268,10 +364,19 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
             onClick={handleSubmit}
             disabled={selectedCategories.length === 0 || isImporting || !isAdmin}
           >
-            {isImporting ? 'Importing...' : 'Create Products'}
+            {isImporting ? 'Fetching Products...' : 'Fetch Products for Review'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Product Approval Modal */}
+      <ProductApprovalModal
+        open={showApprovalModal}
+        onOpenChange={setShowApprovalModal}
+        products={fetchedProducts}
+        onProductsApproved={handleProductsApproved}
+        title="Review and Approve Amazon Products"
+      />
     </Dialog>
   );
 };
