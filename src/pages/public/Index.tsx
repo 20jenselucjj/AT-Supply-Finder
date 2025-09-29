@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import Hero from '@/components/pages/home/Hero';
 import CategoryGrid from '@/components/pages/home/CategoryGrid';
+import StarterKitDisplay from '@/components/pages/home/StarterKitDisplay';
 
 const Index = () => {
   return (
@@ -65,6 +66,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      <StarterKitDisplay />
     </div>
   );
 };

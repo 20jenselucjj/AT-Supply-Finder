@@ -109,13 +109,13 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
               <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
               
               <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="text-lg font-bold text-primary">
+                <span className="text-lg font-bold text-foreground">
                   ${bestPrice.toFixed(2)}
                 </span>
                 {(() => {
                   const countInfo = getProductCountInfo(product);
                   return countInfo ? (
-                    <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-muted/30 text-foreground border-border">
                       {countInfo}
                     </Badge>
                   ) : null;

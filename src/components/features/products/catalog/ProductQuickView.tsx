@@ -80,7 +80,7 @@ export const ProductQuickView = ({
                 )}
                 <div className="flex justify-between pt-2 border-t border-border">
                   <span className="font-medium text-muted-foreground">Best Price:</span>
-                  <span className="text-primary font-bold">${bestPrice.toFixed(2)}</span>
+                  <span className="text-foreground font-bold">${bestPrice.toFixed(2)}</span>
                 </div>
               </div>
             </div>

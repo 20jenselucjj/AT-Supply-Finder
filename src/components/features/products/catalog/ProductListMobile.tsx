@@ -85,7 +85,7 @@ export const ProductListMobile = ({ products, onProductSelect }: ProductListMobi
                   </div>
                   
                   <div className="mb-2">
-                    <span className="font-bold text-primary">${bestPrice.toFixed(2)}</span>
+                    <span className="font-bold text-foreground">${bestPrice.toFixed(2)}</span>
                   </div>
                   
                   {product.features?.length && (

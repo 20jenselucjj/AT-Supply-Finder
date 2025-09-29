@@ -91,7 +91,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({ products, onProductS
                 </ul>
               </TableCell>
               <TableCell>
-                <div className="font-bold text-primary">${bestPrice.toFixed(2)}</div>
+                <div className="font-bold text-foreground">${bestPrice.toFixed(2)}</div>
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <div className="flex flex-wrap gap-1">

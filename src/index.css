@@ -250,4 +250,55 @@ All colors MUST be HSL.
       transform: scale(1);
     }
   }
+
+  /* Custom scrollbar styles for starter kit product lists */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+
+  /* Enhanced starter kit card animations */
+  .starter-kit-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .starter-kit-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+      0 20px 40px -12px hsl(var(--primary) / 0.15),
+      0 8px 24px -8px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Image carousel transition effects */
+  .image-transition-slide {
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .image-transition-fade {
+    transition: opacity 0.5s ease-in-out;
+  }
+  
+  .image-transition-3d {
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
 }

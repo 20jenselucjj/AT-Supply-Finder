@@ -34,11 +34,12 @@ const Build = () => {
     setSelectedCategoryId('');
   };
 
-  // Handle deep link functionality for AI-generated kits
+  // Handle deep link functionality for AI-generated kits and starter kit templates
   useEffect(() => {
     const kitData = searchParams.get('kit');
     const aiGenerated = searchParams.get('ai') === 'true';
     
+    // Check for AI-generated kit data from URL parameters
     if (kitData && aiGenerated) {
       try {
         const parsedKit = JSON.parse(kitData);
@@ -85,6 +86,60 @@ const Build = () => {
         }
       } catch (error) {
         console.error('Failed to parse kit data from URL:', error);
+      }
+    }
+    
+    // Check for starter kit template data from sessionStorage
+    const templateData = sessionStorage.getItem('starterKitTemplate');
+    if (templateData) {
+      try {
+        const parsedTemplate = JSON.parse(templateData);
+        console.log('Starter Kit Template Data:', parsedTemplate); // Debug log
+        
+        if (parsedTemplate.isTemplate && parsedTemplate.products && Array.isArray(parsedTemplate.products)) {
+          // Clear existing kit and add template items
+          clearKit();
+          parsedTemplate.products.forEach((item: any) => {
+            // Use the imageUrl from the template product data
+            const imageUrl = item.imageUrl || item.image_url || '/placeholder.svg';
+            console.log('Processing template item:', item.name, 'Image URL:', imageUrl); // Debug log
+            
+            // Create offers array with proper Amazon affiliate link if ASIN exists
+            const offers = item.asin ? [{
+              name: 'Amazon',
+              url: `https://www.amazon.com/dp/${item.asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+              price: item.price || 0,
+              lastUpdated: new Date().toISOString()
+            }] : [{
+              name: 'Template Product',
+              url: '#',
+              price: item.price || 0,
+              lastUpdated: new Date().toISOString()
+            }];
+            
+            addToKit({
+              id: item.productId || item.id || `template-${Date.now()}-${Math.random()}`,
+              name: item.name,
+              brand: item.brand || 'Unknown',
+              price: item.price || 0,
+              imageUrl: imageUrl,
+              category: item.category || 'miscellaneous',
+              description: item.description || '',
+              features: item.features || [],
+              materials: item.materials || [],
+              asin: item.asin || undefined,
+              offers: offers,
+              quantity: item.quantity || 1
+            } as any, item.quantity || 1);
+          });
+          
+          // Clear sessionStorage after loading
+          sessionStorage.removeItem('starterKitTemplate');
+        }
+      } catch (error) {
+        console.error('Failed to parse template data from sessionStorage:', error);
+        // Clear invalid sessionStorage data
+        sessionStorage.removeItem('starterKitTemplate');
       }
     }
   }, [searchParams, addToKit, clearKit, setSearchParams]);

@@ -80,7 +80,7 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                   </div>
                   
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="font-bold text-primary text-sm">${minPrice.toFixed(2)}</span>
+                    <span className="font-bold text-foreground text-sm">${minPrice.toFixed(2)}</span>
                     {(() => {
                       const countInfo = getProductCountInfo(product);
                       return countInfo ? (
