@@ -166,7 +166,6 @@ const Catalog = () => {
           name: product.name,
           category: product.category,
           brand: product.brand,
-          rating: product.rating || 0,
           imageUrl: product.imageUrl || '',
           asin: product.asin || '',
           dimensions: product.dimensions || '',
@@ -270,7 +269,6 @@ const Catalog = () => {
   }, []);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [brands, setBrands] = useState<string[]>([]);
-  const [minRating, setMinRating] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const isNarrow = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false;
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
@@ -307,8 +305,7 @@ const Catalog = () => {
       // Skip price filtering if product has no offers
       const priceInRange = p.offers.length === 0 || (price >= priceRange[0] && price <= priceRange[1]);
       return priceInRange &&
-             (brands.length === 0 || brands.includes(p.brand)) &&
-             (p.rating ? p.rating >= minRating : true);
+             (brands.length === 0 || brands.includes(p.brand));
     });
 
     switch (sort) {
@@ -321,18 +318,15 @@ const Catalog = () => {
       case "name-asc":
         items.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case "rating-desc":
-        items.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
       default:
         break;
     }
     
     console.log('Filtered products:', items.length, 'from', products.length, 'total');
-    console.log('Current filters - cat:', cat, 'q:', q, 'priceRange:', priceRange, 'brands:', brands, 'minRating:', minRating, 'showFavorites:', showFavorites);
+    console.log('Current filters - cat:', cat, 'q:', q, 'priceRange:', priceRange, 'brands:', brands, 'showFavorites:', showFavorites);
     
     return items;
-  }, [products, q, cat, sort, priceRange, brands, minRating, showFavorites, favorites]); // Add showFavorites and favorites to dependencies
+  }, [products, q, cat, sort, priceRange, brands, showFavorites, favorites]); // Add showFavorites and favorites to dependencies
 
   const { kitCount } = useKit();
   const updateParam = (key: string, value: string) => {
@@ -352,10 +346,9 @@ const Catalog = () => {
     let count = 0;
     if (cat !== "all") count++;
     if (brands.length > 0) count += brands.length;
-    if (minRating > 0) count++;
     if (priceRange[1] < 1000) count++;
     return count;
-  }, [cat, brands, minRating, priceRange]);
+  }, [cat, brands, priceRange]);
 
   // Loading fallback component
   const LoadingFallback = () => (
@@ -420,7 +413,6 @@ const Catalog = () => {
                   <SelectItem value="price-asc">Price: Low to High</SelectItem>
                   <SelectItem value="price-desc">Price: High to Low</SelectItem>
                   <SelectItem value="name-asc">Name: A to Z</SelectItem>
-                  <SelectItem value="rating-desc">Top Rated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -436,7 +428,6 @@ const Catalog = () => {
                   <SelectItem value="price-asc">Price: Low</SelectItem>
                   <SelectItem value="price-desc">Price: High</SelectItem>
                   <SelectItem value="name-asc">Name: A-Z</SelectItem>
-                  <SelectItem value="rating-desc">Top Rated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -459,7 +450,6 @@ const Catalog = () => {
                     onClick={() => {
                       updateParam("cat", "");
                       setBrands([]);
-                      setMinRating(0);
                       setPriceRange([0, 1000]);
                     }}
                     className="text-xs h-auto p-1"
@@ -529,7 +519,6 @@ const Catalog = () => {
                   onClick={() => {
                     setPriceRange([0, 1000]);
                     setBrands([]);
-                    setMinRating(0);
                   }}
                   className="text-xs h-auto p-1"
                 >
@@ -597,26 +586,7 @@ const Catalog = () => {
                   </div>
                 </div>
                 
-                {/* Rating */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Minimum Rating</label>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map(rating => (
-                      <button
-                        key={`rating-${rating}`}
-                        onClick={() => setMinRating(minRating === rating ? 0 : rating)}
-                        className={`p-2 rounded text-sm transition-colors flex-1 flex items-center justify-center ${
-                          minRating >= rating 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted hover:bg-muted/80'
-                        }`}
-                        title={`${rating} stars and above`}
-                      >
-                        {rating}★
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>
@@ -673,7 +643,6 @@ const Catalog = () => {
                           onClick={() => {
                             updateParam("cat", "");
                             setBrands([]);
-                            setMinRating(0);
                             setPriceRange([0, 1000]);
                           }}
                         >
@@ -777,26 +746,7 @@ const Catalog = () => {
                       </div>
                     </div>
                     
-                    {/* Rating */}
-                    <div>
-                      <h3 className="text-sm font-semibold mb-3">Minimum Rating</h3>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map(rating => (
-                          <button
-                            key={`rating-${rating}`}
-                            onClick={() => setMinRating(minRating === rating ? 0 : rating)}
-                            className={`p-2 rounded text-sm transition-colors flex-1 flex items-center justify-center ${
-                              minRating >= rating 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted hover:bg-muted/80'
-                            }`}
-                            title={`${rating} stars and above`}
-                          >
-                            {rating}★
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+
                   </div>
                 </SheetContent>
               </Sheet>
@@ -886,7 +836,6 @@ const Catalog = () => {
                     updateParam("q", "");
                     updateParam("cat", "");
                     setBrands([]);
-                    setMinRating(0);
                     setPriceRange([0, 1000]);
                   }}
                 >

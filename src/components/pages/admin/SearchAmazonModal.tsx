@@ -35,7 +35,6 @@ interface AmazonProduct {
   asin: string;
   title: string;
   price?: string;
-  rating?: number;
   reviewCount?: number;
   imageUrl?: string;
   detailPageURL?: string;
@@ -164,8 +163,6 @@ export const SearchAmazonModal: React.FC<SearchAmazonModalProps> = ({
             asin: product.ASIN,
             title: title || 'No title',
             price: price || undefined,
-            rating: product.CustomerReviews?.StarRating?.Value || undefined,
-            reviewCount: product.CustomerReviews?.Count || undefined,
             imageUrl: product.Images?.Primary?.Large?.URL || product.Images?.Primary?.Medium?.URL || undefined,
             detailPageURL: product.DetailPageURL || undefined,
             category: 'General', // Default category for manual search
@@ -250,7 +247,6 @@ export const SearchAmazonModal: React.FC<SearchAmazonModalProps> = ({
       asin: product.asin,
       title: product.title,
       price: product.price,
-      rating: product.rating,
       reviewCount: product.reviewCount,
       imageUrl: product.imageUrl,
       detailPageURL: product.detailPageURL,
@@ -309,11 +305,7 @@ export const SearchAmazonModal: React.FC<SearchAmazonModalProps> = ({
     return price.startsWith('$') ? price : `$${price}`;
   };
 
-  // Format rating display
-  const formatRating = (rating?: number, reviewCount?: number) => {
-    if (!rating) return 'No rating';
-    return `${rating.toFixed(1)} (${reviewCount || 0} reviews)`;
-  };
+
 
   return (
     <>
@@ -474,12 +466,7 @@ export const SearchAmazonModal: React.FC<SearchAmazonModalProps> = ({
                                       </Badge>
                                     )}
                                     
-                                    {product.rating && (
-                                      <Badge variant="secondary" className="gap-1">
-                                        <Star className="h-3 w-3 fill-current" />
-                                        {formatRating(product.rating, product.reviewCount)}
-                                      </Badge>
-                                    )}
+
                                     
                                     {product.category && (
                                       <Badge variant="outline">

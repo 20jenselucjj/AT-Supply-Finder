@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMemo, useState } from "react";
-import { CheckCircle, AlertCircle, Package, Star, ExternalLink, Plus, Minus, Save, ShoppingCart } from "lucide-react";
+import { CheckCircle, AlertCircle, Package, ExternalLink, Plus, Minus, Save, ShoppingCart } from "lucide-react";
 import { FIRST_AID_CATEGORIES } from "./FirstAidCategories";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -73,22 +73,7 @@ const KitSummary = () => {
     }
   };
 
-  const renderStars = (rating?: number) => {
-    if (!rating) return null;
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-3 h-3 ${
-              star <= rating ? 'fill-primary text-primary' : 'text-gray-300'
-            }`}
-          />
-        ))}
-        <span className="text-xs text-muted-foreground ml-1">({rating})</span>
-      </div>
-    );
-  };
+
 
   // Generate Amazon add to cart URL for the entire kit
   const generateAmazonAddToCartUrl = () => {
@@ -281,7 +266,6 @@ const KitSummary = () => {
                           {item.name}
                         </a>
                         <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
-                        {renderStars(item.rating)}
                         
                         {/* Price Info */}
                         {bestOffer && (

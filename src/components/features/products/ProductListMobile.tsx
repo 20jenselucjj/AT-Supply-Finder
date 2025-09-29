@@ -5,6 +5,8 @@ import { useKit } from '@/context/kit-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, Heart } from 'lucide-react';
 import { useFavorites } from '@/context/favorites-context';
+import { Badge } from '@/components/ui/badge';
+import { getProductCountInfo } from '@/utils/productUtils';
 
 interface ProductListMobileProps {
   products: Product[];
@@ -77,8 +79,16 @@ export const ProductListMobile = ({ products, selectedForCompare, toggleCompare,
                     <span className="font-medium">{product.brand}</span>
                   </div>
                   
-                  <div className="mb-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="font-bold text-primary text-sm">${minPrice.toFixed(2)}</span>
+                    {(() => {
+                      const countInfo = getProductCountInfo(product);
+                      return countInfo ? (
+                        <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                          {countInfo}
+                        </Badge>
+                      ) : null;
+                    })()}
                   </div>
                   
                   {product.features?.length ? (

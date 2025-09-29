@@ -20,11 +20,11 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "rating" | "brand">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "brand">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
-  const [ratingFilter, setRatingFilter] = useState<string>("any");
+
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
@@ -134,9 +134,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
         return price >= minPrice && price <= maxPrice;
       })();
       
-      const matchesRating = !ratingFilter || ratingFilter === "any" || (product.rating && product.rating >= parseFloat(ratingFilter));
-      
-      return matchesSearch && matchesBrand && matchesPrice && matchesRating;
+      return matchesSearch && matchesBrand && matchesPrice;
     });
 
     filtered.sort((a, b) => {
@@ -150,10 +148,6 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
         case "price":
           aValue = a.offers[0]?.price || 0;
           bValue = b.offers[0]?.price || 0;
-          break;
-        case "rating":
-          aValue = a.rating || 0;
-          bValue = b.rating || 0;
           break;
         case "brand":
           aValue = a.brand.toLowerCase();
@@ -169,7 +163,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
     });
 
     return filtered;
-  }, [products, searchTerm, brandFilter, priceRange, ratingFilter, sortBy, sortDirection]);
+  }, [products, searchTerm, brandFilter, priceRange, sortBy, sortDirection]);
 
   const availableBrands = useMemo(() => {
     const brands = [...new Set(products.map(p => p.brand))].filter(Boolean);
@@ -215,10 +209,9 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
     setSearchTerm("");
     setBrandFilter("all");
     setPriceRange({ min: "", max: "" });
-    setRatingFilter("any");
   };
 
-  const getSortIcon = (field: "name" | "price" | "rating" | "brand") => {
+  const getSortIcon = (field: "name" | "price" | "brand") => {
     if (sortBy !== field) return null;
     return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
@@ -272,8 +265,7 @@ export const CategoryProductSelectorRefactored = ({ categoryId, onBack }: Catego
             setBrandFilter={setBrandFilter}
             priceRange={priceRange}
             setPriceRange={setPriceRange}
-            ratingFilter={ratingFilter}
-            setRatingFilter={setRatingFilter}
+
             sortBy={sortBy}
             setSortBy={setSortBy}
             sortDirection={sortDirection}

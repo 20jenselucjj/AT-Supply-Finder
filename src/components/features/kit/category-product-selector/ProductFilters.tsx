@@ -13,8 +13,6 @@ export const ProductFilters = ({
   setBrandFilter,
   priceRange,
   setPriceRange,
-  ratingFilter,
-  setRatingFilter,
   sortBy,
   setSortBy,
   sortDirection,
@@ -79,22 +77,7 @@ export const ProductFilters = ({
             </div>
           </div>
           
-          {/* Rating Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Minimum Rating</label>
-            <Select value={ratingFilter} onValueChange={setRatingFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Any rating" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any rating</SelectItem>
-                <SelectItem value="4">4+ stars</SelectItem>
-                <SelectItem value="3">3+ stars</SelectItem>
-                <SelectItem value="2">2+ stars</SelectItem>
-                <SelectItem value="1">1+ stars</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
           
           {/* Actions */}
           <div className="space-y-2">

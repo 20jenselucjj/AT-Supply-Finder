@@ -42,13 +42,8 @@ export const ProductTableView = ({
                 {getSortIcon("price")}
               </Button>
             </TableHead>
-            <TableHead>
-              <Button variant="ghost" onClick={() => handleSort("rating")} className="flex items-center gap-2 p-0">
-                Rating
-                {getSortIcon("rating")}
-              </Button>
-            </TableHead>
-            <TableHead>Vendors</TableHead>
+
+            <TableHead>Count</TableHead>
             <TableHead>Reviews</TableHead>
             <TableHead className="w-32">Action</TableHead>
           </TableRow>

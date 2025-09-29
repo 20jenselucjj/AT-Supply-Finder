@@ -14,6 +14,7 @@ import { FIRST_AID_CATEGORIES, type FirstAidCategory } from "./FirstAidCategorie
 import ProductSpecifications from "./ProductSpecifications";
 import VendorComparison from "./VendorComparison";
 import ProductDetail from "./ProductDetail";
+import { getProductCountInfo } from "@/utils/productUtils";
 
 interface CategoryProductSelectorProps {
   categoryId: string;
@@ -24,11 +25,28 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "rating" | "brand">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "count" | "brand">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
-  const [ratingFilter, setRatingFilter] = useState<string>("any");
+  const [countFilter, setCountFilter] = useState<string>("any");
+
+  // Helper function to get numeric count from product
+  const getProductCount = (product: Product): number => {
+    // First check if product has a direct count field
+    if (product.count && typeof product.count === 'number') {
+      return product.count;
+    }
+    
+    // Use the utility function to get count info
+    const countInfo = getProductCountInfo(product);
+    if (countInfo) {
+      const match = countInfo.match(/(\d+)/);
+      return match ? parseInt(match[1], 10) : 1;
+    }
+    
+    return 1; // Default to 1 if no count found
+  };
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null); // Added setError state
@@ -86,10 +104,11 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         queries.push(Query.lessThanEqual('price', parseFloat(priceRange.max)));
       }
 
-      // Add rating filter
-      if (ratingFilter !== 'any') {
-        const minRating = parseInt(ratingFilter);
-        queries.push(Query.greaterThanEqual('rating', minRating));
+      // Add vendor count filter
+      if (countFilter !== 'any') {
+        const minCount = parseInt(countFilter);
+        // Note: This would need backend support for vendor count filtering
+        // For now, we'll handle this in the client-side filtering
       }
 
       // Add limit and order
@@ -208,9 +227,9 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         return price >= minPrice && price <= maxPrice;
       })();
       
-      const matchesRating = !ratingFilter || ratingFilter === "any" || (product.rating && product.rating >= parseFloat(ratingFilter));
+      const matchesCount = !countFilter || countFilter === "any" || getProductCount(product) >= parseInt(countFilter);
       
-      return matchesSearch && matchesBrand && matchesPrice && matchesRating;
+      return matchesSearch && matchesBrand && matchesPrice && matchesCount;
     });
 
     filtered.sort((a, b) => {
@@ -225,9 +244,9 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
           aValue = a.offers[0]?.price || 0;
           bValue = b.offers[0]?.price || 0;
           break;
-        case "rating":
-          aValue = a.rating || 0;
-          bValue = b.rating || 0;
+        case "count":
+          aValue = getProductCount(a);
+          bValue = getProductCount(b);
           break;
         case "brand":
           aValue = a.brand.toLowerCase();
@@ -243,7 +262,7 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
     });
 
     return filtered;
-  }, [products, searchTerm, brandFilter, priceRange, ratingFilter, sortBy, sortDirection]);
+  }, [products, searchTerm, brandFilter, priceRange, countFilter, sortBy, sortDirection]);
 
   const availableBrands = useMemo(() => {
     const brands = [...new Set(products.map(p => p.brand))].filter(Boolean);
@@ -312,10 +331,10 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
     setSearchTerm("");
     setBrandFilter("all");
     setPriceRange({ min: "", max: "" });
-    setRatingFilter("any");
+    setCountFilter("any");
   };
 
-  const getSortIcon = (field: "name" | "price" | "rating" | "brand") => {
+  const getSortIcon = (field: "name" | "price" | "count" | "brand") => {
     if (sortBy !== field) return null;
     return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
@@ -390,14 +409,14 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
         </div>
         
         <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={(value: "name" | "price" | "rating" | "brand") => setSortBy(value)}>
+          <Select value={sortBy} onValueChange={(value: "name" | "price" | "count" | "brand") => setSortBy(value)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="name">Name</SelectItem>
               <SelectItem value="price">Price</SelectItem>
-              <SelectItem value="rating">Rating</SelectItem>
+              <SelectItem value="count">Count</SelectItem>
               <SelectItem value="brand">Brand</SelectItem>
             </SelectContent>
           </Select>
@@ -460,19 +479,19 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                 </div>
               </div>
               
-              {/* Rating Filter */}
+              {/* Count Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Minimum Rating</label>
-                <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                <label className="text-sm font-medium">Minimum Count</label>
+                <Select value={countFilter} onValueChange={setCountFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Any rating" />
+                    <SelectValue placeholder="Any count" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any rating</SelectItem>
-                    <SelectItem value="4">4+ stars</SelectItem>
-                    <SelectItem value="3">3+ stars</SelectItem>
-                    <SelectItem value="2">2+ stars</SelectItem>
-                    <SelectItem value="1">1+ stars</SelectItem>
+                    <SelectItem value="any">Any count</SelectItem>
+                    <SelectItem value="5">5+ items</SelectItem>
+                    <SelectItem value="10">10+ items</SelectItem>
+                    <SelectItem value="20">20+ items</SelectItem>
+                    <SelectItem value="50">50+ items</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -547,8 +566,8 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                       <TableHead className="w-40">Product</TableHead>
                       <TableHead className="w-24">Brand</TableHead>
                       <TableHead className="w-20">Price</TableHead>
-                      <TableHead className="w-20">Rating</TableHead>
-                      <TableHead className="w-32">Vendors</TableHead>
+                      <TableHead className="w-20">Count</TableHead>
+                      <TableHead className="w-32">Vendor Options</TableHead>
                       <TableHead className="w-20">Qty</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -638,14 +657,14 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                             )}
                           </TableCell>
                           <TableCell className="py-2">
-                            {product.rating && product.rating > 0 ? (
-                              <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 fill-primary text-primary" />
-                                <span>{product.rating.toFixed(1)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">No rating</span>
-                            )}
+                            {(() => {
+                              const countInfo = getProductCountInfo(product);
+                              return countInfo ? (
+                                <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                                  {countInfo}
+                                </Badge>
+                              ) : null;
+                            })()}
                           </TableCell>
                           <TableCell className="py-2 max-w-[100px]">
                             <div className="max-w-[100px]">
@@ -757,14 +776,14 @@ const CategoryProductSelector = ({ categoryId, onBack }: CategoryProductSelector
                               </span>
                             )}
                             
-                            {product.rating && product.rating > 0 ? (
-                              <div className="flex items-center bg-secondary/60 px-2 py-1 rounded-full text-xs">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                <span className="font-medium">{product.rating.toFixed(1)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No ratings</span>
-                            )}
+                            {(() => {
+                              const countInfo = getProductCountInfo(product);
+                              return countInfo ? (
+                                <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                                  {countInfo}
+                                </Badge>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
                         

@@ -65,37 +65,7 @@ export const Filters: React.FC<FiltersProps> = ({
           />
         </div>
         
-        <div>
-          <Label htmlFor="min-rating" className="text-sm font-medium">
-            Min Rating
-          </Label>
-          <Input
-            id="min-rating"
-            type="number"
-            step="0.1"
-            min="0"
-            max="5"
-            placeholder="0"
-            value={advancedFilters.minRating || ''}
-            onChange={(e) => handleFilterChange('minRating', e.target.value ? parseFloat(e.target.value) : undefined)}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="max-rating" className="text-sm font-medium">
-            Max Rating
-          </Label>
-          <Input
-            id="max-rating"
-            type="number"
-            step="0.1"
-            min="0"
-            max="5"
-            placeholder="5"
-            value={advancedFilters.maxRating || ''}
-            onChange={(e) => handleFilterChange('maxRating', e.target.value ? parseFloat(e.target.value) : undefined)}
-          />
-        </div>
+
         
         <div>
           <Label htmlFor="brand-filter" className="text-sm font-medium">

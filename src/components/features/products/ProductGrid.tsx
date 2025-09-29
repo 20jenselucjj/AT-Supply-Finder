@@ -6,6 +6,7 @@ import { useKit } from '@/context/kit-context';
 import { Plus, Minus, Heart } from 'lucide-react';
 import { useFavorites } from '@/context/favorites-context';
 import { Badge } from '@/components/ui/badge';
+import { getProductCountInfo } from '@/utils/productUtils';
 
 interface ProductGridProps {
   products: Product[];
@@ -107,25 +108,18 @@ export const ProductGrid = ({ products, selectedForCompare, toggleCompare, setQu
               <h3 className="font-semibold mb-1 line-clamp-2 leading-tight">{product.name}</h3>
               <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
               
-              {/* Quantity/Weight display */}
-              <div className="flex flex-wrap gap-1 mb-2">
-                {productQuantity > 0 ? (
-                  <Badge variant="outline" className="text-xs px-2 py-1">
-                    Qty: {productQuantity}
-                  </Badge>
-                ) : product.weight && product.weight !== 'N/A' ? (
-                  <Badge variant="outline" className="text-xs px-2 py-1">
-                    Qty: {product.weight}
-                  </Badge>
-                ) : null}
-              </div>
-              
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <span className="text-lg font-bold text-primary">
                   ${bestPrice.toFixed(2)}
                 </span>
-                
-
+                {(() => {
+                  const countInfo = getProductCountInfo(product);
+                  return countInfo ? (
+                    <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                      {countInfo}
+                    </Badge>
+                  ) : null;
+                })()}
               </div>
             </div>
             

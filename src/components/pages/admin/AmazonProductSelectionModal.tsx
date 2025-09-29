@@ -22,7 +22,6 @@ interface AmazonProduct {
   asin: string;
   title: string;
   price?: string;
-  rating?: number;
   reviewCount?: number;
   imageUrl?: string;
   detailPageURL?: string;
@@ -203,7 +202,6 @@ export const AmazonProductSelectionModal: React.FC<AmazonProductSelectionModalPr
             asin: product.asin || product.ASIN || '',
             title: product.name || product.title || product.ItemInfo?.Title?.DisplayValue || 'Unknown Product',
             price: price,
-            rating: product.rating || 0,
             reviewCount: product.reviewCount || 0,
             imageUrl: product.imageUrl || product.Images?.Primary?.Large?.URL || product.Images?.Primary?.Medium?.URL || '',
             detailPageURL: product.affiliateLink || product.detailPageURL || product.DetailPageURL || '',

@@ -25,7 +25,7 @@ import {
 } from './services/chat-service';
 
 // Import only the wrapper functions, not the individual service functions
-import { handleBuildKit } from './services/kit-customization';
+import { handleBuildKit, handleCustomizeKit, handleFeedback } from './services/kit-customization';
 
 // Components
 import ChatButton from './components/ChatButton';

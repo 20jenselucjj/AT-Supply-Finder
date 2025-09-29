@@ -175,19 +175,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             placeholder="e.g., Mueller"
           />
         </div>
-        <div>
-          <Label htmlFor="rating">Rating (0-5)</Label>
-          <Input
-            id="rating"
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-            value={productForm.rating}
-            onChange={(e) => setProductForm(prev => ({ ...prev, rating: e.target.value }))}
-            placeholder="4.5"
-          />
-        </div>
+
         <div>
           <Label htmlFor="price">Price ($)</Label>
           <Input

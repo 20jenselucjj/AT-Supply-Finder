@@ -1,9 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Package, Star, Plus, Minus } from "lucide-react";
 import ProductSpecifications from "../ProductSpecifications";
 import VendorComparison from "../VendorComparison";
 import { ProductCardProps } from "./types";
+import { getProductCountInfo } from "@/utils/productUtils";
 
 export const ProductCard = ({
   product,
@@ -61,28 +63,26 @@ export const ProductCard = ({
               />
             )}
             
-            {/* Reviews Summary */}
-            {product.reviews && product.reviews.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>{product.rating?.toFixed(1)}</span>
-                </div>
+            {/* Product Count */}
+            <div className="flex items-center gap-2 text-sm">
+              {(() => {
+                const countInfo = getProductCountInfo(product);
+                return countInfo ? (
+                  <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+                    {countInfo}
+                  </Badge>
+                ) : null;
+              })()}
+              {product.reviews && product.reviews.length > 0 && (
                 <button 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
                   onClick={() => setSelectedProduct(product)}
                 >
                   ({product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''})
                 </button>
-              </div>
-            )}
-            
-            {product.rating && (
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="text-sm">{product.rating}</span>
-              </div>
-            )}
+              )}
+            </div>
+
             
             {bestOffer && (
               <div className="flex items-center justify-between">

@@ -5,18 +5,7 @@ export interface VendorOffer {
   lastUpdated: string; // ISO date format
 }
 
-export interface Review {
-  id: string;
-  userId: string;
-  userName: string;
-  rating: number; // 1-5 stars
-  title: string;
-  comment: string;
-  date: string; // ISO date format
-  verified: boolean;
-  helpfulVotes: number;
-  totalVotes: number;
-}
+
 
 export interface ProductSpecifications {
   dimensions?: string;
@@ -60,7 +49,6 @@ export interface Product {
   isFavorite?: boolean;
   specifications?: ProductSpecifications;
   description?: string;
-  reviews?: Review[];
   subcategory?: string;
   lastUpdated?: string;
   vendor_offers?: VendorOffer[];
@@ -79,6 +67,7 @@ export interface KitItem {
   quantity: number;
   price?: number;
   imageUrl?: string;
+  asin?: string;
   offers: VendorOffer[];
   reasoning?: string;
 }

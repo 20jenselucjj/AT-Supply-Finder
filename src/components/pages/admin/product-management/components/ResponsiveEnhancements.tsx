@@ -200,12 +200,7 @@ export const ResponsiveProductGrid: React.FC<{
                   ${product.price?.toFixed(2) || 'N/A'}
                 </span>
               </div>
-              {product.rating && (
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-muted-foreground">Rating:</span>
-                  <span className="text-sm font-medium">{product.rating}</span>
-                </div>
-              )}
+
             </div>
           </CardContent>
         </Card>

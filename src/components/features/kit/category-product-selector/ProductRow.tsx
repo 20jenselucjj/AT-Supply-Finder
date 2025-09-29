@@ -1,9 +1,11 @@
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Star, Plus, Minus } from "lucide-react";
 import ProductSpecifications from "../ProductSpecifications";
 import VendorComparison from "../VendorComparison";
 import { ProductRowProps } from "./types";
+import { getProductCountInfo } from "@/utils/productUtils";
 
 export const ProductRow = ({
   product,
@@ -57,14 +59,16 @@ export const ProductRow = ({
         )}
       </TableCell>
       <TableCell>
-        {product.rating && product.rating > 0 ? (
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span>{product.rating.toFixed(1)}</span>
-          </div>
-        ) : (
-          <span className="text-muted-foreground">No rating</span>
-        )}
+        {(() => {
+          const countInfo = getProductCountInfo(product);
+          return countInfo ? (
+            <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 text-primary">
+              {countInfo}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground text-xs">-</span>
+          );
+        })()}
       </TableCell>
       <TableCell>
         {product.offers && product.offers.length > 0 ? (

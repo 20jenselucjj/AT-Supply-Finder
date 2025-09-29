@@ -71,7 +71,6 @@ export const formatProductForDatabase = (product: any) => {
     name: product.name,
     category: reverseCategoryMapping[product.category] || product.category,
     brand: product.brand,
-    rating: product.rating ? parseFloat(product.rating) : null,
     price: product.price ? parseFloat(product.price) : null,
     dimensions: product.dimensions || null,
     weight: product.weight || null,

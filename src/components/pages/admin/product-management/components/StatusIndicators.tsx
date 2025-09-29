@@ -17,7 +17,6 @@ interface ProductData {
   name: string;
   category: string;
   brand: string;
-  rating?: number | null;
   price?: number | null;
   imageUrl?: string;
   asin?: string;
@@ -68,13 +67,12 @@ export const ProductStatusBadge: React.FC<{
       };
     }
 
-    // Active status - determine quality based on rating and other factors
-    const rating = product.rating || 0;
+    // Active status - determine quality based on completeness and other factors
     const hasImage = !!product.imageUrl;
     const hasAffiliateLink = !!product.affiliateLink;
     const hasCompleteInfo = !!(product.dimensions && product.material && product.features);
 
-    if (rating >= 4.5 && hasImage && hasAffiliateLink && hasCompleteInfo) {
+    if (hasImage && hasAffiliateLink && hasCompleteInfo) {
       return {
         label: 'Premium',
         color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -83,7 +81,7 @@ export const ProductStatusBadge: React.FC<{
       };
     }
 
-    if (rating >= 4.0 && hasImage && hasAffiliateLink) {
+    if (hasImage && hasAffiliateLink) {
       return {
         label: 'Excellent',
         color: 'bg-green-100 text-green-800 border-green-200',
@@ -92,21 +90,12 @@ export const ProductStatusBadge: React.FC<{
       };
     }
 
-    if (rating >= 3.5) {
+    if (hasImage || hasAffiliateLink) {
       return {
         label: 'Good',
         color: 'bg-blue-100 text-blue-800 border-blue-200',
         icon: <Star className="h-3 w-3" />,
         priority: 5
-      };
-    }
-
-    if (rating >= 2.5) {
-      return {
-        label: 'Average',
-        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        icon: <TrendingUp className="h-3 w-3" />,
-        priority: 6
       };
     }
 
@@ -309,31 +298,25 @@ export const QualityScore: React.FC<{
     let score = 0;
     let maxScore = 0;
 
-    // Rating (30 points max)
+    // Image (30 points)
     maxScore += 30;
-    if (product.rating) {
-      score += Math.min(product.rating / 5 * 30, 30);
-    }
+    if (product.imageUrl) score += 30;
 
-    // Image (20 points)
-    maxScore += 20;
-    if (product.imageUrl) score += 20;
-
-    // Complete information (25 points)
-    maxScore += 25;
+    // Complete information (35 points)
+    maxScore += 35;
     let infoScore = 0;
-    if (product.dimensions) infoScore += 8;
-    if (product.material) infoScore += 8;
-    if (product.features) infoScore += 9;
+    if (product.dimensions) infoScore += 12;
+    if (product.material) infoScore += 12;
+    if (product.features) infoScore += 11;
     score += infoScore;
 
-    // Amazon affiliate link (15 points)
-    maxScore += 15;
-    if (product.affiliateLink) score += 15;
+    // Amazon affiliate link (20 points)
+    maxScore += 20;
+    if (product.affiliateLink) score += 20;
 
-    // Brand presence (10 points)
-    maxScore += 10;
-    if (product.brand) score += 10;
+    // Brand presence (15 points)
+    maxScore += 15;
+    if (product.brand) score += 15;
 
     return Math.round((score / maxScore) * 100);
   };

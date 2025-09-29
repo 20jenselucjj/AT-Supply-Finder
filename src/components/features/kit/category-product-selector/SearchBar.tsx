@@ -6,8 +6,8 @@ import { SortSelectProps } from "./types";
 interface SearchBarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  sortBy: "name" | "price" | "rating" | "brand";
-  setSortBy: (sort: "name" | "price" | "rating" | "brand") => void;
+  sortBy: "name" | "price" | "brand";
+  setSortBy: (sort: "name" | "price" | "brand") => void;
 }
 
 export const SearchBar = ({ searchTerm, setSearchTerm, sortBy, setSortBy }: SearchBarProps) => {
@@ -26,14 +26,13 @@ export const SearchBar = ({ searchTerm, setSearchTerm, sortBy, setSortBy }: Sear
       </div>
       
       <div className="flex gap-2">
-        <Select value={sortBy} onValueChange={(value: "name" | "price" | "rating" | "brand") => setSortBy(value)}>
+        <Select value={sortBy} onValueChange={(value: "name" | "price" | "brand") => setSortBy(value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="name">Name</SelectItem>
             <SelectItem value="price">Price</SelectItem>
-            <SelectItem value="rating">Rating</SelectItem>
             <SelectItem value="brand">Brand</SelectItem>
           </SelectContent>
         </Select>

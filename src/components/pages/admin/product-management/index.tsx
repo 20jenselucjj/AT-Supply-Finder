@@ -54,7 +54,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
     name: '',
     category: '',
     brand: '',
-    rating: '',
     price: '',
     dimensions: '',
     weight: '',
@@ -233,7 +232,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           category: productData.category || prev.category,
           image_url: productData.image_url || prev.image_url,
           asin: productData.asin || prev.asin,
-          rating: productData.rating ? productData.rating.toString() : prev.rating,
           price: productData.price ? productData.price.toString() : prev.price,
           dimensions: productData.dimensions || prev.dimensions,
           weight: productData.weight || prev.weight,
@@ -340,7 +338,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
         affiliate_link: prev.affiliate_link,
         asin: prev.asin,
         brand: prev.brand,
-        rating: prev.rating,
         price: prev.price,
         dimensions: prev.dimensions
       }));
@@ -359,7 +356,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       name: '',
       category: '',
       brand: '',
-      rating: '',
       price: '',
       dimensions: '',
       weight: '',
@@ -566,7 +562,7 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           const value = values[j]?.trim() || '';
           
           // Convert numeric values
-          if (header === 'price' || header === 'rating') {
+          if (header === 'price') {
             const numValue = parseFloat(value);
             product[header] = isNaN(numValue) ? null : numValue;
           } else if (header === 'features') {
@@ -594,7 +590,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
           name: product.name,
           category: product.category,
           brand: product.brand,
-          rating: product.rating,
           price: product.price,
           dimensions: product.dimensions,
           weight: product.weight,
@@ -642,7 +637,6 @@ export const ProductManagement: React.FC<ProductManagementProps> = ({ totalProdu
       name: product.name,
       category: categoryMapping[product.category] || product.category,
       brand: product.brand,
-      rating: product.rating?.toString() || '',
       price: product.price?.toString() || '',
       dimensions: product.dimensions || '',
       weight: product.weight || '',

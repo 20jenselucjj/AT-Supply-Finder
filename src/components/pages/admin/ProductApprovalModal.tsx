@@ -31,8 +31,6 @@ interface Product {
   asin: string;
   title: string;
   price?: string;
-  rating?: number;
-  reviewCount?: number;
   imageUrl?: string;
   detailPageURL?: string;
   category?: string;
@@ -146,8 +144,6 @@ export const ProductApprovalModal: React.FC<ProductApprovalModalProps> = ({
             description: product.description || '',
             image_url: product.imageUrl || '',
             affiliate_link: product.detailPageURL || '',
-            rating: product.rating || 0,
-            reviewCount: product.reviewCount || 0,
             brand: product.brand || '',
             availability: product.availability || 'Available',
             features: featuresString,
@@ -205,11 +201,7 @@ export const ProductApprovalModal: React.FC<ProductApprovalModalProps> = ({
     return price.startsWith('$') ? price : `$${price}`;
   };
 
-  // Format rating display
-  const formatRating = (rating?: number, reviewCount?: number) => {
-    if (!rating) return 'No rating';
-    return `${rating.toFixed(1)} (${reviewCount || 0} reviews)`;
-  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -281,12 +273,7 @@ export const ProductApprovalModal: React.FC<ProductApprovalModalProps> = ({
                               </Badge>
                             )}
                             
-                            {product.rating && (
-                              <Badge variant="secondary" className="gap-1">
-                                <Star className="h-3 w-3 fill-current" />
-                                {formatRating(product.rating, product.reviewCount)}
-                              </Badge>
-                            )}
+
                             
                             {product.category && (
                               <Badge variant="outline">

@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type KitItem } from "@/context/kit-context";
 import { useKit } from "@/context/kit-context";
-import { X, Star } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { formatCurrency } from "@/lib/utils/utils";
 import { Link } from "react-router-dom";
+import { getProductCountInfo } from '@/utils/productUtils';
 
 interface KitItemProps {
   item: KitItem;
@@ -16,22 +17,7 @@ const KitItem = ({ item }: KitItemProps) => {
   const [pendingQty, setPendingQty] = useState<number>(item.quantity);
   const debounceRef = useRef<number | null>(null);
 
-  const renderStars = (rating?: number) => {
-    if (!rating) return null;
-    return (
-      <div className="flex items-center gap-1 mt-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-3 h-3 ${
-              star <= rating ? 'fill-primary text-primary' : 'text-gray-300'
-            }`}
-          />
-        ))}
-        <span className="text-xs text-muted-foreground ml-1">({rating})</span>
-      </div>
-    );
-  };
+
 
   useEffect(() => {
     // sync external updates (e.g., from buttons)
@@ -118,8 +104,14 @@ const KitItem = ({ item }: KitItemProps) => {
         >
           {item.name}
         </a>
-        <p className="text-xs xs:text-sm text-muted-foreground">{item.category}</p>
-        {renderStars(item.rating)}
+        <div className="flex items-center gap-2">
+          <span className="text-xs xs:text-sm text-muted-foreground">{item.category}</span>
+          {getProductCountInfo(item.features) && (
+            <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
+              {getProductCountInfo(item.features)}
+            </span>
+          )}
+        </div>
         {bestOffer && (
           <p className="text-xs text-muted-foreground mt-1" aria-label={`Best unit price from ${bestOffer.name} at ${bestOffer.price}`}>
             Best: {bestOffer.name} • {formatCurrency(bestOffer.price)} ea

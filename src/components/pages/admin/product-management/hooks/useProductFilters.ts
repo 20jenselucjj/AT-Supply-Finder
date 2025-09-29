@@ -11,8 +11,6 @@ export const useProductFilters = () => {
   const [advancedFilters, setAdvancedFilters] = useState({
     minPrice: undefined as number | undefined,
     maxPrice: undefined as number | undefined,
-    minRating: undefined as number | undefined,
-    maxRating: undefined as number | undefined,
     brand: '',
     material: '',
     weight: ''
@@ -23,8 +21,6 @@ export const useProductFilters = () => {
     return (
       advancedFilters.minPrice !== undefined ||
       advancedFilters.maxPrice !== undefined ||
-      advancedFilters.minRating !== undefined ||
-      advancedFilters.maxRating !== undefined ||
       !!advancedFilters.brand ||
       !!advancedFilters.material ||
       !!advancedFilters.weight
@@ -36,8 +32,6 @@ export const useProductFilters = () => {
     setAdvancedFilters({
       minPrice: undefined,
       maxPrice: undefined,
-      minRating: undefined,
-      maxRating: undefined,
       brand: '',
       material: '',
       weight: ''
