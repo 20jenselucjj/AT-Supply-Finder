@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Star, Plus, Minus, Check, ExternalLink } from "lucide-react";
 import { useKit } from "@/context/kit-context";
 import { Product } from "@/lib/types/types";
-import ProductReviews from "./ProductReviews";
 import { getProductCountInfo } from "@/utils/productUtils";
 
 interface ProductDetailProps {
@@ -220,10 +219,6 @@ const ProductDetail = ({ product, onBack }: ProductDetailProps) => {
 
 
 
-      {/* Product Reviews */}
-      {product.reviews && product.reviews.length > 0 && (
-        <ProductReviews reviews={product.reviews} />
-      )}
     </div>
   );
 };
