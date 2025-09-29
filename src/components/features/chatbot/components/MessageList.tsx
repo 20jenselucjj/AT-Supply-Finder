@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, User, CheckCircle2, AlertCircle, Package, DollarSign, Package2, ExternalLink, Plus, Settings, CheckCircle2 as CheckIcon, X } from 'lucide-react';
+import { Bot, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -17,8 +17,6 @@ interface MessageListProps {
   progressState: ProgressState;
   handleQuickAction: (query: string) => void;
   handleBuildKit: (kit: any) => void;
-  handleCustomizeKit: (kit: any, action: 'add' | 'remove' | 'update', productId?: string, newQuantity?: number) => void;
-  handleFeedback: (messageId: string, feedback: 'helpful' | 'not-helpful') => void;
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -34,9 +32,7 @@ const MessageList: React.FC<MessageListProps> = ({
   chatState,
   progressState,
   handleQuickAction,
-  handleBuildKit,
-  handleCustomizeKit,
-  handleFeedback
+  handleBuildKit
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -122,9 +118,6 @@ const MessageList: React.FC<MessageListProps> = ({
                       <KitPreview
                         kit={message.kit}
                         handleBuildKit={handleBuildKit}
-                        handleCustomizeKit={handleCustomizeKit}
-                        handleFeedback={handleFeedback}
-                        messageId={message.id}
                         isMobile={isMobile}
                       />
                     )}

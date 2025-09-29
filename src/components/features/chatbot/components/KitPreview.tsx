@@ -1,26 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Package2, Package, DollarSign, ExternalLink, Plus, Settings, CheckCircle2, X } from 'lucide-react';
+import { Package2, Package, DollarSign, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GeneratedKit } from '@/lib/ai/openrouter-service';
-import { toast } from 'sonner';
-
 interface KitPreviewProps {
   kit: GeneratedKit;
   handleBuildKit: (kit: GeneratedKit) => void;
-  handleCustomizeKit: (kit: GeneratedKit, action: 'add' | 'remove' | 'update', productId?: string, newQuantity?: number) => void;
-  handleFeedback: (messageId: string, feedback: 'helpful' | 'not-helpful') => void;
-  messageId: string;
   isMobile: boolean;
 }
 
 const KitPreview: React.FC<KitPreviewProps> = ({
   kit,
   handleBuildKit,
-  handleCustomizeKit,
-  handleFeedback,
-  messageId,
   isMobile
 }) => {
   return (
@@ -85,83 +77,6 @@ const KitPreview: React.FC<KitPreviewProps> = ({
               <span className="truncate relative z-10">Build This Kit</span>
             </Button>
           </motion.div>
-        </div>
-        
-        {/* Kit Customization Options */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">Customize this kit:</div>
-          <div className="flex gap-1 flex-wrap">
-            <motion.div
-              className="flex-1 min-w-[80px]"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs hover:bg-green-50 hover:border-green-200 hover:text-green-700 dark:hover:bg-green-950/20 transition-all duration-200"
-                onClick={() => handleCustomizeKit(kit, 'add')}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add Item
-              </Button>
-            </motion.div>
-            <motion.div
-              className="flex-1 min-w-[80px]"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 dark:hover:bg-blue-950/20 transition-all duration-200"
-                onClick={() => {
-                  // Show kit items for quantity adjustment
-                  toast.info('In a full implementation, this would show item quantity controls');
-                }}
-              >
-                <Settings className="h-3 w-3 mr-1" />
-                Adjust
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-        
-        {/* Feedback Collection */}
-        <div className="pt-3 border-t border-gray-200 dark:border-gray-700 mt-3">
-          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">How was this recommendation?</div>
-          <div className="flex gap-1">
-            <motion.div
-              className="flex-1"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs hover:bg-green-50 hover:border-green-200 hover:text-green-700 dark:hover:bg-green-950/20 transition-all duration-200"
-                onClick={() => handleFeedback(messageId, 'helpful')}
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Helpful
-              </Button>
-            </motion.div>
-            <motion.div
-              className="flex-1"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-7 text-xs hover:bg-red-50 hover:border-red-200 hover:text-red-700 dark:hover:bg-red-950/20 transition-all duration-200"
-                onClick={() => handleFeedback(messageId, 'not-helpful')}
-              >
-                <X className="h-3 w-3 mr-1" />
-                Not Helpful
-              </Button>
-            </motion.div>
-          </div>
         </div>
       </div>
     </motion.div>

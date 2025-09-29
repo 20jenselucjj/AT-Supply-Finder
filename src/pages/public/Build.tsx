@@ -55,11 +55,11 @@ const Build = () => {
             const offers = item.offers && Array.isArray(item.offers) && item.offers.length > 0 
               ? item.offers.map((offer: any) => ({
                 ...offer,
-                url: offer.url && offer.url !== '#' ? offer.url : `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`
+                url: offer.url && offer.url !== '#' ? offer.url : `https://www.amazon.com/dp/${item.asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`
               }))
             : [{
                 name: 'AI Generated',
-                url: `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+                url: `https://www.amazon.com/dp/${item.asin}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
                 price: item.price || 0,
                 lastUpdated: new Date().toISOString()
               }];

@@ -25,7 +25,7 @@ import {
 } from './services/chat-service';
 
 // Import only the wrapper functions, not the individual service functions
-import { handleBuildKit, handleCustomizeKit, handleFeedback } from './services/kit-customization';
+import { handleBuildKit } from './services/kit-customization';
 
 // Components
 import ChatButton from './components/ChatButton';
@@ -317,8 +317,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ apiKey, onInteraction }) => {
           progressState={progressState}
           handleQuickAction={handleQuickAction}
           handleBuildKit={handleBuildKitWrapper}
-          handleCustomizeKit={handleCustomizeKitWrapper}
-          handleFeedback={handleFeedbackWrapper}
         />
         
         <MessageInput

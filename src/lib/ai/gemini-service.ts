@@ -14,6 +14,10 @@ interface KitGenerationRequest {
   budget?: number;
   sportType?: string;
   skillLevel?: string;
+  groupSize?: number;
+  duration?: string;
+  specialNeeds?: string[];
+  onProgress?: (stage: string, progress: number, message: string) => void;
 }
 
 interface GeneratedKit {
@@ -66,7 +70,11 @@ class GeminiService {
   }
 
   async generateTrainingKit(request: KitGenerationRequest): Promise<GeneratedKit> {
-    const { userQuery, availableProducts, sportType, skillLevel, budget } = request;
+    const { userQuery, availableProducts, sportType, skillLevel, budget, groupSize, duration, specialNeeds, onProgress } = request;
+
+    // Stage 1: Searching products
+    onProgress?.('searching', 25, 'Searching products...');
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
 
     // Use RAG to filter relevant products first
     const relevantProducts = await this.searchProducts(userQuery, availableProducts);
@@ -75,10 +83,17 @@ class GeminiService {
       throw new Error('No relevant products found for your request. Please try a different query.');
     }
 
+    // Stage 2: Building prompt
+    onProgress?.('preparing', 50, '');
+    await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
+
     // Create a structured prompt for kit generation
-    const prompt = this.buildKitGenerationPrompt(userQuery, relevantProducts, sportType, skillLevel, budget);
+    const prompt = this.buildKitGenerationPrompt(userQuery, relevantProducts, sportType, skillLevel, budget, groupSize, duration, specialNeeds);
 
     try {
+      // Stage 3: AI generation
+      onProgress?.('generating', 75, 'Creating kit...');
+
       const model = this.client.getGenerativeModel({ model: this.model });
       
       const cacheKey = this.getCacheKey('generateContent', prompt);
@@ -91,7 +106,16 @@ class GeminiService {
         this.setCachedData(cacheKey, generatedText);
       }
       
-      return this.parseKitResponse(generatedText, relevantProducts);
+      // Stage 4: Finalizing
+      onProgress?.('finalizing', 95, '');
+      await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
+      
+      const result = this.parseKitResponse(generatedText, relevantProducts);
+      
+      onProgress?.('complete', 100, 'Complete!');
+      await new Promise(resolve => setTimeout(resolve, 200)); // Brief delay
+      
+      return result;
     } catch (error) {
       console.error('Error generating kit with Gemini:', error);
       throw new Error('Failed to generate training kit. Please try again.');
@@ -99,7 +123,11 @@ class GeminiService {
   }
 
   async generateFirstAidKit(request: KitGenerationRequest): Promise<GeneratedKit> {
-    const { userQuery, availableProducts, kitType, scenario, budget } = request;
+    const { userQuery, availableProducts, kitType, scenario, budget, onProgress } = request;
+
+    // Stage 1: Searching products
+    onProgress?.('searching', 25, 'Searching products...');
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
 
     // Use RAG to filter relevant products first
     const relevantProducts = await this.searchProducts(userQuery, availableProducts);
@@ -108,10 +136,17 @@ class GeminiService {
       throw new Error('No relevant first aid products found for your request. Please try a different query.');
     }
 
+    // Stage 2: Building prompt
+    onProgress?.('preparing', 50, '');
+    await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
+
     // Create a structured prompt for kit generation
     const prompt = this.buildFirstAidKitGenerationPrompt(userQuery, relevantProducts, kitType, scenario, budget);
 
     try {
+      // Stage 3: AI generation
+      onProgress?.('generating', 75, 'Creating kit...');
+
       const model = this.client.getGenerativeModel({ model: this.model });
       
       const cacheKey = this.getCacheKey('generateContent', prompt);
@@ -124,7 +159,16 @@ class GeminiService {
         this.setCachedData(cacheKey, generatedText);
       }
       
-      return this.parseKitResponse(generatedText, relevantProducts);
+      // Stage 4: Finalizing
+      onProgress?.('finalizing', 95, '');
+      await new Promise(resolve => setTimeout(resolve, 400)); // Simulate delay
+      
+      const result = this.parseKitResponse(generatedText, relevantProducts);
+      
+      onProgress?.('complete', 100, 'Complete!');
+      await new Promise(resolve => setTimeout(resolve, 200)); // Brief delay
+      
+      return result;
     } catch (error) {
       console.error('Error generating first aid kit with Gemini:', error);
       throw new Error('Failed to generate first aid kit. Please try again.');
@@ -136,7 +180,10 @@ class GeminiService {
     products: Product[],
     sportType?: string,
     skillLevel?: string,
-    budget?: number
+    budget?: number,
+    groupSize?: number,
+    duration?: string,
+    specialNeeds?: string[]
   ): string {
     const productCatalog = products.map(product => ({
       id: product.id,
@@ -154,6 +201,9 @@ User Request: "${userQuery}"
 Sport Type: ${sportType || 'Not specified'}
 Skill Level: ${skillLevel || 'Not specified'}
 Budget: ${budget ? `$${budget}` : 'Not specified'}
+Group Size: ${groupSize ? `${groupSize} person(s)` : 'Not specified'}
+Duration: ${duration || 'Not specified'}
+Special Needs: ${specialNeeds ? specialNeeds.join(', ') : 'none'}
 
 Available Products:
 ${JSON.stringify(productCatalog, null, 2)}
@@ -182,7 +232,7 @@ Respond in the following JSON format:
 
 Guidelines:
 - Select 3-8 products that work well together
-- Consider the user's skill level and sport type
+- Consider the user's skill level, sport type, group size, duration, and special needs
 - Stay within budget if specified
 - Prioritize quality and functionality
 - Ensure products complement each other
@@ -279,6 +329,7 @@ Guidelines:
           quantity: item.quantity || 1,
           price: product.vendor_offers?.[0]?.price || product.price || 0,
           imageUrl: product.image_url || product.imageUrl,
+          asin: product.asin, // Include ASIN for Amazon cart functionality
           offers: product.vendor_offers || product.offers || [],
           reasoning: item.reason || ''
         };

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMemo, useState } from "react";
-import { CheckCircle, AlertCircle, Package, Star, ExternalLink, Plus, Minus, Save } from "lucide-react";
+import { CheckCircle, AlertCircle, Package, Star, ExternalLink, Plus, Minus, Save, ShoppingCart } from "lucide-react";
 import { FIRST_AID_CATEGORIES } from "./FirstAidCategories";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -90,6 +90,27 @@ const KitSummary = () => {
     );
   };
 
+  // Generate Amazon add to cart URL for the entire kit
+  const generateAmazonAddToCartUrl = () => {
+    const associateTag = 'athletic2006-20'; // From .env AMAZON_PA_PARTNER_TAG
+    const baseUrl = 'https://www.amazon.com/gp/aws/cart/add.html';
+    
+    // Build query parameters for each item in the kit
+    const params = new URLSearchParams();
+    params.append('AssociateTag', associateTag);
+    
+    let itemIndex = 1;
+    kit.forEach((item) => {
+      if (item.asin) {
+        params.append(`ASIN.${itemIndex}`, item.asin);
+        params.append(`Quantity.${itemIndex}`, item.quantity.toString());
+        itemIndex++;
+      }
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  };
+
   // Memoize derived pricing and category analysis
   const { vendorTotals, bestVendor, subtotal, categoryBreakdown, completionScore } = useMemo(() => {
     const vendorTotals = getVendorTotals();
@@ -146,7 +167,7 @@ const KitSummary = () => {
     <Card className="p-4 xs:p-6 mt-6" aria-labelledby="kit-summary-heading">
       <div className="flex flex-col xs:flex-row justify-between xs:items-center gap-3 xs:gap-4 mb-4">
         <h2 id="kit-summary-heading" className="text-lg xs:text-xl font-bold">Kit Summary</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" className="xs:size-default" onClick={handleSaveKitClick}>
             <Save className="mr-2 h-4 w-4" />
             Save to Profile
@@ -353,6 +374,24 @@ const KitSummary = () => {
         <div className="flex justify-between items-center py-2">
           <span className="text-sm xs:text-base">Subtotal ({kit.reduce((total, item) => total + item.quantity, 0)} items)</span>
           <span className="font-medium text-sm xs:text-base" aria-live="polite">{formatCurrency(subtotal)}</span>
+        </div>
+        
+        {/* Amazon Add to Cart Button */}
+        <div className="mt-4 pt-4 border-t">
+          <Button 
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white" 
+            asChild
+          >
+            <a
+              href={generateAmazonAddToCartUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Add to Amazon Cart
+            </a>
+          </Button>
         </div>
       </div>
       

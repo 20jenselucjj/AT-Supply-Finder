@@ -195,7 +195,7 @@ export const generateFirstAidKit = async (
 ): Promise<GeneratedKit> => {
   const openRouterService = new OpenRouterService({ 
     apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
-    model: 'x-ai/grok-4-fast:free'
+    model: 'deepseek/deepseek-chat-v3.1:free'
   });
 
   const geminiService = new GeminiService({
@@ -216,7 +216,8 @@ export const generateFirstAidKit = async (
       scenario: context.scenario,
       budget: context.budget,
       duration: context.duration,
-      specialNeeds: context.specialNeeds
+      specialNeeds: context.specialNeeds,
+      onProgress // Pass the progress callback to the OpenRouter service
     });
   } catch (openRouterError) {
     console.warn('OpenRouter failed, falling back to Gemini 2.5 Pro:', openRouterError);
@@ -230,7 +231,8 @@ export const generateFirstAidKit = async (
         availableProducts: relevantProducts.slice(0, 50), // Limit for API efficiency
         kitType: context.kitType as any,
         scenario: context.scenario,
-        budget: context.budget
+        budget: context.budget,
+        onProgress // Pass the progress callback to the Gemini service
       });
     } catch (geminiError) {
       console.warn('Gemini failed, falling back to rule-based generation:', geminiError);
@@ -269,7 +271,7 @@ export const generateTrainingKit = async (
 ): Promise<GeneratedKit> => {
   const openRouterService = new OpenRouterService({ 
     apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
-    model: 'x-ai/grok-4-fast:free'
+    model: 'deepseek/deepseek-chat-v3.1:free'
   });
 
   const geminiService = new GeminiService({

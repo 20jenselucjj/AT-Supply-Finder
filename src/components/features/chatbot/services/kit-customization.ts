@@ -23,12 +23,13 @@ export const handleBuildKit = (kit: GeneratedKit, navigate: (path: string) => vo
     price: item.price,
     quantity: item.quantity,
     description: `${item.product_name} - ${item.reasoning}`,
+    asin: item.asin, // Add ASIN property for Amazon cart functionality
     // Add offers array for proper link handling
     offers: item.offers && item.offers.length > 0 
       ? item.offers 
       : [{
           name: 'Amazon',
-          url: `https://www.amazon.com/dp/${(item as any).asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
+          url: `https://www.amazon.com/dp/${item.asin || 'B0'}/ref=nosim?tag=YOUR_ASSOCIATE_TAG`,
           price: item.price || 0,
           lastUpdated: new Date().toISOString()
         }]
